@@ -1,0 +1,89 @@
+# Example 6.4: Different count outcomes
+
+These data and specifications reproduce the corresponding example in
+Mize, Doan, and Long (2019) and on the [`mecompare` documentation
+page](https://www.trentonmize.com/software/mecompare). The code chunks
+are not evaluated while building the package website because they
+download the public replication data. Copy and run the code
+interactively to reproduce the results.
+
+## Load and prepare the data
+
+``` r
+
+library(haven)
+library(MASS)
+library(marginaleffects)
+library(suest)
+
+gss <- zap_labels(read_dta(
+  "https://tdmize.github.io/data/data/gss_cme.dta"
+))
+
+vars <- c(
+  "mntlhlth", "physhlth", "woman", "married", "age",
+  "faminc", "race", "college", "parent", "year"
+)
+dat <- gss[complete.cases(gss[vars]), ]
+dat[c("woman", "married", "parent", "college", "race", "year")] <-
+  lapply(dat[c("woman", "married", "parent", "college",
+               "race", "year")], factor)
+```
+
+## Fit negative-binomial models for two outcomes
+
+``` r
+
+mental <- glm.nb(
+  mntlhlth ~ woman + married + parent + college + age +
+    faminc + race + year,
+  data = dat
+)
+
+physical <- glm.nb(
+  physhlth ~ woman + married + parent + college + age +
+    faminc + race + year,
+  data = dat
+)
+
+combined <- suest(
+  mental,
+  physical,
+  model_names = c("Mental", "Physical")
+)
+```
+
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) includes
+`log(theta)` from each negative-binomial model in the joint parameter
+vector, which is required to reproduce the robust uncertainty estimates.
+
+## Compare effects across outcomes
+
+``` r
+
+forward_change <- function(amount) {
+  function(x) data.frame(lo = x, hi = x + amount)
+}
+
+effects <- avg_comparisons(
+  combined,
+  variables = list(
+    woman = "reference",
+    married = "reference",
+    parent = "reference",
+    college = "reference",
+    age = forward_change(sd(dat$age)),
+    faminc = forward_change(sd(dat$faminc)),
+    race = "reference",
+    year = "reference"
+  ),
+  newdata = dat
+)
+
+effects
+```
+
+For example, the one-standard-deviation age effects are approximately
+-0.462 poor mental-health days and 0.491 poor physical-health days.
+Their difference is approximately -0.953 with a robust standard error of
+0.132.

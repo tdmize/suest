@@ -1,0 +1,75 @@
+# Example 6.2: Nested logit models
+
+These data and specifications reproduce the corresponding example in
+Mize, Doan, and Long (2019) and on the [`mecompare` documentation
+page](https://www.trentonmize.com/software/mecompare). The code chunks
+are not evaluated while building the package website because they
+download the public replication data. Copy and run the code
+interactively to reproduce the results.
+
+## Load and prepare the data
+
+``` r
+
+library(haven)
+library(marginaleffects)
+library(suest)
+
+gss <- zap_labels(read_dta(
+  "https://tdmize.github.io/data/data/gss_cme.dta"
+))
+
+vars <- c(
+  "vhappy", "college", "age", "married", "parent", "woman",
+  "conserv", "reltrad", "year", "employed"
+)
+
+dat <- subset(gss, year >= 2000 & employed == 1)
+dat <- dat[complete.cases(dat[vars]), ]
+dat[c("college", "married", "parent", "woman", "conserv",
+      "reltrad", "year")] <-
+  lapply(dat[c("college", "married", "parent", "woman", "conserv",
+               "reltrad", "year")], factor)
+```
+
+## Fit and combine the models
+
+``` r
+
+model1 <- glm(
+  vhappy ~ college,
+  family = binomial("logit"),
+  data = dat
+)
+
+model2 <- glm(
+  vhappy ~ college + married + parent + woman + conserv +
+    reltrad + year + age + I(age^2),
+  family = binomial("logit"),
+  data = dat
+)
+
+combined <- suest(
+  model1,
+  model2,
+  model_names = c("Model 1", "Model 2")
+)
+```
+
+## Compare the average effect of college
+
+``` r
+
+effects <- avg_comparisons(
+  combined,
+  variables = "college",
+  newdata = dat
+)
+
+effects
+hypotheses(effects, hypothesis = difference ~ revpairwise)
+```
+
+The expected average effects are about 0.0718 and 0.0599. The
+cross-model difference is about 0.0119 with a robust standard error of
+0.0040.
