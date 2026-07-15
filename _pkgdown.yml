@@ -17,6 +17,7 @@ reference:
   contents:
   - suest
   - suest_newdata
+  - suest-package
 
 articles:
 - title: Get started
