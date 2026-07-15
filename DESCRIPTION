@@ -20,7 +20,8 @@ Imports:
     marginaleffects,
     MASS,
     nnet,
-    sandwich
+    sandwich,
+    stats
 Suggests:
     haven,
     knitr,

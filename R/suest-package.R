@@ -19,5 +19,6 @@
 #' Models." *Sociological Methodology* 49(1):152--189.
 #' \doi{10.1177/0081175019852763}
 #'
+#' @importFrom stats coef nobs vcov
 #' @keywords internal
 "_PACKAGE"

@@ -343,10 +343,14 @@ suest <- function(model1, model2, model_names = NULL) {
   out
 }
 
+#' @export
 coef.suest_model <- function(object, ...) object$coefficients
+#' @export
 vcov.suest_model <- function(object, ...) object$vcov
+#' @export
 nobs.suest_model <- function(object, ...) object$nobs_union
 
+#' @export
 print.suest_model <- function(x, ...) {
   cat("Seemingly Unrelated Estimation\n")
   cat("Models:", paste(x$model_names, collapse = " + "), "\n")

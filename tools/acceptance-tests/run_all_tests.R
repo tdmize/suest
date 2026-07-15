@@ -60,6 +60,7 @@ run_suest_acceptance_tests <- function() {
   tests <- file.path(root, "tools", "acceptance-tests", "tests")
   source(file.path(tests, "test_paper_examples.R"))
   source(file.path(tests, "test_invariants.R"))
+  source(file.path(tests, "test_comparison_universe.R"))
   source(file.path(tests, "test_validation.R"))
 
   results <- test_summary()

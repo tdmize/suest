@@ -1,0 +1,29 @@
+FULL REPOSITORY UPDATE
+
+This archive does not contain a .git directory, so it will not overwrite your
+local Git history or GitHub remote.
+
+1. Before copying the new repository files, open Git Bash in
+   C:\\Users\\trent\\suest and synchronize the online edits:
+
+     git pull --rebase origin main
+
+2. Extract this archive somewhere temporary. Copy everything inside its
+   top-level suest folder into C:\\Users\\trent\\suest and choose to replace
+   existing files. Be sure the hidden .github folder is copied too.
+
+3. In Git Bash, still in C:\\Users\\trent\\suest, run:
+
+     git status
+     git add -A
+     git commit -m "Fix package namespace and GitHub workflows"
+     git push origin main
+
+The push should trigger:
+
+  1. R-CMD-check
+  2. pkgdown
+  3. paper-replications
+
+The repository includes the current comparison-universe tests, imports the
+stats generics required by the S3 methods, and uses actions/checkout@v6.
