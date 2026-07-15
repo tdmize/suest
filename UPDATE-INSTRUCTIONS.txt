@@ -1,37 +1,22 @@
-FULL REPOSITORY UPDATE — SECOND GITHUB FIX
+SUEST EXAMPLE-LANGUAGE REVISION
 
-This archive contains the complete repository and no .git directory.
+This complete repository revises Examples 6.1--6.6 to follow the headings,
+setup language, and interpretations used on the mecompare Stata command site,
+adapted for the R implementation.
 
-The update addresses two concrete repository issues:
+COPY AND BUILD
 
-1. Every vignette previously used the literal index entry "title". Each
-   vignette now has its real, unique VignetteIndexEntry.
-2. Two testthat checks compared a named zero covariance matrix to an unnamed
-   zero matrix. They now test the numerical condition directly.
+Copy everything inside this archive's top-level suest folder into:
 
-It also links the S3 roxygen blocks to the main suest documentation topic and
-adds tools/preflight.R.
+C:\Users\trent\suest
 
-COPY AND PUSH
+Replace existing files.
 
-1. In Git Bash:
+Then run in R:
 
-   cd /c/Users/trent/suest
-   git pull --rebase origin main
+setwd("C:/Users/trent/suest")
+source("tools/build-site.R")
 
-2. Copy everything inside this archive's top-level suest folder into:
+Open:
 
-   C:\Users\trent\suest
-
-   Replace existing files and include the hidden .github folder.
-
-3. In Git Bash:
-
-   cd /c/Users/trent/suest
-   git add -A
-   git commit -m "Fix package tests and vignette metadata"
-   git push origin main
-
-OPTIONAL LOCAL PREFLIGHT IN R
-
-   source("tools/preflight.R")
+C:/Users/trent/suest/docs/articles/suest.html

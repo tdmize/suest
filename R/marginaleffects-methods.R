@@ -26,42 +26,18 @@ set_coef.suest_model <- function(model, coefs, ...) {
     b <- coefs[out$index[[i]]]
     names(b) <- out$local_names[[i]]
     type <- out$model_types[i]
-
-    if (type %in% c("ologit", "oprobit")) {
-      k <- length(out$models[[i]]$coefficients)
-      q <- length(out$models[[i]]$zeta)
-      out$models[[i]]$coefficients <- b[seq_len(k)]
-      out$models[[i]]$zeta <- b[k + seq_len(q)]
-    } else if (type == "multinom") {
-      m <- out$models[[i]]
-      r <- length(m$vcoefnames)
-      q <- length(m$lev) - 1L
-
-      cf <- matrix(
-        b,
-        nrow = q,
-        ncol = r,
-        byrow = TRUE,
-        dimnames = list(m$lev[-1L], m$vcoefnames)
-      )
-
-      W <- matrix(m$wts, nrow = m$n[3L], byrow = TRUE)
-      W[-1L, 1L + seq_len(r)] <- cf
-      m$wts <- as.vector(t(W))
-      out$models[[i]] <- m
-    } else if (type == "negbin") {
-      m <- out$models[[i]]
-      beta_names <- setdiff(names(b), "ln_theta")
-      m$coefficients <- b[beta_names]
-      m$theta <- exp(unname(b["ln_theta"]))
-      m$family <- MASS::negative.binomial(
-        theta = m$theta,
-        link = m$family$link
-      )
-      out$models[[i]] <- m
+    engine <- if (!is.null(out$model_engines)) {
+      .suest_engine_name(out$model_engines[[i]])
     } else {
-      out$models[[i]]$coefficients <- b
+      .suest_model_engine(out$models[[i]])
     }
+
+    out$models[[i]] <- .suest_set_parameters(
+      out$models[[i]],
+      b,
+      type,
+      engine
+    )
   }
 
   out
@@ -158,7 +134,14 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
         call. = FALSE
       )
 
-    category_levels <- model$models[[1]]$lev
+    category_levels <- if (!is.null(model$category_levels)) {
+      model$category_levels[[1]]
+    } else {
+      .suest_category_levels(
+        model$models[[1]],
+        .suest_model_engine(model$models[[1]])
+      )
+    }
     group_levels <- unlist(lapply(
       seq_along(model$models),
       function(i) paste0(model$model_names[i], "::", category_levels)
@@ -167,20 +150,17 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
     categorical_predictions <- function(i) {
       nd <- get_model_data(i)
       rowid <- get_rowid(nd)
-      p <- stats::predict(
-        model$models[[i]],
-        newdata = nd,
-        type = "probs"
-      )
-
-      if (is.null(dim(p))) {
-        category <- names(p)
-        p <- matrix(
-          as.numeric(p),
-          nrow = 1L,
-          dimnames = list(NULL, category)
-        )
+      engine <- if (!is.null(model$model_engines)) {
+        .suest_engine_name(model$model_engines[[i]])
+      } else {
+        .suest_model_engine(model$models[[i]])
       }
+
+      p <- .suest_predict_probabilities(
+        model$models[[i]],
+        nd,
+        engine
+      )
 
       group <- rep(
         paste0(model$model_names[i], "::", colnames(p)),
@@ -207,12 +187,18 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
   scalar_predictions <- function(i) {
     nd <- get_model_data(i)
     rowid <- get_rowid(nd)
-    predict_type <- if (model$model_types[i] == "lm") "response" else type
+    engine <- if (!is.null(model$model_engines)) {
+      .suest_engine_name(model$model_engines[[i]])
+    } else {
+      .suest_model_engine(model$models[[i]])
+    }
 
-    p <- stats::predict(
+    p <- .suest_predict_values(
       model$models[[i]],
-      newdata = nd,
-      type = predict_type
+      nd,
+      type,
+      engine,
+      model$model_types[i]
     )
 
     data.frame(

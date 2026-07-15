@@ -1,36 +1,3 @@
-.suest_model_type <- function(model) {
-  if (inherits(model, "multinom")) {
-    "multinom"
-  } else if (inherits(model, "polr")) {
-    if (identical(model$method, "logistic")) {
-      "ologit"
-    } else if (identical(model$method, "probit")) {
-      "oprobit"
-    } else {
-      "unsupported"
-    }
-  } else if (inherits(model, "negbin")) {
-    if (identical(unname(model$family$link), "log")) {
-      "negbin"
-    } else {
-      "unsupported"
-    }
-  } else if (inherits(model, "glm")) {
-    key <- paste(model$family$family, model$family$link, sep = ":")
-    switch(
-      key,
-      "binomial:logit" = "logit",
-      "binomial:probit" = "probit",
-      "poisson:log" = "poisson",
-      "unsupported"
-    )
-  } else if (inherits(model, "lm")) {
-    "lm"
-  } else {
-    "unsupported"
-  }
-}
-
 .suest_pair_key <- function(types) {
   paste(sort(types), collapse = "+")
 }
@@ -93,8 +60,11 @@
   }
 }
 
-.suest_extract_parameters <- function(model, type) {
-  if (type %in% c("ologit", "oprobit")) {
+.suest_extract_parameters <- function(model, type, engine) {
+  engine <- .suest_engine_name(engine)
+  if (identical(engine, "ordinal::clm")) {
+    stats::coef(model)
+  } else if (type %in% c("ologit", "oprobit")) {
     c(model$coefficients, model$zeta)
   } else if (type == "multinom") {
     cf <- stats::coef(model)
@@ -292,7 +262,8 @@
     bread = B,
     parameters = .suest_extract_parameters(
       model,
-      if (identical(model$method, "logistic")) "ologit" else "oprobit"
+      if (identical(model$method, "logistic")) "ologit" else "oprobit",
+      "MASS::polr"
     )
   )
 }
@@ -371,7 +342,11 @@
   list(
     score = U,
     bread = B,
-    parameters = .suest_extract_parameters(model, "multinom")
+    parameters = .suest_extract_parameters(
+      model,
+      "multinom",
+      "nnet::multinom"
+    )
   )
 }
 
@@ -421,13 +396,24 @@
   list(
     score = U,
     bread = B,
-    parameters = .suest_extract_parameters(model, "negbin")
+    parameters = .suest_extract_parameters(
+      model,
+      "negbin",
+      "MASS::glm.nb"
+    )
   )
 }
 
-.suest_model_components <- function(model, type) {
+.suest_model_components <- function(model, type, engine) {
+  engine <- .suest_engine_name(engine)
   if (type == "negbin") {
     .suest_negbin_components(model)
+  } else if (identical(engine, "ordinal::clm")) {
+    list(
+      score = sandwich::estfun(model),
+      bread = sandwich::bread(model),
+      parameters = .suest_extract_parameters(model, type, engine)
+    )
   } else if (type %in% c("ologit", "oprobit")) {
     .suest_polr_components(model)
   } else if (type == "multinom") {
@@ -436,10 +422,11 @@
     list(
       score = sandwich::estfun(model),
       bread = sandwich::bread(model),
-      parameters = .suest_extract_parameters(model, type)
+      parameters = .suest_extract_parameters(model, type, engine)
     )
   }
 }
+
 
 .suest_block_diag <- function(A, B) {
   out <- matrix(0, nrow(A) + nrow(B), ncol(A) + ncol(B))

@@ -2,9 +2,13 @@
 
 [![R-CMD-check](https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml)
 
-Full documentation and replication examples: [tdmize.github.io/suest](https://tdmize.github.io/suest/)
+Full documentation, worked examples, and rendered output:
+[tdmize.github.io/suest](https://tdmize.github.io/suest/articles/suest.html)
 
-`suest` combines two separately fitted regression models into one object with a joint model-robust covariance matrix. The combined object works with [`marginaleffects`](https://marginaleffects.com/) to compare predictions and marginal effects across models.
+`suest` combines two separately fitted regression models into one object with a
+joint model-robust covariance matrix. The combined object works with
+[`marginaleffects`](https://marginaleffects.com/) to compare predictions and
+marginal effects across models.
 
 The package implements the framework developed in:
 
@@ -26,45 +30,48 @@ library(marginaleffects)
 dat <- mtcars
 dat$am <- factor(dat$am)
 
-base <- glm(am ~ wt, family = binomial(), data = dat)
-adjusted <- glm(am ~ wt + hp, family = binomial(), data = dat)
+base <- glm(am ~ wt, family = binomial("logit"), data = dat)
+adjusted <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
+combined <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
 
-combined <- suest(
-  base,
-  adjusted,
-  model_names = c("Base", "Adjusted")
-)
-
-effects <- avg_comparisons(
-  combined,
-  variables = "wt",
-  newdata = dat
-)
-
+effects <- avg_comparisons(combined, variables = "wt", newdata = dat)
 effects
 hypotheses(effects, hypothesis = difference ~ revpairwise)
 ```
 
-`suest()` accounts for the cross-model covariance between estimates. This is essential when the models use the same or overlapping observations.
+`suest()` accounts for the cross-model covariance between estimates. This is
+essential when the models use the same or overlapping observations.
 
 ## Supported models
 
 - linear regression using `lm()`
-- binary logit and probit using `glm()`
-- Poisson regression using `glm()`
+- binary logit and probit using `glm()` or `glm2::glm2()`
+- Poisson regression using `glm()` or `glm2::glm2()`
 - negative-binomial regression using `MASS::glm.nb()`
 - ordered logit and probit using `MASS::polr()`
+- ordered logit and probit using restricted `ordinal::clm()` specifications
 - multinomial logit using `nnet::multinom()`
 
-Models may use identical, partially overlapping, or completely disjoint samples. The supported cross-family comparisons are logit–probit, logit–linear, probit–linear, Poisson–negative binomial, and ordered logit–multinomial logit.
+Models may use identical, partially overlapping, or disjoint samples. Supported
+cross-family comparisons are logit–probit, logit–linear, probit–linear,
+Poisson–negative binomial, and ordered logit–multinomial logit.
 
-## Replication vignettes
+## Worked examples
 
-The package website includes six R replications corresponding to Examples 6.1–6.6 on the [`mecompare` page](https://www.trentonmize.com/software/mecompare):
+The single Get Started page contains code and rendered results for six R
+replications corresponding to Examples 6.1–6.6 for the
+[`mecompare` Stata command](https://www.trentonmize.com/software/mecompare):
 
-1. Curvilinear effects and mediation
-2. Nested logit models
-3. Alternative predictor operationalizations
-4. Different count outcomes
-5. Ordered versus multinomial logit
-6. Different samples
+1. Marginal effects to summarize curvilinear relationships and test mediation
+2. Comparing marginal effects across nested logit models
+3. Comparing marginal effects using alternative predictors
+4. Comparing marginal effects across different outcomes
+5. Comparing marginal effects across different model types (ordinal vs nominal)
+6. Comparing marginal effects across different samples or groups
+
+It also documents cross-engine comparisons using `glm2::glm2()` and
+`ordinal::clm()`.
+
+Bias-reduced, adjusted-score, Firth, and penalized GLM fits, including
+`brglm2::brglmFit()`, are rejected rather than being treated incorrectly as
+ordinary maximum-likelihood GLMs.

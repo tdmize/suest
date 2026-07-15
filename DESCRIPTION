@@ -1,6 +1,6 @@
 Package: suest
 Title: Seemingly Unrelated Estimation for Comparing Model Predictions and Effects
-Version: 0.1.0
+Version: 0.1.3
 Authors@R:
     person("Trenton D.", "Mize", email = "tmize@purdue.edu",
            role = c("aut", "cre"))
@@ -23,11 +23,19 @@ Imports:
     sandwich,
     stats
 Suggests:
+    brglm2,
+    glm2,
     haven,
+    ordinal,
     knitr,
     rmarkdown,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+Config/Needs/website:
+    pkgdown,
+    haven,
+    glm2,
+    ordinal
+Config/roxygen2/version: 8.0.0

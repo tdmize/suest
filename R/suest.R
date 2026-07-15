@@ -9,6 +9,8 @@
 #' @param model1,model2 Two supported fitted model objects.
 #' @param model_names Optional character vector containing two display names.
 #'   By default, the object names supplied in the call are used.
+#' @param object,x A `"suest_model"` object.
+#' @param ... Additional arguments, currently ignored.
 #'
 #' @return An object of class `"suest_model"` containing the two fitted models,
 #'   their joint coefficient vector, a joint model-robust covariance matrix,
@@ -32,14 +34,18 @@
 #' calculations for stable robust covariance estimation.
 #'
 #' Offsets, nonunit estimation weights, and aliased parameters are not
-#' currently supported.
+#' currently supported. Bias-reduced, adjusted-score, Firth, and penalized
+#' GLM fits are rejected because they do not use ordinary maximum-likelihood
+#' score equations.
 #'
 #' @section Supported models:
 #' * [stats::lm()]
-#' * binary logit and probit models from [stats::glm()]
-#' * Poisson log-link models from [stats::glm()]
+#' * binary logit and probit models from [stats::glm()] or `glm2::glm2()`
+#' * Poisson log-link models from [stats::glm()] or `glm2::glm2()`
 #' * negative-binomial log-link models from [MASS::glm.nb()]
 #' * ordered logit and probit models from [MASS::polr()]
+#' * ordered logit and probit models from `ordinal::clm()` with flexible
+#'   thresholds, proportional effects, and no scale model
 #' * multinomial logit models from [nnet::multinom()]
 #'
 #' @examples
@@ -52,15 +58,8 @@
 #' fit <- suest(model1, model2, model_names = c("Base", "Adjusted"))
 #' fit
 #'
-#' effects <- marginaleffects::avg_comparisons(
-#'   fit,
-#'   variables = "wt",
-#'   newdata = dat
-#' )
-#' marginaleffects::hypotheses(
-#'   effects,
-#'   hypothesis = difference ~ revpairwise
-#' )
+#' effects <- marginaleffects::avg_comparisons(fit, variables = "wt", newdata = dat)
+#' marginaleffects::hypotheses(effects, hypothesis = difference ~ revpairwise)
 #'
 #' @export
 suest <- function(model1, model2, model_names = NULL) {
@@ -83,13 +82,15 @@ suest <- function(model1, model2, model_names = NULL) {
   model_names <- make.unique(as.character(model_names))
   names(models) <- model_names
 
-  model_types <- vapply(models, .suest_model_type, character(1))
+  adapters <- lapply(models, .suest_model_adapter)
+  model_types <- vapply(adapters, `[[`, character(1), "type")
+  model_engines <- vapply(adapters, `[[`, character(1), "engine")
 
   if (any(model_types == "unsupported"))
     stop(
       paste0(
-        "Each model must be a supported lm, binary logit, binary probit, ",
-        "Poisson, MASS::glm.nb, MASS::polr, or nnet::multinom model."
+        "Each model must be a supported stats::lm, stats::glm, glm2::glm2, ",
+        "MASS::glm.nb, MASS::polr, ordinal::clm, or nnet::multinom model."
       ),
       call. = FALSE
     )
@@ -105,9 +106,15 @@ suest <- function(model1, model2, model_names = NULL) {
 
   categorical <- model_types %in% c("ologit", "oprobit", "multinom")
 
+  category_levels <- Map(
+    .suest_category_levels,
+    models,
+    model_engines
+  )
+
   if (all(categorical)) {
-    levels1 <- models[[1]]$lev
-    levels2 <- models[[2]]$lev
+    levels1 <- category_levels[[1]]
+    levels2 <- category_levels[[2]]
     if (!identical(levels1, levels2))
       stop(
         paste0(
@@ -118,14 +125,19 @@ suest <- function(model1, model2, model_names = NULL) {
       )
   }
 
-  model_frames <- lapply(models, stats::model.frame)
+  model_frames <- Map(
+    .suest_model_frame,
+    models,
+    model_engines
+  )
 
   for (i in seq_along(models)) {
     model <- models[[i]]
     type <- model_types[i]
+    engine <- .suest_engine_name(model_engines[[i]])
     mf <- model_frames[[i]]
 
-    parameters <- .suest_extract_parameters(model, type)
+    parameters <- .suest_extract_parameters(model, type, engine)
     if (anyNA(parameters))
       stop(
         sprintf(
@@ -186,10 +198,11 @@ suest <- function(model1, model2, model_names = NULL) {
 
     if (type == "multinom") {
       cf <- stats::coef(model)
-      valid_multinom <- !is.null(model$lev) &&
-        length(model$lev) >= 3L &&
+      levels <- category_levels[[i]]
+      valid_multinom <- !is.null(levels) &&
+        length(levels) >= 3L &&
         is.matrix(cf) &&
-        nrow(cf) == length(model$lev) - 1L
+        nrow(cf) == length(levels) - 1L
 
       if (!valid_multinom)
         stop(
@@ -199,7 +212,12 @@ suest <- function(model1, model2, model_names = NULL) {
     }
   }
 
-  components <- Map(.suest_model_components, models, model_types)
+  components <- Map(
+    .suest_model_components,
+    models,
+    model_types,
+    model_engines
+  )
   scores <- lapply(components, `[[`, "score")
   breads <- lapply(components, `[[`, "bread")
   parameters <- lapply(components, `[[`, "parameters")
@@ -327,6 +345,8 @@ suest <- function(model1, model2, model_names = NULL) {
     local_names = local_names,
     index = index,
     model_types = model_types,
+    model_engines = model_engines,
+    category_levels = category_levels,
     pair_key = pair$key,
     mixed_models = pair$mixed,
     comparison_scale = pair$scale,
@@ -368,6 +388,16 @@ print.suest_model <- function(x, ...) {
     ),
     "\n"
   )
+  if (!is.null(x$model_engines)) {
+    cat(
+      "Model engines:",
+      paste(
+        paste0(x$model_names, "=", unname(x$model_engines)),
+        collapse = ", "
+      ),
+      "\n"
+    )
+  }
   cat("Comparison scale:", x$comparison_scale, "\n")
 
   if (!is.null(x$theta)) {

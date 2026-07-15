@@ -1,5 +1,6 @@
 ---
 title: "Getting started with suest"
+description: "Compare predictions and marginal effects across regression models in R."
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Getting started with suest}
@@ -8,108 +9,397 @@ vignette: >
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  eval = FALSE
-)
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
 ```
 
-
 `suest()` combines two separately fitted models and supplies the joint robust
-covariance needed to test whether predictions or effects differ across models.
-The package leaves the calculation and presentation of substantive quantities
-to `marginaleffects`.
+covariance matrix needed to test whether predictions, marginal effects, or
+other quantities differ across models. The package leaves calculation and
+presentation of those quantities to
+[`marginaleffects`](https://marginaleffects.com/).
+
+The package implements the framework in Mize, Doan, and Long (2019). The six
+replications below correspond to Examples 6.1–6.6 for the
+[`mecompare` Stata command](https://www.trentonmize.com/software/mecompare).
+
+## Functions at a glance
+
+- `suest()` combines two fitted models and calculates their joint covariance matrix.
+- `suest_newdata()` stacks the two estimation samples so each model's effects
+  can be averaged over its own sample.
+- Standard `marginaleffects` functions—including `predictions()`,
+  `avg_comparisons()`, `avg_slopes()`, `hypotheses()`, and the plotting
+  functions—work with the combined object.
 
 ## Installation and setup
 
-```{r}
+```{r installation, eval=FALSE}
+remotes::install_github("tdmize/suest")
+```
+
+```{r libraries}
 library(suest)
 library(marginaleffects)
 ```
 
-## Fit two models
+## Basic workflow
 
-```{r}
+```{r basic-workflow}
 dat <- mtcars
 dat$am <- factor(dat$am)
 
-base <- glm(am ~ wt, family = binomial(), data = dat)
-adjusted <- glm(am ~ wt + hp, family = binomial(), data = dat)
-```
-
-## Combine the models
-
-```{r}
-combined <- suest(
-  base,
-  adjusted,
-  model_names = c("Base", "Adjusted")
-)
-
+base <- glm(am ~ wt, family = binomial("logit"), data = dat)
+adjusted <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
+combined <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
 combined
-```
 
-The printed object reports the component model types, the comparison scale,
-the component sample sizes, the number of overlapping observations, and the
-number of parameters in the joint system.
-
-## Compute and compare effects
-
-```{r}
-effects <- avg_comparisons(
-  combined,
-  variables = "wt",
-  newdata = dat
-)
-
+effects <- avg_comparisons(combined, variables = "wt", newdata = dat)
 effects
-
-hypotheses(
-  effects,
-  hypothesis = difference ~ revpairwise
-)
+hypotheses(effects, hypothesis = difference ~ revpairwise)
 ```
 
-The final command directly tests the difference between the effects. It does
-not compare whether one effect is statistically significant while the other
-is not.
+The final command tests the difference between the two effects directly. It
+does not compare whether one effect is statistically significant while the
+other is not.
 
-## Different estimation samples
+## Supported models
 
-When models were fitted on different samples, use `suest_newdata()` to average
-each model's effect over its own estimation sample.
+| Model | Supported functions |
+|---|---|
+| Linear regression | `stats::lm()` |
+| Binary logit and probit | `stats::glm()`, `glm2::glm2()` |
+| Poisson regression | `stats::glm()`, `glm2::glm2()` |
+| Negative binomial regression | `MASS::glm.nb()` |
+| Ordered logit and probit | `MASS::polr()`, restricted `ordinal::clm()` |
+| Multinomial logit | `nnet::multinom()` |
 
-```{r}
-model_4cyl <- glm(
-  am ~ wt + hp,
-  family = binomial(),
-  data = dat,
-  subset = cyl == 4
-)
+Models may use identical, partially overlapping, or disjoint samples. Supported
+cross-family comparisons are logit–probit, logit–linear, probit–linear,
+Poisson–negative binomial, and ordered logit–multinomial logit.
 
-model_other <- glm(
-  am ~ wt + hp,
-  family = binomial(),
-  data = dat,
-  subset = cyl != 4
-)
+Nonunit weights and offsets are not yet supported. Bias-reduced,
+adjusted-score, Firth, and penalized GLM fits are rejected because their
+estimating equations differ from ordinary maximum-likelihood GLM scores.
 
-combined_samples <- suest(
-  model_4cyl,
-  model_other,
-  model_names = c("Four cylinders", "Other")
-)
+## Replicating Mize, Doan, and Long (2019)
 
-nd <- suest_newdata(combined_samples)
+The examples use the public replication data for the
+[`mecompare` Stata command](https://www.trentonmize.com/software/mecompare).
+The data are downloaded once and reused below.
 
-avg_comparisons(
-  combined_samples,
-  variables = "wt",
-  newdata = nd,
-  hypothesis = difference ~ revpairwise
-)
+```{r replication-data}
+library(haven)
+
+ah <- zap_labels(read_dta("https://tdmize.github.io/data/data/ah4_cme.dta"))
+gss <- zap_labels(read_dta("https://tdmize.github.io/data/data/gss_cme.dta"))
+
+factorize <- function(data, variables) {
+  data[variables] <- lapply(data[variables], factor)
+  data
+}
+forward_change <- function(amount) function(x) data.frame(lo = x, hi = x + amount)
 ```
 
-For disjoint samples, the cross-model covariance is zero, so the variance of
-the difference is the sum of the two component variances.
+### Ex 6.1 - Marginal effects to summarize curvilinear relationships and test mediation
+
+This example uses a linear regression model with a nonlinear effect represented
+by a polynomial: both income and income squared are included in the model. We
+test whether adding the mediator, job satisfaction, reduces the average effect
+of income, which would suggest mediation. The example also shows how to request
+a custom amount of change for a continuous predictor—in this case, a
+one-standard-deviation increase in income.
+
+```{r example-6-1}
+vars61 <- c("depsympB", "income", "age", "woman", "race", "jobsat")
+dat61 <- ah[complete.cases(ah[vars61]), ]
+dat61 <- factorize(dat61, c("woman", "race", "jobsat"))
+
+base61 <- lm(depsympB ~ income + I(income^2) + age + woman + race, data = dat61)
+mediator61 <- lm(depsympB ~ income + I(income^2) + age + woman + race + jobsat,
+                 data = dat61)
+fit61 <- suest(base61, mediator61, model_names = c("Base", "Mediator"))
+
+effects61 <- avg_comparisons(fit61,
+  variables = list(income = forward_change(sd(dat61$income))), newdata = dat61)
+effects61
+hypotheses(effects61, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation for the effect of income:** In model 1, the
+marginal effect is -0.816, indicating that a standard-deviation increase in
+income is associated with about 0.8 fewer depressive symptoms. The effect is
+reduced to -0.648 after accounting for job satisfaction. The direct
+cross-model test shows that accounting for job satisfaction decreases the
+average effect of income by 0.168, a statistically significant reduction
+(\(p < .001\)) that is consistent with mediation.
+
+### Ex 6.2 - Comparing marginal effects across nested logit models
+
+This example uses binary logit models and examines how the effect of college
+changes as additional variables are added to the model.
+
+```{r example-6-2}
+vars62 <- c("vhappy", "college", "age", "married", "parent", "woman",
+            "conserv", "reltrad", "year", "employed")
+dat62 <- subset(gss, year >= 2000 & employed == 1)
+dat62 <- dat62[complete.cases(dat62[vars62]), ]
+dat62 <- factorize(dat62, c("college", "married", "parent", "woman", "conserv",
+                            "reltrad", "year"))
+
+model62a <- glm(vhappy ~ college, family = binomial("logit"), data = dat62)
+model62b <- glm(vhappy ~ college + married + parent + woman + conserv + reltrad +
+                  year + age + I(age^2), family = binomial("logit"), data = dat62)
+fit62 <- suest(model62a, model62b, model_names = c("Model 1", "Model 2"))
+
+effects62 <- avg_comparisons(fit62, variables = "college", newdata = dat62)
+effects62
+hypotheses(effects62, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation for the effect of college:** On average, the
+probability of being very happy is 0.072 higher for people with a college
+degree than for those without one (\(p < .001\)). Model 2 adds demographic
+controls, reducing the average marginal effect of college to 0.060, which
+remains statistically significant. A direct test shows that adding the
+controls decreases the effect of college by 0.012 (\(p < .01\)).
+
+### Ex 6.3 - Comparing marginal effects using alternative predictors
+
+This example uses two binary logit models with alternative predictors. The
+models use two different ways to measure sexuality: sexual behavior
+(`sexbehav`) in one model and sexual identity (`sexident`) in the other.
+
+```{r example-6-3-models}
+vars63 <- c("samesexB", "sexident", "sexbehav", "college",
+            "woman", "race", "age", "year")
+dat63 <- gss[complete.cases(gss[vars63]), ]
+dat63 <- factorize(dat63, c("sexident", "sexbehav", "college", "woman", "race", "year"))
+
+behavior63 <- glm(samesexB ~ sexbehav + woman + college + age + race + year,
+                  family = binomial("logit"), data = dat63)
+identity63 <- glm(samesexB ~ sexident + woman + college + age + race + year,
+                  family = binomial("logit"), data = dat63)
+fit63 <- suest(behavior63, identity63, model_names = c("Behavior", "Identity"))
+
+effects63 <- avg_comparisons(fit63,
+  variables = list(sexbehav = "reference", sexident = "reference"), newdata = dat63)
+effects63
+```
+
+Because each predictor appears in only one component model,
+`marginaleffects` reports zero and `NA` for structurally absent effects. The
+nonzero rows give the effects for each operationalization.
+
+```{r example-6-3-contrasts}
+alternative_predictor_hypothesis <- function(x) {
+  group <- as.character(x$group)
+  term <- as.character(x$term)
+  behavior <- x$estimate[term == "sexbehav" & group == "Behavior"]
+  identity <- x$estimate[term == "sexident" & group == "Identity"]
+
+  data.frame(
+    term = c("Behavior bisexual - Identity bisexual",
+             "Behavior gay - Identity gay",
+             "(Behavior gay - bisexual) - (Identity gay - bisexual)"),
+    estimate = c(behavior[1] - identity[1], behavior[2] - identity[2],
+                 (behavior[2] - behavior[1]) - (identity[2] - identity[1])))
+}
+
+avg_comparisons(fit63,
+  variables = list(sexbehav = "reference", sexident = "reference"),
+  newdata = dat63, hypothesis = alternative_predictor_hypothesis)
+```
+
+**Example interpretations:** The contrasts between heterosexual and
+gay/lesbian respondents and between bisexual and gay/lesbian respondents do
+not differ significantly across the two models. However, the difference
+between heterosexual and bisexual respondents is significantly larger when
+sexuality is measured using identity than when it is measured using behavior.
+
+### Ex 6.4 - Comparing marginal effects across different outcomes
+
+This example compares effects across different dependent variables. Two count
+outcomes—poor mental-health days and poor physical-health days—are estimated
+using negative-binomial models, with effects calculated on the predicted-rate
+scale. Effects and cross-model comparisons are calculated for all predictors.
+
+```{r example-6-4}
+vars64 <- c("mntlhlth", "physhlth", "woman", "married", "age",
+            "faminc", "race", "college", "parent", "year")
+dat64 <- gss[complete.cases(gss[vars64]), ]
+dat64 <- factorize(dat64, c("woman", "married", "parent", "college", "race", "year"))
+
+mental64 <- MASS::glm.nb(mntlhlth ~ woman + married + parent + college + age +
+                           faminc + race + year, data = dat64)
+physical64 <- MASS::glm.nb(physhlth ~ woman + married + parent + college + age +
+                             faminc + race + year, data = dat64)
+fit64 <- suest(mental64, physical64, model_names = c("Mental", "Physical"))
+
+variables64 <- list(woman = "reference", married = "reference", parent = "reference",
+  college = "reference", age = forward_change(sd(dat64$age)),
+  faminc = forward_change(sd(dat64$faminc)), race = "reference", year = "reference")
+effects64 <- avg_comparisons(fit64, variables = variables64, newdata = dat64)
+effects64
+
+age64 <- avg_comparisons(fit64, variables = list(age = forward_change(sd(dat64$age))),
+                         newdata = dat64)
+hypotheses(age64, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretations:** Women report about 0.99 more poor
+mental-health days and 0.77 more poor physical-health days per month than men.
+Although the effect of gender is about 0.22 larger for mental health, the
+cross-outcome difference is not statistically significant.
+
+Being married significantly reduces poor mental-health days by about 1.01,
+whereas its effect on poor physical-health days is not statistically
+significant. The direct comparison shows that the effect of marriage is
+significantly larger for mental health than for physical health
+(cross-model difference = -0.851, \(p < .01\)).
+
+Similarly, the effect of age differs significantly across the outcomes:
+aging is associated with fewer poor mental-health days but more poor
+physical-health days.
+
+### Ex 6.5 - Comparing marginal effects across different model types (ordinal vs nominal)
+
+This example compares effects across two model types: an ordinal model and a
+nominal model. The models are otherwise identical, using the same outcome and
+predictors. It also illustrates a custom effect for a continuous predictor:
+a change in age from 20 to 30, with the other covariates held at their means.
+
+```{r example-6-5-models}
+vars65 <- c("partyid5", "woman", "edyrs", "age", "parent", "married",
+            "faminc", "employed", "region4", "year", "race")
+dat65 <- subset(gss, year >= 2010)
+dat65 <- dat65[complete.cases(dat65[vars65]), ]
+dat65 <- factorize(dat65, c("woman", "parent", "married", "race",
+                            "employed", "region4", "year"))
+
+party_levels <- sort(unique(dat65$partyid5))
+dat65$party_ord <- ordered(dat65$partyid5, levels = party_levels)
+dat65$party_nom <- factor(dat65$partyid5, levels = party_levels)
+
+ordered65 <- MASS::polr(party_ord ~ age + I(age^2) + woman + edyrs + parent +
+                          married + race + faminc + employed + region4 + year,
+                        data = dat65, method = "logistic", Hess = TRUE)
+nominal65 <- nnet::multinom(party_nom ~ age + I(age^2) + woman + edyrs + parent +
+                             married + race + faminc + employed + region4 + year,
+                           data = dat65, Hess = TRUE, trace = FALSE)
+fit65 <- suest(ordered65, nominal65, model_names = c("Ordered", "Multinomial"))
+```
+
+For an empirical-distribution average, `marginaleffects` calculates
+category-specific ten-year age changes directly:
+
+```{r example-6-5-effects}
+avg_comparisons(fit65, variables = list(age = forward_change(10)), newdata = dat65)
+```
+
+The published comparison evaluates a change from age 20 to age 30 with the
+other model-matrix columns held at their means. The full acceptance suite
+reproduces the following benchmark:
+
+| Category | Ordered effect | Ordered SE | Multinomial effect | Multinomial SE | Difference | Difference SE |
+|---|---:|---:|---:|---:|---:|---:|
+| Strong Democrat | 0.020 | 0.004 | 0.032 | 0.003 | -0.012 | 0.003 |
+| Democrat | 0.023 | 0.005 | -0.010 | 0.011 | 0.034 | 0.009 |
+| Independent | -0.003 | 0.000 | -0.000 | 0.010 | -0.003 | 0.010 |
+| Republican | -0.024 | 0.005 | -0.031 | 0.011 | 0.007 | 0.009 |
+| Strong Republican | -0.016 | 0.004 | 0.010 | 0.003 | -0.026 | 0.004 |
+
+**Example interpretation:** For someone who is 20 years old, the effect of a
+ten-year increase in age differs significantly across the ordinal and nominal
+models for three of the five outcome categories. For example, aging increases
+the probability of identifying as a strong Democrat in both models, but the
+increase is significantly larger in the nominal model. More strikingly, the
+effects of age on identifying as a strong Republican run in opposite
+directions across the two models.
+
+### Ex 6.6 - Comparing marginal effects across different samples or groups
+
+This example compares effects from separate models estimated on different
+samples: one sample from 1986 and another from 2016. The models are otherwise
+identical, using binary logit with the same outcome and predictors. The same
+approach can be used to compare models for different groups, such as men and
+women. In R, the samples are selected with `subset`, and `suest_newdata()`
+ensures that each marginal effect is averaged over the appropriate estimation
+sample.
+
+```{r example-6-6}
+vars66 <- c("helpsickB", "conserv", "faminc", "employed", "woman",
+            "age", "college", "married", "parent", "race", "year")
+dat66 <- gss[complete.cases(gss[vars66]), ]
+dat66 <- factorize(dat66, c("conserv", "employed", "woman", "college",
+                            "married", "parent", "race"))
+
+model1986 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
+                   college + married + parent + race, family = binomial("logit"),
+                 data = dat66, subset = year == 1986)
+model2016 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
+                   college + married + parent + race, family = binomial("logit"),
+                 data = dat66, subset = year == 2016)
+fit66 <- suest(model1986, model2016, model_names = c("1986", "2016"))
+fit66
+
+effects66 <- avg_comparisons(fit66, variables = "conserv",
+                             newdata = suest_newdata(fit66))
+effects66
+hypotheses(effects66, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation:** Conservatives had significantly lower predicted
+probabilities of saying that government should be responsible for providing
+health care in both 1986 (marginal effect = -0.092) and 2016 (marginal effect =
+-0.258). The gap between conservatives and nonconservatives increased over
+time: the conservative effect is significantly more negative in 2016 than in
+1986 (cross-model difference = 0.166, \(p < .001\)).
+
+## Alternative fitting engines
+
+The statistical model family and fitting engine are handled separately. This
+allows comparisons across packages when likelihood scores, parameter ordering,
+observation alignment, and prediction scales are compatible.
+
+### `glm2::glm2()`
+
+```{r glm2-engine}
+library(glm2)
+
+standard <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
+alternative <- glm2(am ~ wt + hp, family = binomial("logit"), data = dat)
+engine_fit <- suest(standard, alternative, model_names = c("glm", "glm2"))
+engine_fit
+avg_comparisons(engine_fit, variables = "wt", newdata = dat)
+```
+
+### `ordinal::clm()`
+
+`clm()` is supported for proportional-effects ordered logit and probit models
+with flexible thresholds and no scale or nominal-effects formula.
+
+```{r clm-engine}
+library(ordinal)
+
+housing <- MASS::housing[rep(seq_len(nrow(MASS::housing)), MASS::housing$Freq),
+                         c("Sat", "Infl", "Type", "Cont")]
+rownames(housing) <- NULL
+housing$Sat <- ordered(housing$Sat, levels = c("Low", "Medium", "High"))
+
+clm_model <- clm(Sat ~ Cont + Infl + Type, data = housing, link = "logit")
+polr_model <- MASS::polr(Sat ~ Cont + Infl + Type, data = housing,
+                         method = "logistic", Hess = TRUE)
+ordinal_fit <- suest(clm_model, polr_model, model_names = c("clm", "polr"))
+avg_comparisons(ordinal_fit, variables = "Cont", newdata = housing)
+```
+
+## For Stata users
+
+The same framework is available in Stata through the
+[`mecompare` Stata command](https://www.trentonmize.com/software/mecompare).
+The R package uses `marginaleffects` for predictions and effects, while the
+`mecompare` Stata command provides a Stata-native workflow for the same class
+of cross-model comparisons.

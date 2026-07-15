@@ -166,8 +166,11 @@ test_summary <- function() {
 
 require_test_packages <- function() {
   packages <- c(
+    "brglm2",
+    "glm2",
     "haven",
     "marginaleffects",
+    "ordinal",
     "sandwich",
     "MASS",
     "nnet"

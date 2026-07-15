@@ -6,7 +6,7 @@ template:
 home:
   title: suest for comparing predictions and marginal effects across models
   links:
-  - text: mecompare for Stata
+  - text: mecompare Stata command
     href: https://www.trentonmize.com/software/mecompare
   - text: Mize, Doan, and Long (2019)
     href: https://doi.org/10.1177/0081175019852763
@@ -17,24 +17,8 @@ reference:
   contents:
   - suest
   - suest_newdata
-  - suest-package
-
-articles:
-- title: Get started
-  navbar: ~
-  contents:
-  - suest
-- title: Replicating Mize, Doan, and Long (2019)
-  desc: R versions of Examples 6.1 through 6.6 from the mecompare documentation
-  contents:
-  - example-6-1
-  - example-6-2
-  - example-6-3
-  - example-6-4
-  - example-6-5
-  - example-6-6
 
 navbar:
   structure:
-    left: [intro, reference, articles, news]
+    left: [intro, reference, news]
     right: [search, github]

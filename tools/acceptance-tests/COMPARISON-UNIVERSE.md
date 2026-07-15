@@ -37,3 +37,17 @@ and disjoint men/women samples:
 Finally, a separate test confirms the documented behavior that models fitted
 from separately filtered data objects are treated as disjoint when common
 observations cannot be inferred safely.
+
+
+## Alternative engines
+
+A separate adapter suite tests that the comparison universe is not tied to a
+single fitting function:
+
+- `glm2::glm2()` is tested for binary logit, binary probit, and Poisson models;
+- `ordinal::clm()` is tested for ordered logit and ordered probit models;
+- `stats::glm()` and `glm2::glm2()` are compared directly;
+- `ordinal::clm()` and `MASS::polr()` are compared directly;
+- `clm()` is tested with identical, disjoint, and partially overlapping
+  samples;
+- unsupported `clm()` extensions and adjusted-score GLMs are rejected.
