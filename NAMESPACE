@@ -1,0 +1,7 @@
+# Generated manually; run devtools::document() after editing roxygen comments.
+export(suest)
+export(suest_newdata)
+S3method(coef,suest_model)
+S3method(nobs,suest_model)
+S3method(print,suest_model)
+S3method(vcov,suest_model)

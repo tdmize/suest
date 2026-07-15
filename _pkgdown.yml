@@ -1,0 +1,39 @@
+url: https://tdmize.github.io/suest/
+
+template:
+  bootstrap: 5
+
+home:
+  title: suest for comparing predictions and marginal effects across models
+  links:
+  - text: mecompare for Stata
+    href: https://www.trentonmize.com/software/mecompare
+  - text: Mize, Doan, and Long (2019)
+    href: https://doi.org/10.1177/0081175019852763
+
+reference:
+- title: Core workflow
+  desc: Combine models and construct model-specific evaluation data
+  contents:
+  - suest
+  - suest_newdata
+
+articles:
+- title: Get started
+  navbar: ~
+  contents:
+  - suest
+- title: Replicating Mize, Doan, and Long (2019)
+  desc: R versions of Examples 6.1 through 6.6 from the mecompare documentation
+  contents:
+  - example-6-1
+  - example-6-2
+  - example-6-3
+  - example-6-4
+  - example-6-5
+  - example-6-6
+
+navbar:
+  structure:
+    left: [intro, reference, articles, news]
+    right: [search, github]

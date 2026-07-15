@@ -1,0 +1,126 @@
+---
+title: "Example 6.3: Alternative predictor operationalizations"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  eval = FALSE
+)
+```
+
+
+These data and specifications reproduce the corresponding example in Mize,
+Doan, and Long (2019) and on the
+[`mecompare` documentation page](https://www.trentonmize.com/software/mecompare).
+The code chunks are not evaluated while building the package website because
+they download the public replication data. Copy and run the code interactively
+to reproduce the results.
+
+
+## Load and prepare the data
+
+```{r}
+library(haven)
+library(marginaleffects)
+library(suest)
+
+gss <- zap_labels(read_dta(
+  "https://tdmize.github.io/data/data/gss_cme.dta"
+))
+
+vars <- c(
+  "samesexB", "sexident", "sexbehav", "college",
+  "woman", "race", "age", "year"
+)
+dat <- gss[complete.cases(gss[vars]), ]
+dat[c("sexident", "sexbehav", "college", "woman", "race", "year")] <-
+  lapply(dat[c("sexident", "sexbehav", "college", "woman",
+               "race", "year")], factor)
+```
+
+## Fit models using behavior and identity
+
+```{r}
+behavior <- glm(
+  samesexB ~ sexbehav + woman + college + age + race + year,
+  family = binomial("logit"),
+  data = dat
+)
+
+identity <- glm(
+  samesexB ~ sexident + woman + college + age + race + year,
+  family = binomial("logit"),
+  data = dat
+)
+
+combined <- suest(
+  behavior,
+  identity,
+  model_names = c("Behavior", "Identity")
+)
+```
+
+## Estimate the category effects
+
+```{r}
+effects <- avg_comparisons(
+  combined,
+  variables = list(
+    sexbehav = "reference",
+    sexident = "reference"
+  ),
+  newdata = dat
+)
+
+effects
+```
+
+Because each predictor appears in only one component model,
+`marginaleffects` reports zero and `NA` for the structurally absent effects.
+The nonzero rows give the effects for each operationalization.
+
+## Test custom cross-model contrasts
+
+```{r}
+alternative_predictor_hypothesis <- function(x) {
+  group <- as.character(x$group)
+  term <- as.character(x$term)
+
+  behavior <- x$estimate[term == "sexbehav" & group == "Behavior"]
+  identity <- x$estimate[term == "sexident" & group == "Identity"]
+
+  data.frame(
+    term = c(
+      "Behavior bisexual - Identity bisexual",
+      "Behavior gay - Identity gay",
+      "(Behavior gay - bisexual) - (Identity gay - bisexual)"
+    ),
+    estimate = c(
+      behavior[1] - identity[1],
+      behavior[2] - identity[2],
+      (behavior[2] - behavior[1]) -
+        (identity[2] - identity[1])
+    )
+  )
+}
+
+avg_comparisons(
+  combined,
+  variables = list(
+    sexbehav = "reference",
+    sexident = "reference"
+  ),
+  newdata = dat,
+  hypothesis = alternative_predictor_hypothesis
+)
+```
+
+The expected cross-model contrasts are approximately 0.177, 0.066, and
+-0.111.
