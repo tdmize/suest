@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,13 +33,6 @@
       <ul class="navbar-nav me-auto">
 <li class="nav-item"><a class="nav-link" href="articles/suest.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
-  </ul>
-</li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul>
 <ul class="navbar-nav">
@@ -58,7 +51,7 @@
 <div class="page-header"><h1 id="suest-for-r">suest for R<a class="anchor" aria-label="anchor" href="#suest-for-r"></a>
 </h1></div>
 <p><a href="https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></p>
-<p>Full documentation and replication examples: <a href="https://tdmize.github.io/suest/">tdmize.github.io/suest</a></p>
+<p>Full documentation, worked examples, and rendered output: <a href="https://tdmize.github.io/suest/articles/suest.html">tdmize.github.io/suest</a></p>
 <p><code>suest</code> combines two separately fitted regression models into one object with a joint model-robust covariance matrix. The combined object works with <a href="https://marginaleffects.com/" class="external-link"><code>marginaleffects</code></a> to compare predictions and marginal effects across models.</p>
 <p>The package implements the framework developed in:</p>
 <blockquote>
@@ -81,21 +74,11 @@
 <span><span class="va">dat</span> <span class="op">&lt;-</span> <span class="va">mtcars</span></span>
 <span><span class="va">dat</span><span class="op">$</span><span class="va">am</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">am</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">am</span> <span class="op">~</span> <span class="va">wt</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
-<span><span class="va">adjusted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">am</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">hp</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
+<span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">am</span> <span class="op">~</span> <span class="va">wt</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
+<span><span class="va">adjusted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">am</span> <span class="op">~</span> <span class="va">wt</span> <span class="op">+</span> <span class="va">hp</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
+<span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base</span>, <span class="va">adjusted</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest.html">suest</a></span><span class="op">(</span></span>
-<span>  <span class="va">base</span>,</span>
-<span>  <span class="va">adjusted</span>,</span>
-<span>  model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">effects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span></span>
-<span>  <span class="va">combined</span>,</span>
-<span>  variables <span class="op">=</span> <span class="st">"wt"</span>,</span>
-<span>  newdata <span class="op">=</span> <span class="va">dat</span></span>
-<span><span class="op">)</span></span>
-<span></span>
+<span><span class="va">effects</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">combined</span>, variables <span class="op">=</span> <span class="st">"wt"</span>, newdata <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
 <span><span class="va">effects</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span></code></pre></div>
 <p><code><a href="reference/suest.html">suest()</a></code> accounts for the cross-model covariance between estimates. This is essential when the models use the same or overlapping observations.</p>
@@ -106,31 +89,34 @@
 <ul>
 <li>linear regression using <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>
 </li>
-<li>binary logit and probit using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>
+<li>binary logit and probit using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>
 </li>
-<li>Poisson regression using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>
+<li>Poisson regression using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>
 </li>
 <li>negative-binomial regression using <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code>
 </li>
 <li>ordered logit and probit using <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code>
 </li>
+<li>ordered logit and probit using restricted <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> specifications</li>
 <li>multinomial logit using <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code>
 </li>
 </ul>
-<p>Models may use identical, partially overlapping, or completely disjoint samples. The supported cross-family comparisons are logit–probit, logit–linear, probit–linear, Poisson–negative binomial, and ordered logit–multinomial logit.</p>
+<p>Models may use identical, partially overlapping, or disjoint samples. Supported cross-family comparisons are logit–probit, logit–linear, probit–linear, Poisson–negative binomial, and ordered logit–multinomial logit.</p>
 </div>
 <div class="section level2">
-<h2 id="replication-vignettes">Replication vignettes<a class="anchor" aria-label="anchor" href="#replication-vignettes"></a>
+<h2 id="worked-examples">Worked examples<a class="anchor" aria-label="anchor" href="#worked-examples"></a>
 </h2>
-<p>The package website includes six R replications corresponding to Examples 6.1–6.6 on the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code> page</a>:</p>
+<p>The single Get Started page contains code and rendered results for six R replications corresponding to Examples 6.1–6.6 for the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code> Stata command</a>:</p>
 <ol style="list-style-type: decimal">
-<li>Curvilinear effects and mediation</li>
-<li>Nested logit models</li>
-<li>Alternative predictor operationalizations</li>
-<li>Different count outcomes</li>
-<li>Ordered versus multinomial logit</li>
-<li>Different samples</li>
+<li>Marginal effects to summarize curvilinear relationships and test mediation</li>
+<li>Comparing marginal effects across nested logit models</li>
+<li>Comparing marginal effects using alternative predictors</li>
+<li>Comparing marginal effects across different outcomes</li>
+<li>Comparing marginal effects across different model types (ordinal vs nominal)</li>
+<li>Comparing marginal effects across different samples or groups</li>
 </ol>
+<p>It also documents cross-engine comparisons using <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code> and <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code>.</p>
+<p>Bias-reduced, adjusted-score, Firth, and penalized GLM fits, including <code><a href="https://rdrr.io/pkg/brglm2/man/brglmFit.html" class="external-link">brglm2::brglmFit()</a></code>, are rejected rather than being treated incorrectly as ordinary maximum-likelihood GLMs.</p>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">
@@ -138,7 +124,7 @@
 <ul class="list-unstyled">
 <li><a href="https://github.com/tdmize/suest/" class="external-link">Browse source code</a></li>
 <li><a href="https://github.com/tdmize/suest/issues" class="external-link">Report a bug</a></li>
-<li><a href="https://www.trentonmize.com/software/mecompare" class="external-link">mecompare for Stata</a></li>
+<li><a href="https://www.trentonmize.com/software/mecompare" class="external-link">mecompare Stata command</a></li>
 <li><a href="https://doi.org/10.1177/0081175019852763" class="external-link">Mize, Doan, and Long (2019)</a></li>
 </ul>
 </div>

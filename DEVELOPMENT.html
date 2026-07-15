@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,11 +17,6 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="articles/suest.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="reference/index.html">Reference</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="articles/index.html">More articles...</a></li>
-  </ul></li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="search.json"></form></li>
@@ -42,34 +37,33 @@
 
 <div class="section level2">
 <h2 id="first-local-setup">First local setup<a class="anchor" aria-label="anchor" href="#first-local-setup"></a></h2>
-<p>Open <code>suest.Rproj</code>, then run:</p>
+<p>Open <code>suest.Rproj</code> and install the development packages:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span></span>
-<span>  <span class="st">"devtools"</span>,</span>
-<span>  <span class="st">"pkgdown"</span>,</span>
-<span>  <span class="st">"roxygen2"</span>,</span>
-<span>  <span class="st">"testthat"</span></span>
-<span><span class="op">)</span><span class="op">)</span></span>
-<span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/document.html" class="external-link">document</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/test.html" class="external-link">test</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu"><a href="https://devtools.r-lib.org/reference/check.html" class="external-link">check</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="fu">pkgdown</span><span class="fu">::</span><span class="fu"><a href="https://pkgdown.r-lib.org/reference/build_site.html" class="external-link">build_site</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<span>  <span class="st">"brglm2"</span>, <span class="st">"callr"</span>, <span class="st">"devtools"</span>, <span class="st">"glm2"</span>, <span class="st">"ordinal"</span>, <span class="st">"pkgdown"</span>,</span>
+<span>  <span class="st">"rlang"</span>, <span class="st">"roxygen2"</span>, <span class="st">"testthat"</span></span>
+<span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
+<p>Restart R after updating packages.</p>
 </div>
 <div class="section level2">
-<h2 id="create-the-github-repository">Create the GitHub repository<a class="anchor" aria-label="anchor" href="#create-the-github-repository"></a></h2>
-<p>Create a new public repository named <code>suest</code> under <code>tdmize</code>, then from the package directory run:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" tabindex="-1"></a><span class="fu">git</span> init</span>
-<span id="cb2-2"><a href="#cb2-2" tabindex="-1"></a><span class="fu">git</span> add .</span>
-<span id="cb2-3"><a href="#cb2-3" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">"Initial suest package"</span></span>
-<span id="cb2-4"><a href="#cb2-4" tabindex="-1"></a><span class="fu">git</span> branch <span class="at">-M</span> main</span>
-<span id="cb2-5"><a href="#cb2-5" tabindex="-1"></a><span class="fu">git</span> remote add origin https://github.com/tdmize/suest.git</span>
-<span id="cb2-6"><a href="#cb2-6" tabindex="-1"></a><span class="fu">git</span> push <span class="at">-u</span> origin main</span></code></pre></div>
-<p>The included GitHub Actions workflows will:</p>
-<ul><li>run <code>R CMD check</code> on Windows, macOS, and Linux;</li>
-<li>build and deploy the pkgdown site to the <code>gh-pages</code> branch;</li>
-<li>run the full Mize, Doan, and Long (2019) numerical acceptance suite.</li>
-</ul><p>After the first successful pkgdown deployment, enable GitHub Pages using the <code>gh-pages</code> branch if GitHub has not done so automatically.</p>
+<h2 id="build-and-preview-the-website">Build and preview the website<a class="anchor" aria-label="anchor" href="#build-and-preview-the-website"></a></h2>
+<p>From the package directory:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/build-site.R"</span><span class="op">)</span></span></code></pre></div>
+<p>Then open <code>docs/articles/suest.html</code>.</p>
+<p>The script documents the package and builds the site in separate clean R processes. This avoids failures caused by the package or an older dependency remaining loaded in the interactive session.</p>
+</div>
+<div class="section level2">
+<h2 id="run-all-local-checks">Run all local checks<a class="anchor" aria-label="anchor" href="#run-all-local-checks"></a></h2>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/preflight.R"</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="numerical-acceptance-tests">Numerical acceptance tests<a class="anchor" aria-label="anchor" href="#numerical-acceptance-tests"></a></h2>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/acceptance-tests/run_model_adapter_tests.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/acceptance-tests/run_all_tests.R"</span><span class="op">)</span></span></code></pre></div>
+<p>The included GitHub Actions workflows run <code>R CMD check</code> on Windows, macOS, and Linux, build and deploy the pkgdown site, and run the full Mize, Doan, and Long (2019) numerical acceptance suite.</p>
 </div>
 </div>
 

@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.0</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -17,11 +17,6 @@
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/suest.html">Get started</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item dropdown">
-  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
-  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
-    <li><a class="dropdown-item" href="../articles/index.html">More articles...</a></li>
-  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
@@ -39,21 +34,52 @@
     </div>
 
     <div class="section level2">
-<h2 class="pkg-version" data-toc-text="0.1.0" id="suest-010">suest 0.1.0<a class="anchor" aria-label="anchor" href="#suest-010"></a></h2>
-<ul><li><p>Initial GitHub release.</p></li>
-<li><p>Combines exactly two supported cross-sectional models using a joint model-robust covariance matrix.</p></li>
-<li><p>Integrates with <code>marginaleffects</code> for predictions, comparisons, slopes, hypotheses, and plots.</p></li>
-<li><p>Supports identical, partially overlapping, and disjoint estimation samples.</p></li>
-<li><p>Includes replication vignettes for Examples 6.1–6.6 in Mize, Doan, and Long (2019).</p></li>
+<h2 class="pkg-version" data-toc-text="0.1.3" id="suest-013">suest 0.1.3<a class="anchor" aria-label="anchor" href="#suest-013"></a></h2>
+<ul><li><p>Revised the headings, setup descriptions, and interpretations for Examples 6.1–6.6 to follow the language and organization of the <code>mecompare</code> Stata command website, adapted for the R workflow.</p></li>
+<li><p>Fixed package-level roxygen links and converted <code>NAMESPACE</code> and all manual pages to roxygen-managed files.</p></li>
+<li><p>Marked the package help topic as internal so it does not appear as a missing pkgdown reference topic.</p></li>
+<li><p>Added a clean-process website build script and updated the GitHub workflow to use the package already installed by <code>setup-r-dependencies</code>.</p></li>
+<li><p>Added explicit website dependencies and restored the exact validated model specifications in the consolidated Get Started page.</p></li>
+<li><p>Reorganized the pkgdown documentation around one comprehensive Get Started page, following the structure of the cleanplots package site.</p></li>
+<li><p>Moved all six paper replications and alternative-engine documentation onto the main page and removed the separate Articles menu.</p></li>
+<li><p>Enabled code evaluation during pkgdown builds so example output and results appear on the website, while keeping network-dependent chunks unevaluated during ordinary package checks.</p></li>
+<li><p>Condensed example code throughout the vignette, README, and function documentation.</p></li>
+<li><p>Clarified throughout that <code>mecompare</code> is a Stata command.</p></li>
+<li><p>Corrected the direct adapter tests to call the package’s registered <code>suest_model</code> methods directly. The public <code><a href="https://rdrr.io/pkg/marginaleffects/man/get_predict.html" class="external-link">marginaleffects::get_predict()</a></code> helper normalizes <code>type = "response"</code> for native <code>clm</code> objects before S3 dispatch and was therefore not an appropriate unit-test entry point.</p></li>
+<li><p>Retained the direct coefficient-perturbation check for <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> while leaving end-to-end integration testing to <code><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons()</a></code>.</p></li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.2" id="suest-012">suest 0.1.2<a class="anchor" aria-label="anchor" href="#suest-012"></a></h2>
+<ul><li>Fixed <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> prediction and coefficient-replacement dispatch when model-engine vectors carry model-name attributes.</li>
+<li>Added direct tests that <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">clm()</a></code> probability predictions respond to coefficient perturbations.</li>
+<li>Corrected two focused acceptance-test reporting statements which treated returned error-message strings as condition objects.</li>
+</ul></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.1" id="suest-011">suest 0.1.1<a class="anchor" aria-label="anchor" href="#suest-011"></a></h2>
+<ul><li><p>Made the acceptance-test runners remove stale global <code><a href="../reference/suest.html">suest()</a></code> and <code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> functions before <code><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">devtools::load_all()</a></code>. This prevents a previously sourced standalone implementation from masking the package code.</p></li>
+<li><p>Added a test-runner guard and log entry confirming that tests use the package namespace and model-adapter implementation.</p></li>
+<li><p>Added a model-adapter layer that separates the statistical model family from the package or function used to fit it.</p></li>
+<li><p>Added tested support for <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code> binary logit, binary probit, and Poisson models.</p></li>
+<li><p>Added support for <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> ordered logit and ordered probit models with flexible thresholds, proportional effects, and no scale model.</p></li>
+<li><p>Added defensive rejection of bias-reduced, adjusted-score, Firth, and penalized GLM fits such as <code><a href="https://rdrr.io/pkg/brglm2/man/brglmFit.html" class="external-link">brglm2::brglmFit()</a></code>.</p></li>
 <li><p>Expanded the numerical acceptance suite to cover a full cross-model comparison-by-model-family matrix, including nested/mediator comparisons, alternative predictor operationalizations, different outcomes, sex-stratified samples, missing-data sample changes, and partially overlapping samples.</p></li>
 <li><p>Added same-sample and disjoint-sample tests for every supported cross-family comparison.</p></li>
 <li><p>Imported the <code>stats</code> generics used by the <code>suest_model</code> S3 methods so the namespace loads correctly during <code>R CMD check</code> and pkgdown builds.</p></li>
 <li><p>Updated GitHub Actions checkout steps to <code>actions/checkout@v6</code> and the GitHub Pages deployment action to version 4.8.0.</p></li>
-<li><p>Corrected the vignette metadata so each article has a unique <code>VignetteIndexEntry</code>.</p></li>
+<li><p>Corrected vignette metadata so each article has a unique <code>VignetteIndexEntry</code>.</p></li>
 <li><p>Updated exact-zero covariance tests to ignore irrelevant matrix dimnames.</p></li>
 <li><p>Added a local package and pkgdown preflight script.</p></li>
 </ul></div>
-  </main></div>
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.0" id="suest-010">suest 0.1.0<a class="anchor" aria-label="anchor" href="#suest-010"></a></h2>
+<ul><li>Initial GitHub release.</li>
+<li>Combines exactly two supported cross-sectional models using a joint model-robust covariance matrix.</li>
+<li>Integrates with <code>marginaleffects</code> for predictions, comparisons, slopes, hypotheses, and plots.</li>
+<li>Supports identical, partially overlapping, and disjoint estimation samples.</li>
+<li>Includes replication vignettes for Examples 6.1–6.6 in Mize, Doan, and Long (2019).</li>
+</ul></div>
+  </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
+    </nav></aside></div>
 
 
     <footer><div class="pkgdown-footer-left">

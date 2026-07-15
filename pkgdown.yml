@@ -2,14 +2,8 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
-  example-6-1: example-6-1.html
-  example-6-2: example-6-2.html
-  example-6-3: example-6-3.html
-  example-6-4: example-6-4.html
-  example-6-5: example-6-5.html
-  example-6-6: example-6-6.html
   suest: suest.html
-last_built: 2026-07-15T13:28Z
+last_built: 2026-07-15T15:15Z
 urls:
   reference: https://tdmize.github.io/suest/reference
   article: https://tdmize.github.io/suest/articles

@@ -2,42 +2,48 @@
 
 ## First local setup
 
-Open `suest.Rproj`, then run:
+Open `suest.Rproj` and install the development packages:
 
 ``` r
 
 install.packages(c(
-  "devtools",
-  "pkgdown",
-  "roxygen2",
-  "testthat"
+  "brglm2", "callr", "devtools", "glm2", "ordinal", "pkgdown",
+  "rlang", "roxygen2", "testthat"
 ))
-
-devtools::document()
-devtools::test()
-devtools::check()
-pkgdown::build_site()
 ```
 
-## Create the GitHub repository
+Restart R after updating packages.
 
-Create a new public repository named `suest` under `tdmize`, then from
-the package directory run:
+## Build and preview the website
 
-``` bash
-git init
-git add .
-git commit -m "Initial suest package"
-git branch -M main
-git remote add origin https://github.com/tdmize/suest.git
-git push -u origin main
+From the package directory:
+
+``` r
+
+source("tools/build-site.R")
 ```
 
-The included GitHub Actions workflows will:
+Then open `docs/articles/suest.html`.
 
-- run `R CMD check` on Windows, macOS, and Linux;
-- build and deploy the pkgdown site to the `gh-pages` branch;
-- run the full Mize, Doan, and Long (2019) numerical acceptance suite.
+The script documents the package and builds the site in separate clean R
+processes. This avoids failures caused by the package or an older
+dependency remaining loaded in the interactive session.
 
-After the first successful pkgdown deployment, enable GitHub Pages using
-the `gh-pages` branch if GitHub has not done so automatically.
+## Run all local checks
+
+``` r
+
+source("tools/preflight.R")
+```
+
+## Numerical acceptance tests
+
+``` r
+
+source("tools/acceptance-tests/run_model_adapter_tests.R")
+source("tools/acceptance-tests/run_all_tests.R")
+```
+
+The included GitHub Actions workflows run `R CMD check` on Windows,
+macOS, and Linux, build and deploy the pkgdown site, and run the full
+Mize, Doan, and Long (2019) numerical acceptance suite.
