@@ -1,0 +1,37 @@
+FULL REPOSITORY UPDATE — SECOND GITHUB FIX
+
+This archive contains the complete repository and no .git directory.
+
+The update addresses two concrete repository issues:
+
+1. Every vignette previously used the literal index entry "title". Each
+   vignette now has its real, unique VignetteIndexEntry.
+2. Two testthat checks compared a named zero covariance matrix to an unnamed
+   zero matrix. They now test the numerical condition directly.
+
+It also links the S3 roxygen blocks to the main suest documentation topic and
+adds tools/preflight.R.
+
+COPY AND PUSH
+
+1. In Git Bash:
+
+   cd /c/Users/trent/suest
+   git pull --rebase origin main
+
+2. Copy everything inside this archive's top-level suest folder into:
+
+   C:\Users\trent\suest
+
+   Replace existing files and include the hidden .github folder.
+
+3. In Git Bash:
+
+   cd /c/Users/trent/suest
+   git add -A
+   git commit -m "Fix package tests and vignette metadata"
+   git push origin main
+
+OPTIONAL LOCAL PREFLIGHT IN R
+
+   source("tools/preflight.R")
