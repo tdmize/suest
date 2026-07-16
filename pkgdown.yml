@@ -3,7 +3,7 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   suest: suest.html
-last_built: 2026-07-16T13:36Z
+last_built: 2026-07-16T13:50Z
 urls:
   reference: https://tdmize.github.io/suest/reference
   article: https://tdmize.github.io/suest/articles
