@@ -61,8 +61,8 @@ observations. Models fitted from different data objects are treated as
 disjoint because shared observations cannot be inferred safely without
 an identifier.
 
-Same-family comparisons are supported for all model types listed below.
-The supported cross-family pairs are logit–probit, logit–linear,
+Same-family comparisons are supported for all listed model types. The
+supported cross-family pairs are logit–probit, logit–linear,
 probit–linear, Poisson–negative binomial, and ordered logit–multinomial
 logit.
 
@@ -109,7 +109,6 @@ dat$am <- factor(dat$am)
 
 model1 <- glm(am ~ wt, family = binomial(), data = dat)
 model2 <- glm(am ~ wt + hp, family = binomial(), data = dat)
-
 fit <- suest(model1, model2, model_names = c("Base", "Adjusted"))
 fit
 #> Seemingly Unrelated Estimation

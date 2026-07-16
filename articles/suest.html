@@ -70,6 +70,12 @@ The package leaves calculation and presentation of those quantities to
 <p>The package implements the framework in Mize, Doan, and Long (2019).
 The six replications below correspond to Examples 6.1–6.6 for the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code>
 Stata command</a>.</p>
+<p>For numeric predictors, a single numeric value in
+<code>variables</code> requests a forward change of that amount. Thus,
+<code>list(income = sd(dat61$income))</code> calculates the change from
+each observed income value to that value plus one standard deviation.
+This differs from <code>"sd"</code>, which requests a centered
+one-standard-deviation contrast around the regressor mean.</p>
 <div class="section level2">
 <h2 id="functions-at-a-glance">Functions at a glance<a class="anchor" aria-label="anchor" href="#functions-at-a-glance"></a>
 </h2>
@@ -203,8 +209,7 @@ Stata command</a>. The data are downloaded once and reused below.</p>
 <span><span class="va">factorize</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">data</span>, <span class="va">variables</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">data</span><span class="op">[</span><span class="va">variables</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/lapply.html" class="external-link">lapply</a></span><span class="op">(</span><span class="va">data</span><span class="op">[</span><span class="va">variables</span><span class="op">]</span>, <span class="va">factor</span><span class="op">)</span></span>
 <span>  <span class="va">data</span></span>
-<span><span class="op">}</span></span>
-<span><span class="va">forward_change</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">amount</span><span class="op">)</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>lo <span class="op">=</span> <span class="va">x</span>, hi <span class="op">=</span> <span class="va">x</span> <span class="op">+</span> <span class="va">amount</span><span class="op">)</span></span></code></pre></div>
+<span><span class="op">}</span></span></code></pre></div>
 <div class="section level3">
 <h3 id="ex-6-1---marginal-effects-to-summarize-curvilinear-relationships-and-test-mediation">Ex 6.1 - Marginal effects to summarize curvilinear relationships and
 test mediation<a class="anchor" aria-label="anchor" href="#ex-6-1---marginal-effects-to-summarize-curvilinear-relationships-and-test-mediation"></a>
@@ -217,8 +222,11 @@ example also shows how to request a custom amount of change for a
 continuous predictor—in this case, a one-standard-deviation increase in
 income.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">vars61</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"depsympB"</span>, <span class="st">"income"</span>, <span class="st">"age"</span>, <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"jobsat"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">vars61</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"depsympB"</span>, <span class="st">"income"</span>, <span class="st">"inc10"</span>, <span class="st">"age"</span>, <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"college"</span>, <span class="st">"jobsat"</span><span class="op">)</span></span>
 <span><span class="va">dat61</span> <span class="op">&lt;-</span> <span class="va">ah</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">ah</span><span class="op">[</span><span class="va">vars61</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat61</span><span class="op">)</span> <span class="op">==</span> <span class="fl">4307</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat61</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 4307</span></span>
 <span><span class="va">dat61</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat61</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"jobsat"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">base61</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">depsympB</span> <span class="op">~</span> <span class="va">income</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">income</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">race</span>, data <span class="op">=</span> <span class="va">dat61</span><span class="op">)</span></span>
@@ -227,7 +235,7 @@ income.</p>
 <span><span class="va">fit61</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base61</span>, <span class="va">mediator61</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Mediator"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">effects61</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit61</span>,</span>
-<span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>income <span class="op">=</span> <span class="fu">forward_change</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat61</span><span class="op">$</span><span class="va">income</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>, newdata <span class="op">=</span> <span class="va">dat61</span><span class="op">)</span></span>
+<span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>income <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat61</span><span class="op">$</span><span class="va">income</span><span class="op">)</span><span class="op">)</span>, newdata <span class="op">=</span> <span class="va">dat61</span><span class="op">)</span></span>
 <span><span class="va">effects61</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     Group Estimate Std. Error      z Pr(&gt;|z|)    S  2.5 % 97.5 %</span></span>
@@ -236,7 +244,7 @@ income.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Term: income</span></span>
 <span><span class="co">#&gt; Type: response</span></span>
-<span><span class="co">#&gt; Comparison: custom</span></span>
+<span><span class="co">#&gt; Comparison: +27.2108562966562</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects61</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;           Hypothesis Estimate Std. Error     z Pr(&gt;|z|)    S  2.5 % 97.5 %</span></span>
@@ -257,10 +265,13 @@ that is consistent with mediation.</p>
 <p>This example uses binary logit models and examines how the effect of
 college changes as additional variables are added to the model.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">vars62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"vhappy"</span>, <span class="st">"college"</span>, <span class="st">"age"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"woman"</span>,</span>
-<span>            <span class="st">"conserv"</span>, <span class="st">"reltrad"</span>, <span class="st">"year"</span>, <span class="st">"employed"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">vars62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"vhappy"</span>, <span class="st">"college"</span>, <span class="st">"wages"</span>, <span class="st">"occprest"</span>, <span class="st">"age"</span>, <span class="st">"married"</span>,</span>
+<span>            <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>, <span class="st">"reltrad"</span>, <span class="st">"year"</span>, <span class="st">"employed"</span><span class="op">)</span></span>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">gss</span>, <span class="va">year</span> <span class="op">&gt;=</span> <span class="fl">2000</span> <span class="op">&amp;</span> <span class="va">employed</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="va">dat62</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">[</span><span class="va">vars62</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">)</span> <span class="op">==</span> <span class="fl">9216</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 9216</span></span>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat62</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>,</span>
 <span>                            <span class="st">"reltrad"</span>, <span class="st">"year"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
@@ -273,16 +284,16 @@ college changes as additional variables are added to the model.</p>
 <span><span class="va">effects62</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;    Group Estimate Std. Error    z Pr(&gt;|z|)    S  2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  Model 1   0.0709    0.00958 7.41   &lt;0.001 42.8 0.0522 0.0897</span></span>
-<span><span class="co">#&gt;  Model 2   0.0558    0.00974 5.73   &lt;0.001 26.6 0.0367 0.0749</span></span>
+<span><span class="co">#&gt;  Model 1   0.0718     0.0103 6.95   &lt;0.001 38.0 0.0516 0.0921</span></span>
+<span><span class="co">#&gt;  Model 2   0.0599     0.0105 5.69   &lt;0.001 26.2 0.0393 0.0806</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Term: college</span></span>
 <span><span class="co">#&gt; Type: response</span></span>
 <span><span class="co">#&gt; Comparison: 1 - 0</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects62</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;             Hypothesis Estimate Std. Error    z Pr(&gt;|z|)    S   2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  (Model 1) - (Model 2)   0.0151    0.00376 4.02   &lt;0.001 14.1 0.00777 0.0225</span></span></code></pre></div>
+<span><span class="co">#&gt;             Hypothesis Estimate Std. Error    z Pr(&gt;|z|)   S 2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  (Model 1) - (Model 2)   0.0119    0.00402 2.95  0.00313 8.3 0.004 0.0198</span></span></code></pre></div>
 <p><strong>Example interpretation for the effect of college:</strong> On
 average, the probability of being very happy is 0.072 higher for people
 with a college degree than for those without one
@@ -305,6 +316,9 @@ sexual behavior (<code>sexbehav</code>) in one model and sexual identity
 <code class="sourceCode R"><span><span class="va">vars63</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"samesexB"</span>, <span class="st">"sexident"</span>, <span class="st">"sexbehav"</span>, <span class="st">"college"</span>,</span>
 <span>            <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"age"</span>, <span class="st">"year"</span><span class="op">)</span></span>
 <span><span class="va">dat63</span> <span class="op">&lt;-</span> <span class="va">gss</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">gss</span><span class="op">[</span><span class="va">vars63</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat63</span><span class="op">)</span> <span class="op">==</span> <span class="fl">4921</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat63</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 4921</span></span>
 <span><span class="va">dat63</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat63</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sexident"</span>, <span class="st">"sexbehav"</span>, <span class="st">"college"</span>, <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"year"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">behavior63</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">samesexB</span> <span class="op">~</span> <span class="va">sexbehav</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">college</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">year</span>,</span>
@@ -375,11 +389,18 @@ identity than when it is measured using behavior.</p>
 Two count outcomes—poor mental-health days and poor physical-health
 days—are estimated using negative-binomial models, with effects
 calculated on the predicted-rate scale. Effects and cross-model
-comparisons are calculated for all predictors.</p>
+comparisons are calculated for all predictors. To reproduce the
+<code>mecompare</code> Stata example exactly, the common sample also
+excludes observations missing <code>reltrad</code>, even though
+<code>reltrad</code> is not included in either displayed model.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mntlhlth"</span>, <span class="st">"physhlth"</span>, <span class="st">"woman"</span>, <span class="st">"married"</span>, <span class="st">"age"</span>,</span>
-<span>            <span class="st">"faminc"</span>, <span class="st">"race"</span>, <span class="st">"college"</span>, <span class="st">"parent"</span>, <span class="st">"year"</span><span class="op">)</span></span>
+<span>            <span class="st">"faminc"</span>, <span class="st">"race"</span>, <span class="st">"college"</span>, <span class="st">"parent"</span>, <span class="st">"reltrad"</span><span class="op">)</span></span>
 <span><span class="va">dat64</span> <span class="op">&lt;-</span> <span class="va">gss</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">gss</span><span class="op">[</span><span class="va">vars64</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">)</span> <span class="op">==</span> <span class="fl">5062</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 5062</span></span>
+<span></span>
 <span><span class="va">dat64</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat64</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"woman"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"college"</span>, <span class="st">"race"</span>, <span class="st">"year"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">mental64</span> <span class="op">&lt;-</span> <span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">glm.nb</a></span><span class="op">(</span><span class="va">mntlhlth</span> <span class="op">~</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span> <span class="va">college</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span></span>
@@ -389,43 +410,43 @@ comparisons are calculated for all predictors.</p>
 <span><span class="va">fit64</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">mental64</span>, <span class="va">physical64</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Mental"</span>, <span class="st">"Physical"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">variables64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>woman <span class="op">=</span> <span class="st">"reference"</span>, married <span class="op">=</span> <span class="st">"reference"</span>, parent <span class="op">=</span> <span class="st">"reference"</span>,</span>
-<span>  college <span class="op">=</span> <span class="st">"reference"</span>, age <span class="op">=</span> <span class="fu">forward_change</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">age</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>  faminc <span class="op">=</span> <span class="fu">forward_change</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">faminc</span><span class="op">)</span><span class="op">)</span>, race <span class="op">=</span> <span class="st">"reference"</span>, year <span class="op">=</span> <span class="st">"reference"</span><span class="op">)</span></span>
+<span>  college <span class="op">=</span> <span class="st">"reference"</span>, age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">age</span><span class="op">)</span>, faminc <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">faminc</span><span class="op">)</span>,</span>
+<span>  race <span class="op">=</span> <span class="st">"reference"</span>, year <span class="op">=</span> <span class="st">"reference"</span><span class="op">)</span></span>
 <span><span class="va">effects64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit64</span>, variables <span class="op">=</span> <span class="va">variables64</span>, newdata <span class="op">=</span> <span class="va">dat64</span><span class="op">)</span></span>
 <span><span class="va">effects64</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;     Term    Group    Contrast Estimate Std. Error      z Pr(&gt;|z|)    S  2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  age     Mental   custom       -0.4946      0.105 -4.689  &lt; 0.001 18.5 -0.701 -0.288</span></span>
-<span><span class="co">#&gt;  age     Physical custom        0.4393      0.114  3.863  &lt; 0.001 13.1  0.216  0.662</span></span>
-<span><span class="co">#&gt;  college Mental   1 - 0        -0.9213      0.226 -4.077  &lt; 0.001 14.4 -1.364 -0.478</span></span>
-<span><span class="co">#&gt;  college Physical 1 - 0        -0.5483      0.188 -2.911  0.00361  8.1 -0.918 -0.179</span></span>
-<span><span class="co">#&gt;  faminc  Mental   custom       -0.5254      0.115 -4.552  &lt; 0.001 17.5 -0.752 -0.299</span></span>
-<span><span class="co">#&gt;  faminc  Physical custom       -0.3991      0.101 -3.953  &lt; 0.001 13.7 -0.597 -0.201</span></span>
-<span><span class="co">#&gt;  married Mental   1 - 0        -1.0044      0.227 -4.422  &lt; 0.001 16.6 -1.450 -0.559</span></span>
-<span><span class="co">#&gt;  married Physical 1 - 0        -0.1781      0.191 -0.932  0.35113  1.5 -0.552  0.196</span></span>
-<span><span class="co">#&gt;  parent  Mental   1 - 0         0.3691      0.241  1.532  0.12565  3.0 -0.103  0.841</span></span>
-<span><span class="co">#&gt;  parent  Physical 1 - 0        -0.2889      0.214 -1.347  0.17783  2.5 -0.709  0.131</span></span>
-<span><span class="co">#&gt;  race    Mental   2 - 1        -1.1590      0.249 -4.651  &lt; 0.001 18.2 -1.647 -0.671</span></span>
-<span><span class="co">#&gt;  race    Mental   3 - 1        -0.4042      0.359 -1.125  0.26044  1.9 -1.108  0.300</span></span>
-<span><span class="co">#&gt;  race    Physical 2 - 1        -0.5833      0.215 -2.707  0.00678  7.2 -1.006 -0.161</span></span>
-<span><span class="co">#&gt;  race    Physical 3 - 1         0.0776      0.337  0.231  0.81759  0.3 -0.582  0.738</span></span>
-<span><span class="co">#&gt;  woman   Mental   1 - 0         0.9317      0.205  4.535  &lt; 0.001 17.4  0.529  1.334</span></span>
-<span><span class="co">#&gt;  woman   Physical 1 - 0         0.6997      0.173  4.054  &lt; 0.001 14.3  0.361  1.038</span></span>
-<span><span class="co">#&gt;  year    Mental   2006 - 2002  -0.8782      0.267 -3.287  0.00101  9.9 -1.402 -0.355</span></span>
-<span><span class="co">#&gt;  year    Mental   2010 - 2002  -0.0951      0.309 -0.308  0.75803  0.4 -0.700  0.510</span></span>
-<span><span class="co">#&gt;  year    Mental   2014 - 2002  -0.4676      0.300 -1.557  0.11948  3.1 -1.056  0.121</span></span>
-<span><span class="co">#&gt;  year    Physical 2006 - 2002  -0.3091      0.222 -1.391  0.16408  2.6 -0.745  0.126</span></span>
-<span><span class="co">#&gt;  year    Physical 2010 - 2002   0.3587      0.258  1.393  0.16368  2.6 -0.146  0.864</span></span>
-<span><span class="co">#&gt;  year    Physical 2014 - 2002  -0.2117      0.243 -0.871  0.38365  1.4 -0.688  0.265</span></span>
+<span><span class="co">#&gt;     Term    Group          Contrast Estimate Std. Error      z Pr(&gt;|z|)    S  2.5 %   97.5 %</span></span>
+<span><span class="co">#&gt;  age     Mental   +13.0755231484462  -0.4623      0.108 -4.294   &lt;0.001 15.8 -0.673 -0.25129</span></span>
+<span><span class="co">#&gt;  age     Physical +13.0755231484462   0.4912      0.118  4.179   &lt;0.001 15.1  0.261  0.72155</span></span>
+<span><span class="co">#&gt;  college Mental   1 - 0              -0.8794      0.229 -3.848   &lt;0.001 13.0 -1.327 -0.43145</span></span>
+<span><span class="co">#&gt;  college Physical 1 - 0              -0.5422      0.189 -2.870   0.0041  7.9 -0.912 -0.17198</span></span>
+<span><span class="co">#&gt;  faminc  Mental   +35.054788229243   -0.4445      0.118 -3.769   &lt;0.001 12.6 -0.676 -0.21334</span></span>
+<span><span class="co">#&gt;  faminc  Physical +35.054788229243   -0.3808      0.102 -3.741   &lt;0.001 12.4 -0.580 -0.18125</span></span>
+<span><span class="co">#&gt;  married Mental   1 - 0              -1.0103      0.230 -4.397   &lt;0.001 16.5 -1.461 -0.55992</span></span>
+<span><span class="co">#&gt;  married Physical 1 - 0              -0.1591      0.192 -0.827   0.4082  1.3 -0.536  0.21795</span></span>
+<span><span class="co">#&gt;  parent  Mental   1 - 0               0.2741      0.248  1.107   0.2682  1.9 -0.211  0.75944</span></span>
+<span><span class="co">#&gt;  parent  Physical 1 - 0              -0.2692      0.219 -1.231   0.2182  2.2 -0.698  0.15931</span></span>
+<span><span class="co">#&gt;  race    Mental   2 - 1              -1.0159      0.258 -3.941   &lt;0.001 13.6 -1.521 -0.51070</span></span>
+<span><span class="co">#&gt;  race    Mental   3 - 1              -0.4381      0.356 -1.230   0.2188  2.2 -1.136  0.26022</span></span>
+<span><span class="co">#&gt;  race    Physical 2 - 1              -0.5308      0.217 -2.443   0.0146  6.1 -0.957 -0.10487</span></span>
+<span><span class="co">#&gt;  race    Physical 3 - 1               0.1451      0.343  0.423   0.6724  0.6 -0.527  0.81749</span></span>
+<span><span class="co">#&gt;  woman   Mental   1 - 0               0.9929      0.208  4.774   &lt;0.001 19.1  0.585  1.40062</span></span>
+<span><span class="co">#&gt;  woman   Physical 1 - 0               0.7734      0.174  4.446   &lt;0.001 16.8  0.432  1.11430</span></span>
+<span><span class="co">#&gt;  year    Mental   2006 - 2002        -0.9438      0.270 -3.492   &lt;0.001 11.0 -1.474 -0.41408</span></span>
+<span><span class="co">#&gt;  year    Mental   2010 - 2002        -0.0675      0.318 -0.213   0.8316  0.3 -0.690  0.55484</span></span>
+<span><span class="co">#&gt;  year    Mental   2014 - 2002        -0.5819      0.302 -1.929   0.0537  4.2 -1.173  0.00922</span></span>
+<span><span class="co">#&gt;  year    Physical 2006 - 2002        -0.2917      0.225 -1.299   0.1939  2.4 -0.732  0.14839</span></span>
+<span><span class="co">#&gt;  year    Physical 2010 - 2002         0.3233      0.261  1.240   0.2148  2.2 -0.187  0.83400</span></span>
+<span><span class="co">#&gt;  year    Physical 2014 - 2002        -0.2286      0.245 -0.933   0.3507  1.5 -0.709  0.25148</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Type: response</span></span>
 <span></span>
-<span><span class="va">age64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit64</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu">forward_change</span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">age</span><span class="op">)</span><span class="op">)</span><span class="op">)</span>,</span>
+<span><span class="va">age64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit64</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">age</span><span class="op">)</span><span class="op">)</span>,</span>
 <span>                         newdata <span class="op">=</span> <span class="va">dat64</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">age64</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;             Hypothesis Estimate Std. Error     z Pr(&gt;|z|)    S 2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  (Mental) - (Physical)   -0.934      0.128 -7.29   &lt;0.001 41.5 -1.19 -0.683</span></span></code></pre></div>
+<span><span class="co">#&gt;  (Mental) - (Physical)   -0.953      0.132 -7.22   &lt;0.001 40.8 -1.21 -0.694</span></span></code></pre></div>
 <p><strong>Example interpretations:</strong> Women report about 0.99
 more poor mental-health days and 0.77 more poor physical-health days per
 month than men. Although the effect of gender is about 0.22 larger for
@@ -455,12 +476,17 @@ covariates held at their means.</p>
 <span>            <span class="st">"faminc"</span>, <span class="st">"employed"</span>, <span class="st">"region4"</span>, <span class="st">"year"</span>, <span class="st">"race"</span><span class="op">)</span></span>
 <span><span class="va">dat65</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">gss</span>, <span class="va">year</span> <span class="op">&gt;=</span> <span class="fl">2010</span><span class="op">)</span></span>
 <span><span class="va">dat65</span> <span class="op">&lt;-</span> <span class="va">dat65</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">[</span><span class="va">vars65</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">)</span> <span class="op">==</span> <span class="fl">8179</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">)</span></span>
+<span><span class="co">#&gt; [1] 8179</span></span>
 <span><span class="va">dat65</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat65</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"woman"</span>, <span class="st">"parent"</span>, <span class="st">"married"</span>, <span class="st">"race"</span>,</span>
 <span>                            <span class="st">"employed"</span>, <span class="st">"region4"</span>, <span class="st">"year"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">party_levels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/sort.html" class="external-link">sort</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/unique.html" class="external-link">unique</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">$</span><span class="va">partyid5</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">dat65</span><span class="op">$</span><span class="va">party_ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">ordered</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">$</span><span class="va">partyid5</span>, levels <span class="op">=</span> <span class="va">party_levels</span><span class="op">)</span></span>
-<span><span class="va">dat65</span><span class="op">$</span><span class="va">party_nom</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">$</span><span class="va">partyid5</span>, levels <span class="op">=</span> <span class="va">party_levels</span><span class="op">)</span></span>
+<span><span class="va">party_labels</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Strong Democrat"</span>, <span class="st">"Democrat"</span>, <span class="st">"Independent"</span>,</span>
+<span>                  <span class="st">"Republican"</span>, <span class="st">"Strong Republican"</span><span class="op">)</span></span>
+<span><span class="va">dat65</span><span class="op">$</span><span class="va">party_ord</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">ordered</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">$</span><span class="va">partyid5</span>, levels <span class="op">=</span> <span class="va">party_levels</span>, labels <span class="op">=</span> <span class="va">party_labels</span><span class="op">)</span></span>
+<span><span class="va">dat65</span><span class="op">$</span><span class="va">party_nom</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">$</span><span class="va">partyid5</span>, levels <span class="op">=</span> <span class="va">party_levels</span>, labels <span class="op">=</span> <span class="va">party_labels</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">ordered65</span> <span class="op">&lt;-</span> <span class="fu">MASS</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">polr</a></span><span class="op">(</span><span class="va">party_ord</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">age</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">edyrs</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span></span>
 <span>                          <span class="va">married</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">faminc</span> <span class="op">+</span> <span class="va">employed</span> <span class="op">+</span> <span class="va">region4</span> <span class="op">+</span> <span class="va">year</span>,</span>
@@ -469,96 +495,40 @@ covariates held at their means.</p>
 <span>                             <span class="va">married</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">faminc</span> <span class="op">+</span> <span class="va">employed</span> <span class="op">+</span> <span class="va">region4</span> <span class="op">+</span> <span class="va">year</span>,</span>
 <span>                           data <span class="op">=</span> <span class="va">dat65</span>, Hess <span class="op">=</span> <span class="cn">TRUE</span>, trace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit65</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">ordered65</span>, <span class="va">nominal65</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Ordered"</span>, <span class="st">"Multinomial"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>For an empirical-distribution average, <code>marginaleffects</code>
-calculates category-specific ten-year age changes directly:</p>
+<p>The estimand here is important. The <code>mecompare</code> Stata
+command compares age 20 with age 30 and holds the other
+<strong>model-matrix columns</strong> at their means. This is not the
+same as averaging a ten-year forward change over observed ages and
+covariates. The distinction is especially consequential because age
+enters quadratically.</p>
+<p>It is also not reproduced exactly by <code>newdata = "mean"</code> in
+<code>marginaleffects</code>, which uses means for numeric variables but
+modes for categorical variables. The helper supplied with
+<code>suest</code> reproduces Stata’s model-matrix <code>atmeans</code>
+calculation exactly. <a href="https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R" class="external-link">View
+the helper code</a>.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit65</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu">forward_change</span><span class="op">(</span><span class="fl">10</span><span class="op">)</span><span class="op">)</span>, newdata <span class="op">=</span> <span class="va">dat65</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;           Group Estimate Std. Error       z Pr(&gt;|z|)     S     2.5 %    97.5 %</span></span>
-<span><span class="co">#&gt;  Ordered::0      0.00527    0.00190   2.779  0.00546   7.5  0.001553  8.99e-03</span></span>
-<span><span class="co">#&gt;  Ordered::1      0.00283    0.00163   1.736  0.08262   3.6 -0.000366  6.03e-03</span></span>
-<span><span class="co">#&gt;  Ordered::2     -0.00100    0.00022  -4.557  &lt; 0.001  17.6 -0.001433 -5.71e-04</span></span>
-<span><span class="co">#&gt;  Ordered::3     -0.00428    0.00189  -2.270  0.02322   5.4 -0.007977 -5.84e-04</span></span>
-<span><span class="co">#&gt;  Ordered::4     -0.00282    0.00146  -1.934  0.05313   4.2 -0.005674  3.81e-05</span></span>
-<span><span class="co">#&gt;  Multinomial::0  0.02945    0.00304   9.695  &lt; 0.001  71.4  0.023495  3.54e-02</span></span>
-<span><span class="co">#&gt;  Multinomial::1 -0.01750    0.00335  -5.216  &lt; 0.001  22.4 -0.024073 -1.09e-02</span></span>
-<span><span class="co">#&gt;  Multinomial::2 -0.02667    0.00229 -11.663  &lt; 0.001 102.0 -0.031148 -2.22e-02</span></span>
-<span><span class="co">#&gt;  Multinomial::3 -0.00158    0.00338  -0.467  0.64076   0.6 -0.008191  5.04e-03</span></span>
-<span><span class="co">#&gt;  Multinomial::4  0.01629    0.00282   5.781  &lt; 0.001  27.0  0.010768  2.18e-02</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Term: age</span></span>
-<span><span class="co">#&gt; Type: response</span></span>
-<span><span class="co">#&gt; Comparison: custom</span></span></code></pre></div>
-<p>The published comparison evaluates a change from age 20 to age 30
-with the other model-matrix columns held at their means. The full
-acceptance suite reproduces the following benchmark:</p>
-<table class="table">
-<colgroup>
-<col width="11%">
-<col width="14%">
-<col width="14%">
-<col width="14%">
-<col width="14%">
-<col width="14%">
-<col width="14%">
-</colgroup>
-<thead><tr class="header">
-<th>Category</th>
-<th align="right">Ordered effect</th>
-<th align="right">Ordered SE</th>
-<th align="right">Multinomial effect</th>
-<th align="right">Multinomial SE</th>
-<th align="right">Difference</th>
-<th align="right">Difference SE</th>
-</tr></thead>
-<tbody>
-<tr class="odd">
-<td>Strong Democrat</td>
-<td align="right">0.020</td>
-<td align="right">0.004</td>
-<td align="right">0.032</td>
-<td align="right">0.003</td>
-<td align="right">-0.012</td>
-<td align="right">0.003</td>
-</tr>
-<tr class="even">
-<td>Democrat</td>
-<td align="right">0.023</td>
-<td align="right">0.005</td>
-<td align="right">-0.010</td>
-<td align="right">0.011</td>
-<td align="right">0.034</td>
-<td align="right">0.009</td>
-</tr>
-<tr class="odd">
-<td>Independent</td>
-<td align="right">-0.003</td>
-<td align="right">0.000</td>
-<td align="right">-0.000</td>
-<td align="right">0.010</td>
-<td align="right">-0.003</td>
-<td align="right">0.010</td>
-</tr>
-<tr class="even">
-<td>Republican</td>
-<td align="right">-0.024</td>
-<td align="right">0.005</td>
-<td align="right">-0.031</td>
-<td align="right">0.011</td>
-<td align="right">0.007</td>
-<td align="right">0.009</td>
-</tr>
-<tr class="odd">
-<td>Strong Republican</td>
-<td align="right">-0.016</td>
-<td align="right">0.004</td>
-<td align="right">0.010</td>
-<td align="right">0.003</td>
-<td align="right">-0.026</td>
-<td align="right">0.004</td>
-</tr>
-</tbody>
-</table>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"example-code"</span>, <span class="st">"example-6-5-atmeans.R"</span>, package <span class="op">=</span> <span class="st">"suest"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">results65</span> <span class="op">&lt;-</span> <span class="fu">example65_atmeans</span><span class="op">(</span><span class="va">fit65</span>, age_lo <span class="op">=</span> <span class="fl">20</span>, age_hi <span class="op">=</span> <span class="fl">30</span><span class="op">)</span></span>
+<span><span class="va">results65</span><span class="op">$</span><span class="va">effects</span></span>
+<span><span class="co">#&gt;             category       model      estimate   std.error      p.value</span></span>
+<span><span class="co">#&gt; 1    Strong Democrat     Ordered  0.0200043395 0.003873903 2.418938e-07</span></span>
+<span><span class="co">#&gt; 2           Democrat     Ordered  0.0233309158 0.005309554 1.112128e-05</span></span>
+<span><span class="co">#&gt; 3        Independent     Ordered -0.0030269099 0.000485863 4.665355e-10</span></span>
+<span><span class="co">#&gt; 4         Republican     Ordered -0.0244327347 0.005230285 2.991588e-06</span></span>
+<span><span class="co">#&gt; 5  Strong Republican     Ordered -0.0158756107 0.003786173 2.752300e-05</span></span>
+<span><span class="co">#&gt; 6    Strong Democrat Multinomial  0.0324035507 0.003318210 1.585306e-22</span></span>
+<span><span class="co">#&gt; 7           Democrat Multinomial -0.0102369435 0.011006328 3.523213e-01</span></span>
+<span><span class="co">#&gt; 8        Independent Multinomial -0.0004415478 0.010034596 9.649024e-01</span></span>
+<span><span class="co">#&gt; 9         Republican Multinomial -0.0314658066 0.010558017 2.879885e-03</span></span>
+<span><span class="co">#&gt; 10 Strong Republican Multinomial  0.0097407472 0.003265056 2.851280e-03</span></span>
+<span><span class="va">results65</span><span class="op">$</span><span class="va">differences</span></span>
+<span><span class="co">#&gt;            category     estimate   std.error      p.value</span></span>
+<span><span class="co">#&gt; 1   Strong Democrat -0.012399211 0.003072737 5.454810e-05</span></span>
+<span><span class="co">#&gt; 2          Democrat  0.033567859 0.009357678 3.342486e-04</span></span>
+<span><span class="co">#&gt; 3       Independent -0.002585362 0.010024139 7.964736e-01</span></span>
+<span><span class="co">#&gt; 4        Republican  0.007033072 0.009022795 4.356981e-01</span></span>
+<span><span class="co">#&gt; 5 Strong Republican -0.025616358 0.003720332 5.758342e-12</span></span></code></pre></div>
 <p><strong>Example interpretation:</strong> For someone who is 20 years
 old, the effect of a ten-year increase in age differs significantly
 across the ordinal and nominal models for three of the five outcome
@@ -581,8 +551,8 @@ with <code>subset</code>, and <code><a href="../reference/suest_newdata.html">su
 each marginal effect is averaged over the appropriate estimation
 sample.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">vars66</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"helpsickB"</span>, <span class="st">"conserv"</span>, <span class="st">"faminc"</span>, <span class="st">"employed"</span>, <span class="st">"woman"</span>,</span>
-<span>            <span class="st">"age"</span>, <span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"race"</span>, <span class="st">"year"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">vars66</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"helpsickB"</span>, <span class="st">"polviews"</span>, <span class="st">"conserv"</span>, <span class="st">"faminc"</span>, <span class="st">"employed"</span>,</span>
+<span>            <span class="st">"woman"</span>, <span class="st">"age"</span>, <span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"race"</span>, <span class="st">"year"</span><span class="op">)</span></span>
 <span><span class="va">dat66</span> <span class="op">&lt;-</span> <span class="va">gss</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">gss</span><span class="op">[</span><span class="va">vars66</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="va">dat66</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat66</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"conserv"</span>, <span class="st">"employed"</span>, <span class="st">"woman"</span>, <span class="st">"college"</span>,</span>
 <span>                            <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"race"</span><span class="op">)</span><span class="op">)</span></span>
@@ -593,6 +563,10 @@ sample.</p>
 <span><span class="va">model2016</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">helpsickB</span> <span class="op">~</span> <span class="va">conserv</span> <span class="op">+</span> <span class="va">faminc</span> <span class="op">+</span> <span class="va">employed</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span></span>
 <span>                   <span class="va">college</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span> <span class="va">race</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>,</span>
 <span>                 data <span class="op">=</span> <span class="va">dat66</span>, subset <span class="op">=</span> <span class="va">year</span> <span class="op">==</span> <span class="fl">2016</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model1986</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1254</span>, <span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model2016</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1670</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>`1986` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model1986</span><span class="op">)</span>, `2016` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model2016</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 1986 2016 </span></span>
+<span><span class="co">#&gt; 1254 1670</span></span>
 <span><span class="va">fit66</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">model1986</span>, <span class="va">model2016</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"1986"</span>, <span class="st">"2016"</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="va">fit66</span></span>
 <span><span class="co">#&gt; Seemingly Unrelated Estimation</span></span>

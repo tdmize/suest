@@ -12,6 +12,12 @@ six replications below correspond to Examples 6.1–6.6 for the
 [`mecompare` Stata
 command](https://www.trentonmize.com/software/mecompare).
 
+For numeric predictors, a single numeric value in `variables` requests a
+forward change of that amount. Thus, `list(income = sd(dat61$income))`
+calculates the change from each observed income value to that value plus
+one standard deviation. This differs from `"sd"`, which requests a
+centered one-standard-deviation contrast around the regressor mean.
+
 ## Functions at a glance
 
 - [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
@@ -118,7 +124,6 @@ factorize <- function(data, variables) {
   data[variables] <- lapply(data[variables], factor)
   data
 }
-forward_change <- function(amount) function(x) data.frame(lo = x, hi = x + amount)
 ```
 
 ### Ex 6.1 - Marginal effects to summarize curvilinear relationships and test mediation
@@ -133,8 +138,11 @@ income.
 
 ``` r
 
-vars61 <- c("depsympB", "income", "age", "woman", "race", "jobsat")
+vars61 <- c("depsympB", "income", "inc10", "age", "woman", "race", "college", "jobsat")
 dat61 <- ah[complete.cases(ah[vars61]), ]
+stopifnot(nrow(dat61) == 4307)
+nrow(dat61)
+#> [1] 4307
 dat61 <- factorize(dat61, c("woman", "race", "jobsat"))
 
 base61 <- lm(depsympB ~ income + I(income^2) + age + woman + race, data = dat61)
@@ -143,7 +151,7 @@ mediator61 <- lm(depsympB ~ income + I(income^2) + age + woman + race + jobsat,
 fit61 <- suest(base61, mediator61, model_names = c("Base", "Mediator"))
 
 effects61 <- avg_comparisons(fit61,
-  variables = list(income = forward_change(sd(dat61$income))), newdata = dat61)
+  variables = list(income = sd(dat61$income)), newdata = dat61)
 effects61
 #> 
 #>     Group Estimate Std. Error      z Pr(>|z|)    S  2.5 % 97.5 %
@@ -152,7 +160,7 @@ effects61
 #> 
 #> Term: income
 #> Type: response
-#> Comparison: custom
+#> Comparison: +27.2108562966562
 hypotheses(effects61, hypothesis = difference ~ revpairwise)
 #> 
 #>           Hypothesis Estimate Std. Error     z Pr(>|z|)    S  2.5 % 97.5 %
@@ -174,10 +182,13 @@ college changes as additional variables are added to the model.
 
 ``` r
 
-vars62 <- c("vhappy", "college", "age", "married", "parent", "woman",
-            "conserv", "reltrad", "year", "employed")
+vars62 <- c("vhappy", "college", "wages", "occprest", "age", "married",
+            "parent", "woman", "conserv", "reltrad", "year", "employed")
 dat62 <- subset(gss, year >= 2000 & employed == 1)
 dat62 <- dat62[complete.cases(dat62[vars62]), ]
+stopifnot(nrow(dat62) == 9216)
+nrow(dat62)
+#> [1] 9216
 dat62 <- factorize(dat62, c("college", "married", "parent", "woman", "conserv",
                             "reltrad", "year"))
 
@@ -190,16 +201,16 @@ effects62 <- avg_comparisons(fit62, variables = "college", newdata = dat62)
 effects62
 #> 
 #>    Group Estimate Std. Error    z Pr(>|z|)    S  2.5 % 97.5 %
-#>  Model 1   0.0709    0.00958 7.41   <0.001 42.8 0.0522 0.0897
-#>  Model 2   0.0558    0.00974 5.73   <0.001 26.6 0.0367 0.0749
+#>  Model 1   0.0718     0.0103 6.95   <0.001 38.0 0.0516 0.0921
+#>  Model 2   0.0599     0.0105 5.69   <0.001 26.2 0.0393 0.0806
 #> 
 #> Term: college
 #> Type: response
 #> Comparison: 1 - 0
 hypotheses(effects62, hypothesis = difference ~ revpairwise)
 #> 
-#>             Hypothesis Estimate Std. Error    z Pr(>|z|)    S   2.5 % 97.5 %
-#>  (Model 1) - (Model 2)   0.0151    0.00376 4.02   <0.001 14.1 0.00777 0.0225
+#>             Hypothesis Estimate Std. Error    z Pr(>|z|)   S 2.5 % 97.5 %
+#>  (Model 1) - (Model 2)   0.0119    0.00402 2.95  0.00313 8.3 0.004 0.0198
 ```
 
 **Example interpretation for the effect of college:** On average, the
@@ -221,6 +232,9 @@ The models use two different ways to measure sexuality: sexual behavior
 vars63 <- c("samesexB", "sexident", "sexbehav", "college",
             "woman", "race", "age", "year")
 dat63 <- gss[complete.cases(gss[vars63]), ]
+stopifnot(nrow(dat63) == 4921)
+nrow(dat63)
+#> [1] 4921
 dat63 <- factorize(dat63, c("sexident", "sexbehav", "college", "woman", "race", "year"))
 
 behavior63 <- glm(samesexB ~ sexbehav + woman + college + age + race + year,
@@ -295,13 +309,19 @@ This example compares effects across different dependent variables. Two
 count outcomes—poor mental-health days and poor physical-health days—are
 estimated using negative-binomial models, with effects calculated on the
 predicted-rate scale. Effects and cross-model comparisons are calculated
-for all predictors.
+for all predictors. To reproduce the `mecompare` Stata example exactly,
+the common sample also excludes observations missing `reltrad`, even
+though `reltrad` is not included in either displayed model.
 
 ``` r
 
 vars64 <- c("mntlhlth", "physhlth", "woman", "married", "age",
-            "faminc", "race", "college", "parent", "year")
+            "faminc", "race", "college", "parent", "reltrad")
 dat64 <- gss[complete.cases(gss[vars64]), ]
+stopifnot(nrow(dat64) == 5062)
+nrow(dat64)
+#> [1] 5062
+
 dat64 <- factorize(dat64, c("woman", "married", "parent", "college", "race", "year"))
 
 mental64 <- MASS::glm.nb(mntlhlth ~ woman + married + parent + college + age +
@@ -311,43 +331,43 @@ physical64 <- MASS::glm.nb(physhlth ~ woman + married + parent + college + age +
 fit64 <- suest(mental64, physical64, model_names = c("Mental", "Physical"))
 
 variables64 <- list(woman = "reference", married = "reference", parent = "reference",
-  college = "reference", age = forward_change(sd(dat64$age)),
-  faminc = forward_change(sd(dat64$faminc)), race = "reference", year = "reference")
+  college = "reference", age = sd(dat64$age), faminc = sd(dat64$faminc),
+  race = "reference", year = "reference")
 effects64 <- avg_comparisons(fit64, variables = variables64, newdata = dat64)
 effects64
 #> 
-#>     Term    Group    Contrast Estimate Std. Error      z Pr(>|z|)    S  2.5 % 97.5 %
-#>  age     Mental   custom       -0.4946      0.105 -4.689  < 0.001 18.5 -0.701 -0.288
-#>  age     Physical custom        0.4393      0.114  3.863  < 0.001 13.1  0.216  0.662
-#>  college Mental   1 - 0        -0.9213      0.226 -4.077  < 0.001 14.4 -1.364 -0.478
-#>  college Physical 1 - 0        -0.5483      0.188 -2.911  0.00361  8.1 -0.918 -0.179
-#>  faminc  Mental   custom       -0.5254      0.115 -4.552  < 0.001 17.5 -0.752 -0.299
-#>  faminc  Physical custom       -0.3991      0.101 -3.953  < 0.001 13.7 -0.597 -0.201
-#>  married Mental   1 - 0        -1.0044      0.227 -4.422  < 0.001 16.6 -1.450 -0.559
-#>  married Physical 1 - 0        -0.1781      0.191 -0.932  0.35113  1.5 -0.552  0.196
-#>  parent  Mental   1 - 0         0.3691      0.241  1.532  0.12565  3.0 -0.103  0.841
-#>  parent  Physical 1 - 0        -0.2889      0.214 -1.347  0.17783  2.5 -0.709  0.131
-#>  race    Mental   2 - 1        -1.1590      0.249 -4.651  < 0.001 18.2 -1.647 -0.671
-#>  race    Mental   3 - 1        -0.4042      0.359 -1.125  0.26044  1.9 -1.108  0.300
-#>  race    Physical 2 - 1        -0.5833      0.215 -2.707  0.00678  7.2 -1.006 -0.161
-#>  race    Physical 3 - 1         0.0776      0.337  0.231  0.81759  0.3 -0.582  0.738
-#>  woman   Mental   1 - 0         0.9317      0.205  4.535  < 0.001 17.4  0.529  1.334
-#>  woman   Physical 1 - 0         0.6997      0.173  4.054  < 0.001 14.3  0.361  1.038
-#>  year    Mental   2006 - 2002  -0.8782      0.267 -3.287  0.00101  9.9 -1.402 -0.355
-#>  year    Mental   2010 - 2002  -0.0951      0.309 -0.308  0.75803  0.4 -0.700  0.510
-#>  year    Mental   2014 - 2002  -0.4676      0.300 -1.557  0.11948  3.1 -1.056  0.121
-#>  year    Physical 2006 - 2002  -0.3091      0.222 -1.391  0.16408  2.6 -0.745  0.126
-#>  year    Physical 2010 - 2002   0.3587      0.258  1.393  0.16368  2.6 -0.146  0.864
-#>  year    Physical 2014 - 2002  -0.2117      0.243 -0.871  0.38365  1.4 -0.688  0.265
+#>     Term    Group          Contrast Estimate Std. Error      z Pr(>|z|)    S  2.5 %   97.5 %
+#>  age     Mental   +13.0755231484462  -0.4623      0.108 -4.294   <0.001 15.8 -0.673 -0.25129
+#>  age     Physical +13.0755231484462   0.4912      0.118  4.179   <0.001 15.1  0.261  0.72155
+#>  college Mental   1 - 0              -0.8794      0.229 -3.848   <0.001 13.0 -1.327 -0.43145
+#>  college Physical 1 - 0              -0.5422      0.189 -2.870   0.0041  7.9 -0.912 -0.17198
+#>  faminc  Mental   +35.054788229243   -0.4445      0.118 -3.769   <0.001 12.6 -0.676 -0.21334
+#>  faminc  Physical +35.054788229243   -0.3808      0.102 -3.741   <0.001 12.4 -0.580 -0.18125
+#>  married Mental   1 - 0              -1.0103      0.230 -4.397   <0.001 16.5 -1.461 -0.55992
+#>  married Physical 1 - 0              -0.1591      0.192 -0.827   0.4082  1.3 -0.536  0.21795
+#>  parent  Mental   1 - 0               0.2741      0.248  1.107   0.2682  1.9 -0.211  0.75944
+#>  parent  Physical 1 - 0              -0.2692      0.219 -1.231   0.2182  2.2 -0.698  0.15931
+#>  race    Mental   2 - 1              -1.0159      0.258 -3.941   <0.001 13.6 -1.521 -0.51070
+#>  race    Mental   3 - 1              -0.4381      0.356 -1.230   0.2188  2.2 -1.136  0.26022
+#>  race    Physical 2 - 1              -0.5308      0.217 -2.443   0.0146  6.1 -0.957 -0.10487
+#>  race    Physical 3 - 1               0.1451      0.343  0.423   0.6724  0.6 -0.527  0.81749
+#>  woman   Mental   1 - 0               0.9929      0.208  4.774   <0.001 19.1  0.585  1.40062
+#>  woman   Physical 1 - 0               0.7734      0.174  4.446   <0.001 16.8  0.432  1.11430
+#>  year    Mental   2006 - 2002        -0.9438      0.270 -3.492   <0.001 11.0 -1.474 -0.41408
+#>  year    Mental   2010 - 2002        -0.0675      0.318 -0.213   0.8316  0.3 -0.690  0.55484
+#>  year    Mental   2014 - 2002        -0.5819      0.302 -1.929   0.0537  4.2 -1.173  0.00922
+#>  year    Physical 2006 - 2002        -0.2917      0.225 -1.299   0.1939  2.4 -0.732  0.14839
+#>  year    Physical 2010 - 2002         0.3233      0.261  1.240   0.2148  2.2 -0.187  0.83400
+#>  year    Physical 2014 - 2002        -0.2286      0.245 -0.933   0.3507  1.5 -0.709  0.25148
 #> 
 #> Type: response
 
-age64 <- avg_comparisons(fit64, variables = list(age = forward_change(sd(dat64$age))),
+age64 <- avg_comparisons(fit64, variables = list(age = sd(dat64$age)),
                          newdata = dat64)
 hypotheses(age64, hypothesis = difference ~ revpairwise)
 #> 
 #>             Hypothesis Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
-#>  (Mental) - (Physical)   -0.934      0.128 -7.29   <0.001 41.5 -1.19 -0.683
+#>  (Mental) - (Physical)   -0.953      0.132 -7.22   <0.001 40.8 -1.21 -0.694
 ```
 
 **Example interpretations:** Women report about 0.99 more poor
@@ -379,12 +399,17 @@ vars65 <- c("partyid5", "woman", "edyrs", "age", "parent", "married",
             "faminc", "employed", "region4", "year", "race")
 dat65 <- subset(gss, year >= 2010)
 dat65 <- dat65[complete.cases(dat65[vars65]), ]
+stopifnot(nrow(dat65) == 8179)
+nrow(dat65)
+#> [1] 8179
 dat65 <- factorize(dat65, c("woman", "parent", "married", "race",
                             "employed", "region4", "year"))
 
 party_levels <- sort(unique(dat65$partyid5))
-dat65$party_ord <- ordered(dat65$partyid5, levels = party_levels)
-dat65$party_nom <- factor(dat65$partyid5, levels = party_levels)
+party_labels <- c("Strong Democrat", "Democrat", "Independent",
+                  "Republican", "Strong Republican")
+dat65$party_ord <- ordered(dat65$partyid5, levels = party_levels, labels = party_labels)
+dat65$party_nom <- factor(dat65$partyid5, levels = party_levels, labels = party_labels)
 
 ordered65 <- MASS::polr(party_ord ~ age + I(age^2) + woman + edyrs + parent +
                           married + race + faminc + employed + region4 + year,
@@ -395,41 +420,42 @@ nominal65 <- nnet::multinom(party_nom ~ age + I(age^2) + woman + edyrs + parent 
 fit65 <- suest(ordered65, nominal65, model_names = c("Ordered", "Multinomial"))
 ```
 
-For an empirical-distribution average, `marginaleffects` calculates
-category-specific ten-year age changes directly:
+The estimand here is important. The `mecompare` Stata command compares
+age 20 with age 30 and holds the other **model-matrix columns** at their
+means. This is not the same as averaging a ten-year forward change over
+observed ages and covariates. The distinction is especially
+consequential because age enters quadratically.
+
+It is also not reproduced exactly by `newdata = "mean"` in
+`marginaleffects`, which uses means for numeric variables but modes for
+categorical variables. The helper supplied with `suest` reproduces
+Stata’s model-matrix `atmeans` calculation exactly. [View the helper
+code](https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R).
 
 ``` r
 
-avg_comparisons(fit65, variables = list(age = forward_change(10)), newdata = dat65)
-#> 
-#>           Group Estimate Std. Error       z Pr(>|z|)     S     2.5 %    97.5 %
-#>  Ordered::0      0.00527    0.00190   2.779  0.00546   7.5  0.001553  8.99e-03
-#>  Ordered::1      0.00283    0.00163   1.736  0.08262   3.6 -0.000366  6.03e-03
-#>  Ordered::2     -0.00100    0.00022  -4.557  < 0.001  17.6 -0.001433 -5.71e-04
-#>  Ordered::3     -0.00428    0.00189  -2.270  0.02322   5.4 -0.007977 -5.84e-04
-#>  Ordered::4     -0.00282    0.00146  -1.934  0.05313   4.2 -0.005674  3.81e-05
-#>  Multinomial::0  0.02945    0.00304   9.695  < 0.001  71.4  0.023495  3.54e-02
-#>  Multinomial::1 -0.01750    0.00335  -5.216  < 0.001  22.4 -0.024073 -1.09e-02
-#>  Multinomial::2 -0.02667    0.00229 -11.663  < 0.001 102.0 -0.031148 -2.22e-02
-#>  Multinomial::3 -0.00158    0.00338  -0.467  0.64076   0.6 -0.008191  5.04e-03
-#>  Multinomial::4  0.01629    0.00282   5.781  < 0.001  27.0  0.010768  2.18e-02
-#> 
-#> Term: age
-#> Type: response
-#> Comparison: custom
+source(system.file("example-code", "example-6-5-atmeans.R", package = "suest"))
+results65 <- example65_atmeans(fit65, age_lo = 20, age_hi = 30)
+results65$effects
+#>             category       model      estimate   std.error      p.value
+#> 1    Strong Democrat     Ordered  0.0200043395 0.003873903 2.418938e-07
+#> 2           Democrat     Ordered  0.0233309158 0.005309554 1.112128e-05
+#> 3        Independent     Ordered -0.0030269099 0.000485863 4.665355e-10
+#> 4         Republican     Ordered -0.0244327347 0.005230285 2.991588e-06
+#> 5  Strong Republican     Ordered -0.0158756107 0.003786173 2.752300e-05
+#> 6    Strong Democrat Multinomial  0.0324035507 0.003318210 1.585306e-22
+#> 7           Democrat Multinomial -0.0102369435 0.011006328 3.523213e-01
+#> 8        Independent Multinomial -0.0004415478 0.010034596 9.649024e-01
+#> 9         Republican Multinomial -0.0314658066 0.010558017 2.879885e-03
+#> 10 Strong Republican Multinomial  0.0097407472 0.003265056 2.851280e-03
+results65$differences
+#>            category     estimate   std.error      p.value
+#> 1   Strong Democrat -0.012399211 0.003072737 5.454810e-05
+#> 2          Democrat  0.033567859 0.009357678 3.342486e-04
+#> 3       Independent -0.002585362 0.010024139 7.964736e-01
+#> 4        Republican  0.007033072 0.009022795 4.356981e-01
+#> 5 Strong Republican -0.025616358 0.003720332 5.758342e-12
 ```
-
-The published comparison evaluates a change from age 20 to age 30 with
-the other model-matrix columns held at their means. The full acceptance
-suite reproduces the following benchmark:
-
-| Category | Ordered effect | Ordered SE | Multinomial effect | Multinomial SE | Difference | Difference SE |
-|----|---:|---:|---:|---:|---:|---:|
-| Strong Democrat | 0.020 | 0.004 | 0.032 | 0.003 | -0.012 | 0.003 |
-| Democrat | 0.023 | 0.005 | -0.010 | 0.011 | 0.034 | 0.009 |
-| Independent | -0.003 | 0.000 | -0.000 | 0.010 | -0.003 | 0.010 |
-| Republican | -0.024 | 0.005 | -0.031 | 0.011 | 0.007 | 0.009 |
-| Strong Republican | -0.016 | 0.004 | 0.010 | 0.003 | -0.026 | 0.004 |
 
 **Example interpretation:** For someone who is 20 years old, the effect
 of a ten-year increase in age differs significantly across the ordinal
@@ -453,8 +479,8 @@ estimation sample.
 
 ``` r
 
-vars66 <- c("helpsickB", "conserv", "faminc", "employed", "woman",
-            "age", "college", "married", "parent", "race", "year")
+vars66 <- c("helpsickB", "polviews", "conserv", "faminc", "employed",
+            "woman", "age", "college", "married", "parent", "race", "year")
 dat66 <- gss[complete.cases(gss[vars66]), ]
 dat66 <- factorize(dat66, c("conserv", "employed", "woman", "college",
                             "married", "parent", "race"))
@@ -465,6 +491,10 @@ model1986 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
 model2016 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
                    college + married + parent + race, family = binomial("logit"),
                  data = dat66, subset = year == 2016)
+stopifnot(nobs(model1986) == 1254, nobs(model2016) == 1670)
+c(`1986` = nobs(model1986), `2016` = nobs(model2016))
+#> 1986 2016 
+#> 1254 1670
 fit66 <- suest(model1986, model2016, model_names = c("1986", "2016"))
 fit66
 #> Seemingly Unrelated Estimation

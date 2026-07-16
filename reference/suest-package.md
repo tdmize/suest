@@ -25,23 +25,3 @@ Mize, Trenton D., Long Doan, and J. Scott Long. 2019. "A General
 Framework for Comparing Predictions and Marginal Effects Across Models."
 *Sociological Methodology* 49(1):152–189.
 [doi:10.1177/0081175019852763](https://doi.org/10.1177/0081175019852763)
-
-## See also
-
-Useful links:
-
-- <https://tdmize.github.io/suest/>
-
-- <https://github.com/tdmize/suest>
-
-- <https://www.trentonmize.com/software/mecompare>
-
-- Report bugs at <https://github.com/tdmize/suest/issues>
-
-## Author
-
-**Maintainer**: Trenton D. Mize <tmize@purdue.edu>
-
-Authors:
-
-- Trenton D. Mize <tmize@purdue.edu>
