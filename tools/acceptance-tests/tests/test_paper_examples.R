@@ -486,7 +486,7 @@ test_case("Paper 6.5: ordered versus nominal benchmark at covariate means", {
   )
 
   helper_file <- file.path(
-    test_state$root,
+    .suest_test_state$root,
     "inst",
     "example-code",
     "example-6-5-atmeans.R"
