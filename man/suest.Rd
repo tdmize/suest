@@ -37,8 +37,10 @@ and sample-alignment information.
 \code{suest()} combines two separately fitted models and constructs a joint
 model-robust covariance matrix from their observation-level score
 contributions. The returned object can be passed directly to
-\code{\link[marginaleffects:predictions]{marginaleffects::predictions()}}, \code{\link[marginaleffects:avg_comparisons]{marginaleffects::avg_comparisons()}},
-\code{\link[marginaleffects:avg_slopes]{marginaleffects::avg_slopes()}}, and \code{\link[marginaleffects:hypotheses]{marginaleffects::hypotheses()}}.
+\code{\link[marginaleffects:predictions]{marginaleffects::predictions()}},
+\code{\link[marginaleffects:avg_comparisons]{marginaleffects::avg_comparisons()}},
+\code{\link[marginaleffects:avg_slopes]{marginaleffects::avg_slopes()}}, and
+\code{\link[marginaleffects:hypotheses]{marginaleffects::hypotheses()}}.
 }
 \details{
 Exactly two models are supported. Models can use identical, partially
@@ -48,45 +50,45 @@ observations. Models fitted from different data objects are treated as
 disjoint because shared observations cannot be inferred safely without an
 identifier.
 
-Same-family comparisons are supported for all model types listed below.
-The supported cross-family pairs are logit--probit, logit--linear,
+Same-family comparisons are supported for all listed model types. The
+supported cross-family pairs are logit--probit, logit--linear,
 probit--linear, Poisson--negative binomial, and ordered
 logit--multinomial logit.
 
-Negative-binomial models include \code{log(theta)} in the joint parameter vector.
-Ordered and multinomial models use analytic score and observed-information
-calculations for stable robust covariance estimation.
+Negative-binomial models include \code{log(theta)} in the joint parameter
+vector. Ordered and multinomial models use analytic score and
+observed-information calculations for stable robust covariance estimation.
 
-Offsets, nonunit estimation weights, and aliased parameters are not
-currently supported. Bias-reduced, adjusted-score, Firth, and penalized
-GLM fits are rejected because they do not use ordinary maximum-likelihood
-score equations.
+Offsets, nonunit estimation weights, and aliased parameters are not currently
+supported. Bias-reduced, adjusted-score, Firth, and penalized GLM fits are
+rejected because they do not use ordinary maximum-likelihood score equations.
 }
 \section{Supported models}{
-
 \itemize{
 \item \code{\link[stats:lm]{stats::lm()}}
-\item binary logit and probit models from \code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
-\item Poisson log-link models from \code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
-\item negative-binomial log-link models from \code{\link[MASS:glm.nb]{MASS::glm.nb()}}
-\item ordered logit and probit models from \code{\link[MASS:polr]{MASS::polr()}}
+\item binary logit and probit models from
+\code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
+\item Poisson log-link models from
+\code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
+\item negative-binomial log-link models from
+\code{\link[MASS:glm.nb]{MASS::glm.nb()}}
+\item ordered logit and probit models from
+\code{\link[MASS:polr]{MASS::polr()}}
 \item ordered logit and probit models from \code{ordinal::clm()} with flexible
 thresholds, proportional effects, and no scale model
-\item multinomial logit models from \code{\link[nnet:multinom]{nnet::multinom()}}
+\item multinomial logit models from
+\code{\link[nnet:multinom]{nnet::multinom()}}
 }
 }
-
 \examples{
 dat <- mtcars
 dat$am <- factor(dat$am)
 
 model1 <- glm(am ~ wt, family = binomial(), data = dat)
 model2 <- glm(am ~ wt + hp, family = binomial(), data = dat)
-
 fit <- suest(model1, model2, model_names = c("Base", "Adjusted"))
 fit
 
 effects <- marginaleffects::avg_comparisons(fit, variables = "wt", newdata = dat)
 marginaleffects::hypotheses(effects, hypothesis = difference ~ revpairwise)
-
 }

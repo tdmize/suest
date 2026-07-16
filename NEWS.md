@@ -1,5 +1,23 @@
 # suest 0.1.3
 
+* Corrected Example 6.5 to reproduce the exact published estimand: an age
+  change from 20 to 30 with all other model-matrix columns held at their
+  means.
+* Added a supplied Stata-style `atmeans` replication helper and linked its
+  output directly to the validated numerical acceptance test.
+* Added explicit sample-size checks for all six paper examples so the website
+  build fails instead of silently displaying results from a different sample.
+
+* Matched the Example 6.4 sample-selection statement exactly to the
+  `mecompare` Stata command example and added an explicit check and displayed
+  result confirming `N = 5,062`.
+
+* Simplified continuous-variable comparisons by using the native
+  `marginaleffects` numeric forward-contrast syntax.
+* Restored every example's common-sample restrictions to match the
+  corresponding `mecompare` Stata example exactly, including variables used
+  only to define the analysis sample.
+
 * Revised the headings, setup descriptions, and interpretations for Examples
   6.1--6.6 to follow the language and organization of the `mecompare` Stata
   command website, adapted for the R workflow.

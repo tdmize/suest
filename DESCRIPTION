@@ -33,9 +33,9 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
 Config/Needs/website:
     pkgdown,
     haven,
     glm2,
     ordinal
-Config/roxygen2/version: 8.0.0

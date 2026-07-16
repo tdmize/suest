@@ -10,9 +10,9 @@ suest_newdata(object)
 \item{object}{A \code{"suest_model"} returned by \code{\link[=suest]{suest()}}.}
 }
 \value{
-A data frame with the component model frames stacked vertically and
-two internal columns, \code{.suest_model} and \code{.suest_rowid}, used to route rows
-to the correct component model.
+A data frame with the component model frames stacked vertically and two
+internal columns, \code{.suest_model} and \code{.suest_rowid}, used to route
+rows to the correct component model.
 }
 \description{
 Creates a data frame containing each component model's own estimation
@@ -29,5 +29,4 @@ model2 <- glm(am ~ wt + hp, family = binomial(), data = dat, subset = cyl != 4)
 fit <- suest(model1, model2, model_names = c("Four cylinders", "Other"))
 nd <- suest_newdata(fit)
 marginaleffects::avg_comparisons(fit, variables = "wt", newdata = nd)
-
 }

@@ -485,6 +485,15 @@ test_case("Paper 6.5: ordered versus nominal benchmark at covariate means", {
     model_names = c("Ordered", "Multinomial")
   )
 
+  helper_file <- file.path(
+    test_state$root,
+    "inst",
+    "example-code",
+    "example-6-5-atmeans.R"
+  )
+  source(helper_file)
+  website65 <- example65_atmeans(s65, 20, 30)
+
   results65 <- paper65_results(s65, 20, 30)
   effects65 <- results65$effects
   differences65 <- results65$differences
@@ -548,6 +557,31 @@ test_case("Paper 6.5: ordered versus nominal benchmark at covariate means", {
     tolerance = 0.003,
     label = "Example 6.5 nominal SEs"
   )
+  expect_near(
+    website65$effects$estimate,
+    effects65$estimate,
+    tolerance = 1e-10,
+    label = "Example 6.5 website helper effects"
+  )
+  expect_near(
+    website65$effects$std.error,
+    effects65$std.error,
+    tolerance = 1e-10,
+    label = "Example 6.5 website helper SEs"
+  )
+  expect_near(
+    website65$differences$estimate,
+    differences65$estimate,
+    tolerance = 1e-10,
+    label = "Example 6.5 website helper differences"
+  )
+  expect_near(
+    website65$differences$std.error,
+    differences65$std.error,
+    tolerance = 1e-10,
+    label = "Example 6.5 website helper difference SEs"
+  )
+
   expect_near(
     differences,
     c(-0.012, 0.034, -0.003, 0.007, -0.026),

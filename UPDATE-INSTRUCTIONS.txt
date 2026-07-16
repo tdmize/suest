@@ -1,8 +1,19 @@
-SUEST EXAMPLE-LANGUAGE REVISION
+SUEST EXAMPLE 6.5 EXACT-REPLICATION FIX
 
-This complete repository revises Examples 6.1--6.6 to follow the headings,
-setup language, and interpretations used on the mecompare Stata command site,
-adapted for the R implementation.
+The Example 6.5 discrepancy was not caused by sample size. It was caused by
+the estimand:
+
+- The Stata example uses start(age=20), amount(10), and covariates(atmeans).
+- The previous R page averaged a +10 change from each observed age over the
+  observed covariate distribution.
+- Since age enters quadratically, those are different effects.
+- marginaleffects newdata = "mean" is also not exact here because it uses
+  modes for factor variables, whereas Stata atmeans uses means of factor
+  indicator columns.
+
+This repository now supplies and uses the exact model-matrix atmeans helper
+validated by the acceptance suite. It also adds sample-size checks to every
+paper example.
 
 COPY AND BUILD
 
@@ -10,13 +21,15 @@ Copy everything inside this archive's top-level suest folder into:
 
 C:\Users\trent\suest
 
-Replace existing files.
-
-Then run in R:
+Replace existing files, then run:
 
 setwd("C:/Users/trent/suest")
 source("tools/build-site.R")
 
-Open:
+Review:
 
 C:/Users/trent/suest/docs/articles/suest.html
+
+Then rerun the full numerical suite:
+
+source("tools/acceptance-tests/run_all_tests.R")

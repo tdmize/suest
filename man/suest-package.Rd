@@ -12,39 +12,18 @@ matrix. The combined object works with the
 predictions, slopes, and average comparisons across models.
 }
 \section{Supported models}{
-
 \code{lm()}, binary logit and probit models fitted by \code{glm()} or
 \code{glm2::glm2()}, Poisson models fitted by either GLM engine,
-negative-binomial models fitted by \code{\link[MASS:glm.nb]{MASS::glm.nb()}}, ordered logit and
-probit models fitted by \code{\link[MASS:polr]{MASS::polr()}} or restricted \code{ordinal::clm()}
-specifications, and multinomial logit models fitted by \code{\link[nnet:multinom]{nnet::multinom()}}.
+negative-binomial models fitted by \code{\link[MASS:glm.nb]{MASS::glm.nb()}},
+ordered logit and probit models fitted by
+\code{\link[MASS:polr]{MASS::polr()}} or restricted
+\code{ordinal::clm()} specifications, and multinomial logit models fitted by
+\code{\link[nnet:multinom]{nnet::multinom()}}.
 }
-
 \section{Reference}{
-
 Mize, Trenton D., Long Doan, and J. Scott Long. 2019.
 "A General Framework for Comparing Predictions and Marginal Effects Across
 Models." \emph{Sociological Methodology} 49(1):152--189.
 \doi{10.1177/0081175019852763}
-}
-
-\seealso{
-Useful links:
-\itemize{
-  \item \url{https://tdmize.github.io/suest/}
-  \item \url{https://github.com/tdmize/suest}
-  \item \url{https://www.trentonmize.com/software/mecompare}
-  \item Report bugs at \url{https://github.com/tdmize/suest/issues}
-}
-
-}
-\author{
-\strong{Maintainer}: Trenton D. Mize \email{tmize@purdue.edu}
-
-Authors:
-\itemize{
-  \item Trenton D. Mize \email{tmize@purdue.edu}
-}
-
 }
 \keyword{internal}

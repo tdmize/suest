@@ -25,6 +25,12 @@ The package implements the framework in Mize, Doan, and Long (2019). The six
 replications below correspond to Examples 6.1–6.6 for the
 [`mecompare` Stata command](https://www.trentonmize.com/software/mecompare).
 
+For numeric predictors, a single numeric value in `variables` requests a
+forward change of that amount. Thus, `list(income = sd(dat61$income))`
+calculates the change from each observed income value to that value plus one
+standard deviation. This differs from `"sd"`, which requests a centered
+one-standard-deviation contrast around the regressor mean.
+
 ## Functions at a glance
 
 - `suest()` combines two fitted models and calculates their joint covariance matrix.
@@ -100,7 +106,6 @@ factorize <- function(data, variables) {
   data[variables] <- lapply(data[variables], factor)
   data
 }
-forward_change <- function(amount) function(x) data.frame(lo = x, hi = x + amount)
 ```
 
 ### Ex 6.1 - Marginal effects to summarize curvilinear relationships and test mediation
@@ -113,8 +118,10 @@ a custom amount of change for a continuous predictor—in this case, a
 one-standard-deviation increase in income.
 
 ```{r example-6-1}
-vars61 <- c("depsympB", "income", "age", "woman", "race", "jobsat")
+vars61 <- c("depsympB", "income", "inc10", "age", "woman", "race", "college", "jobsat")
 dat61 <- ah[complete.cases(ah[vars61]), ]
+stopifnot(nrow(dat61) == 4307)
+nrow(dat61)
 dat61 <- factorize(dat61, c("woman", "race", "jobsat"))
 
 base61 <- lm(depsympB ~ income + I(income^2) + age + woman + race, data = dat61)
@@ -123,7 +130,7 @@ mediator61 <- lm(depsympB ~ income + I(income^2) + age + woman + race + jobsat,
 fit61 <- suest(base61, mediator61, model_names = c("Base", "Mediator"))
 
 effects61 <- avg_comparisons(fit61,
-  variables = list(income = forward_change(sd(dat61$income))), newdata = dat61)
+  variables = list(income = sd(dat61$income)), newdata = dat61)
 effects61
 hypotheses(effects61, hypothesis = difference ~ revpairwise)
 ```
@@ -142,10 +149,12 @@ This example uses binary logit models and examines how the effect of college
 changes as additional variables are added to the model.
 
 ```{r example-6-2}
-vars62 <- c("vhappy", "college", "age", "married", "parent", "woman",
-            "conserv", "reltrad", "year", "employed")
+vars62 <- c("vhappy", "college", "wages", "occprest", "age", "married",
+            "parent", "woman", "conserv", "reltrad", "year", "employed")
 dat62 <- subset(gss, year >= 2000 & employed == 1)
 dat62 <- dat62[complete.cases(dat62[vars62]), ]
+stopifnot(nrow(dat62) == 9216)
+nrow(dat62)
 dat62 <- factorize(dat62, c("college", "married", "parent", "woman", "conserv",
                             "reltrad", "year"))
 
@@ -176,6 +185,8 @@ models use two different ways to measure sexuality: sexual behavior
 vars63 <- c("samesexB", "sexident", "sexbehav", "college",
             "woman", "race", "age", "year")
 dat63 <- gss[complete.cases(gss[vars63]), ]
+stopifnot(nrow(dat63) == 4921)
+nrow(dat63)
 dat63 <- factorize(dat63, c("sexident", "sexbehav", "college", "woman", "race", "year"))
 
 behavior63 <- glm(samesexB ~ sexbehav + woman + college + age + race + year,
@@ -225,11 +236,17 @@ This example compares effects across different dependent variables. Two count
 outcomes—poor mental-health days and poor physical-health days—are estimated
 using negative-binomial models, with effects calculated on the predicted-rate
 scale. Effects and cross-model comparisons are calculated for all predictors.
+To reproduce the `mecompare` Stata example exactly, the common sample also
+excludes observations missing `reltrad`, even though `reltrad` is not included
+in either displayed model.
 
 ```{r example-6-4}
 vars64 <- c("mntlhlth", "physhlth", "woman", "married", "age",
-            "faminc", "race", "college", "parent", "year")
+            "faminc", "race", "college", "parent", "reltrad")
 dat64 <- gss[complete.cases(gss[vars64]), ]
+stopifnot(nrow(dat64) == 5062)
+nrow(dat64)
+
 dat64 <- factorize(dat64, c("woman", "married", "parent", "college", "race", "year"))
 
 mental64 <- MASS::glm.nb(mntlhlth ~ woman + married + parent + college + age +
@@ -239,12 +256,12 @@ physical64 <- MASS::glm.nb(physhlth ~ woman + married + parent + college + age +
 fit64 <- suest(mental64, physical64, model_names = c("Mental", "Physical"))
 
 variables64 <- list(woman = "reference", married = "reference", parent = "reference",
-  college = "reference", age = forward_change(sd(dat64$age)),
-  faminc = forward_change(sd(dat64$faminc)), race = "reference", year = "reference")
+  college = "reference", age = sd(dat64$age), faminc = sd(dat64$faminc),
+  race = "reference", year = "reference")
 effects64 <- avg_comparisons(fit64, variables = variables64, newdata = dat64)
 effects64
 
-age64 <- avg_comparisons(fit64, variables = list(age = forward_change(sd(dat64$age))),
+age64 <- avg_comparisons(fit64, variables = list(age = sd(dat64$age)),
                          newdata = dat64)
 hypotheses(age64, hypothesis = difference ~ revpairwise)
 ```
@@ -276,12 +293,16 @@ vars65 <- c("partyid5", "woman", "edyrs", "age", "parent", "married",
             "faminc", "employed", "region4", "year", "race")
 dat65 <- subset(gss, year >= 2010)
 dat65 <- dat65[complete.cases(dat65[vars65]), ]
+stopifnot(nrow(dat65) == 8179)
+nrow(dat65)
 dat65 <- factorize(dat65, c("woman", "parent", "married", "race",
                             "employed", "region4", "year"))
 
 party_levels <- sort(unique(dat65$partyid5))
-dat65$party_ord <- ordered(dat65$partyid5, levels = party_levels)
-dat65$party_nom <- factor(dat65$partyid5, levels = party_levels)
+party_labels <- c("Strong Democrat", "Democrat", "Independent",
+                  "Republican", "Strong Republican")
+dat65$party_ord <- ordered(dat65$partyid5, levels = party_levels, labels = party_labels)
+dat65$party_nom <- factor(dat65$partyid5, levels = party_levels, labels = party_labels)
 
 ordered65 <- MASS::polr(party_ord ~ age + I(age^2) + woman + edyrs + parent +
                           married + race + faminc + employed + region4 + year,
@@ -292,24 +313,23 @@ nominal65 <- nnet::multinom(party_nom ~ age + I(age^2) + woman + edyrs + parent 
 fit65 <- suest(ordered65, nominal65, model_names = c("Ordered", "Multinomial"))
 ```
 
-For an empirical-distribution average, `marginaleffects` calculates
-category-specific ten-year age changes directly:
+The estimand here is important. The `mecompare` Stata command compares
+age 20 with age 30 and holds the other **model-matrix columns** at their means.
+This is not the same as averaging a ten-year forward change over observed ages
+and covariates. The distinction is especially consequential because age enters
+quadratically.
+
+It is also not reproduced exactly by `newdata = "mean"` in `marginaleffects`,
+which uses means for numeric variables but modes for categorical variables.
+The helper supplied with `suest` reproduces Stata's model-matrix `atmeans`
+calculation exactly. [View the helper code](https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R).
 
 ```{r example-6-5-effects}
-avg_comparisons(fit65, variables = list(age = forward_change(10)), newdata = dat65)
+source(system.file("example-code", "example-6-5-atmeans.R", package = "suest"))
+results65 <- example65_atmeans(fit65, age_lo = 20, age_hi = 30)
+results65$effects
+results65$differences
 ```
-
-The published comparison evaluates a change from age 20 to age 30 with the
-other model-matrix columns held at their means. The full acceptance suite
-reproduces the following benchmark:
-
-| Category | Ordered effect | Ordered SE | Multinomial effect | Multinomial SE | Difference | Difference SE |
-|---|---:|---:|---:|---:|---:|---:|
-| Strong Democrat | 0.020 | 0.004 | 0.032 | 0.003 | -0.012 | 0.003 |
-| Democrat | 0.023 | 0.005 | -0.010 | 0.011 | 0.034 | 0.009 |
-| Independent | -0.003 | 0.000 | -0.000 | 0.010 | -0.003 | 0.010 |
-| Republican | -0.024 | 0.005 | -0.031 | 0.011 | 0.007 | 0.009 |
-| Strong Republican | -0.016 | 0.004 | 0.010 | 0.003 | -0.026 | 0.004 |
 
 **Example interpretation:** For someone who is 20 years old, the effect of a
 ten-year increase in age differs significantly across the ordinal and nominal
@@ -330,8 +350,8 @@ ensures that each marginal effect is averaged over the appropriate estimation
 sample.
 
 ```{r example-6-6}
-vars66 <- c("helpsickB", "conserv", "faminc", "employed", "woman",
-            "age", "college", "married", "parent", "race", "year")
+vars66 <- c("helpsickB", "polviews", "conserv", "faminc", "employed",
+            "woman", "age", "college", "married", "parent", "race", "year")
 dat66 <- gss[complete.cases(gss[vars66]), ]
 dat66 <- factorize(dat66, c("conserv", "employed", "woman", "college",
                             "married", "parent", "race"))
@@ -342,6 +362,8 @@ model1986 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
 model2016 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
                    college + married + parent + race, family = binomial("logit"),
                  data = dat66, subset = year == 2016)
+stopifnot(nobs(model1986) == 1254, nobs(model2016) == 1670)
+c(`1986` = nobs(model1986), `2016` = nobs(model2016))
 fit66 <- suest(model1986, model2016, model_names = c("1986", "2016"))
 fit66
 
