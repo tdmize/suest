@@ -153,17 +153,17 @@ test_that("ordered-model offsets use the correct analytic scores", {
         plogis(thresholds[y] - eta)
     ))
   }
-  epsilon <- 1e-6
+  epsilon <- 1e-5*pmax(1, abs(parameters))
   numerical_score <- vapply(seq_along(parameters), function(i) {
     upper <- lower <- parameters
-    upper[i] <- upper[i] + epsilon
-    lower[i] <- lower[i] - epsilon
-    (loglik(upper) - loglik(lower))/(2*epsilon)
+    upper[i] <- upper[i] + epsilon[i]
+    lower[i] <- lower[i] - epsilon[i]
+    (loglik(upper) - loglik(lower))/(2*epsilon[i])
   }, numeric(1))
 
-  expect_true(max(abs(
+  expect_lt(max(abs(
     unname(colSums(components$score)) - numerical_score
-  )) < 1e-6)
+  )), 1e-6)
   expect_equal(nrow(effects), 8L)
   expect_true(all(is.finite(effects$std.error)))
 })
