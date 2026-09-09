@@ -1,5 +1,17 @@
 # Development notes
 
+Version 0.1.4 is the certified survey-binary release candidate. Its
+expanded model adapters, pweights, linear ancillary parameter, sample
+alignment, cluster-robust covariance, linear-panel, random-intercept
+Gaussian ML, bivariate-probit, IV-probit, GEE, multiple-imputation, and
+narrow one-stage survey routes are covered by focused unit tests. The
+established families are also covered by the full numerical acceptance
+suite. Cross-language benchmarks live in `tools/stata-benchmarks/`.
+
+Post-0.1.4 development prioritizes nonlinear panel families first and
+general GLMM/multilevel models second. See
+`tools/ROADMAP-POST-0.1.4-20260909.md` for the scoped sequence.
+
 ## First local setup
 
 Open `suest.Rproj` and install the development packages:
@@ -40,6 +52,7 @@ source("tools/preflight.R")
 
 ``` r
 
+source("tools/acceptance-tests/run_pweight_tests.R")
 source("tools/acceptance-tests/run_model_adapter_tests.R")
 source("tools/acceptance-tests/run_all_tests.R")
 ```

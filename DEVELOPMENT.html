@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.3</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,6 +35,8 @@
 
 <div id="development-notes" class="section level1">
 
+<p>Version 0.1.4 is the certified survey-binary release candidate. Its expanded model adapters, pweights, linear ancillary parameter, sample alignment, cluster-robust covariance, linear-panel, random-intercept Gaussian ML, bivariate-probit, IV-probit, GEE, multiple-imputation, and narrow one-stage survey routes are covered by focused unit tests. The established families are also covered by the full numerical acceptance suite. Cross-language benchmarks live in <code>tools/stata-benchmarks/</code>.</p>
+<p>Post-0.1.4 development prioritizes nonlinear panel families first and general GLMM/multilevel models second. See <code>tools/ROADMAP-POST-0.1.4-20260909.md</code> for the scoped sequence.</p>
 <div class="section level2">
 <h2 id="first-local-setup">First local setup<a class="anchor" aria-label="anchor" href="#first-local-setup"></a></h2>
 <p>Open <code>suest.Rproj</code> and install the development packages:</p>
@@ -61,7 +63,8 @@
 <div class="section level2">
 <h2 id="numerical-acceptance-tests">Numerical acceptance tests<a class="anchor" aria-label="anchor" href="#numerical-acceptance-tests"></a></h2>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/acceptance-tests/run_model_adapter_tests.R"</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/acceptance-tests/run_pweight_tests.R"</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/acceptance-tests/run_model_adapter_tests.R"</span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="st">"tools/acceptance-tests/run_all_tests.R"</span><span class="op">)</span></span></code></pre></div>
 <p>The included GitHub Actions workflows run <code>R CMD check</code> on Windows, macOS, and Linux, build and deploy the pkgdown site, and run the full Mize, Doan, and Long (2019) numerical acceptance suite.</p>
 </div>
