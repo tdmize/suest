@@ -52,7 +52,7 @@
 </h1></div>
 <p><a href="https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></p>
 <p>Full documentation, worked examples, and rendered output: <a href="https://tdmize.github.io/suest/articles/suest.html">tdmize.github.io/suest</a></p>
-<p><code>suest</code> combines two separately fitted regression models into one object with a joint model-robust covariance matrix. The combined object works with <a href="https://marginaleffects.com/" class="external-link"><code>marginaleffects</code></a> to compare predictions and marginal effects across models.</p>
+<p><code>suest</code> combines two or more separately fitted regression models into one object with a joint model-robust covariance matrix. The combined object works with <a href="https://marginaleffects.com/" class="external-link"><code>marginaleffects</code></a> to compare predictions and marginal effects across models.</p>
 <p>The package implements the framework developed in:</p>
 <blockquote>
 <p>Mize, Trenton D., Long Doan, and J. Scott Long. 2019. “A General Framework for Comparing Predictions and Marginal Effects Across Models.” <em>Sociological Methodology</em> 49(1):152–189. <a href="https://doi.org/10.1177/0081175019852763" class="external-link">doi:10.1177/0081175019852763</a></p>
@@ -89,19 +89,73 @@
 <ul>
 <li>linear regression using <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>
 </li>
-<li>binary logit and probit using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>
+<li>binary logit, probit, and complementary-log-log using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>
 </li>
 <li>Poisson regression using <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>
 </li>
+<li>other GLMs using identity, log, logit, probit, complementary-log-log, or log-log links</li>
+<li>fractional-response quasi-binomial logit, probit, complementary-log-log, and user-supplied log-log links</li>
 <li>negative-binomial regression using <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code>
 </li>
+<li>parametric survival and censored regression using <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code> with a common scale, including Gaussian interval regression</li>
+<li>beta regression using <code><a href="https://rdrr.io/pkg/betareg/man/betareg.html" class="external-link">betareg::betareg()</a></code> with logit, probit, complementary-log-log, or log-log mean links</li>
+<li>Poisson and negative-binomial zero-inflated regression using <code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code>
+</li>
+<li>truncated Gaussian regression using <code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code>
+</li>
+<li>left-, right-, and two-limit censored Gaussian regression using <code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code>; response-scale predictions are the latent mean</li>
+<li>unweighted two-stage least squares using <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code> without absorbed fixed effects; the original data object must remain available</li>
+<li>heteroskedastic binary probit and logit using <code><a href="https://rdrr.io/pkg/Rchoice/man/hetprob.html" class="external-link">Rchoice::hetprob()</a></code>
+</li>
+<li>maximum-likelihood instrumental-variable probit using <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>; response-scale predictions use the average structural probability</li>
+<li>bivariate probit using <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> when both outcome equations use the same regressors and an observed final Hessian is retained</li>
+<li>unweighted individual fixed-effects, between-effects, and Swamy-Arora random-effects linear panel models using <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code>; unbalanced random- effects panels can retain small engine-specific differences from Stata</li>
+<li>unweighted random-intercept Gaussian panel models using <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> with <code>method = "ML"</code>; both variance components are included in the joint system</li>
+<li>unweighted GEE using <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity, binary logit/probit/cloglog, and Poisson log, with independence or exchangeable correlation; numeric outcomes only, with default panel or higher nested clusters</li>
 <li>ordered logit and probit using <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code>
 </li>
 <li>ordered logit and probit using restricted <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> specifications</li>
 <li>multinomial logit using <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code>
 </li>
 </ul>
-<p>Models may use identical, partially overlapping, or disjoint samples. Supported cross-family comparisons are logit–probit, logit–linear, probit–linear, Poisson–negative binomial, and ordered logit–multinomial logit.</p>
+<p>Models may use identical, partially overlapping, or disjoint samples. All combinations of supported scalar-response models are allowed. All combinations of supported categorical-response models are allowed, and scalar and categorical models may be combined. Outputs on different response scales are labeled separately rather than treated as directly commensurate. Supported panel systems can be combined only with panel models of the same type. Offsets are supported. Linear models include a Stata-compatible <code>lnvar</code> ancillary parameter in the combined coefficient and covariance matrices. Unweighted fits use <code>log(RSS / df.residual)</code>; pweighted fits follow <code>suest2</code>’s iweight-reference normalization. This nuisance parameter has no effect on <code>marginaleffects</code> predictions.</p>
+</div>
+<div class="section level2">
+<h2 id="multiple-imputation">Multiple imputation<a class="anchor" aria-label="anchor" href="#multiple-imputation"></a>
+</h2>
+<p>Pool compatible SUEST systems fitted in separate imputed datasets with <code><a href="reference/suest_mi.html">suest_mi()</a></code>:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest_mi.html">suest_mi</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="va">fit_imp1</span>, <span class="va">fit_imp2</span>, <span class="va">fit_imp3</span>, <span class="va">fit_imp4</span>, <span class="va">fit_imp5</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<p><code><a href="https://amices.org/mice/reference/with.mids.html" class="external-link">mice::with()</a></code> results can be pooled directly when each imputation fits the same SUEST system:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">analyses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fu"><a href="reference/suest.html">suest</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span><span class="op">)</span>,</span>
+<span>  model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span></span>
+<span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest_mi.html">suest_mi</a></span><span class="op">(</span><span class="va">analyses</span><span class="op">)</span></span></code></pre></div>
+<p>The result of <code>with(mitools::imputationList(...), suest(...))</code> can likewise be passed directly to <code><a href="reference/suest_mi.html">suest_mi()</a></code>.</p>
+<p>The function applies Rubin’s rules to the complete joint coefficient vector, preserving cross-model covariance within and between imputations. Coefficient hypotheses and their pooled standard errors work through <code><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">marginaleffects::hypotheses()</a></code>. Predictions, slopes, and comparisons are not yet exposed for pooled objects because nonlinear estimands must be estimated within each imputation and then pooled.</p>
+</div>
+<div class="section level2">
+<h2 id="cluster-robust-covariance">Cluster-robust covariance<a class="anchor" aria-label="anchor" href="#cluster-robust-covariance"></a>
+</h2>
+<p>Use <code>cluster</code> to aggregate the joint score contributions before constructing the covariance matrix:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base</span>, <span class="va">adjusted</span>, cluster <span class="op">=</span> <span class="st">"person_id"</span><span class="op">)</span></span></code></pre></div>
+<p>The argument accepts one or more cluster-column names, or a list of cluster IDs aligned to the estimation sample of each model. Shared observations must have the same cluster ID in every model. Completely disjoint observations can share a cluster, so their cross-model covariance need not be zero. The resulting object remains directly compatible with <code>marginaleffects</code>. Supported panel systems default to clustering on the panel identifier; a supplied higher-level cluster must contain whole panels.</p>
+</div>
+<div class="section level2">
+<h2 id="probability-weights">Probability weights<a class="anchor" aria-label="anchor" href="#probability-weights"></a>
+</h2>
+<p>Version 0.1.4 adds explicit probability-weight support. Fit each component model with <code>weights=</code> and declare their interpretation when combining the models:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">base</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, weights <span class="op">=</span> <span class="va">pw</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
+<span><span class="va">adjusted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span> <span class="op">+</span> <span class="va">mediator</span>, weights <span class="op">=</span> <span class="va">pw</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
+<span><span class="va">combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base</span>, <span class="va">adjusted</span>, weight_type <span class="op">=</span> <span class="st">"pweight"</span><span class="op">)</span></span></code></pre></div>
+<p>Pweights must be finite and strictly positive. Their evaluated values must agree for observations included in any pair of models. They may differ for observations unique to one model, including completely disjoint samples. To calculate a sampling-weighted average with <code>marginaleffects</code>, supply the weight column using <code>wts</code>, such as <code>wts = "pw"</code>. With model-specific estimation samples, use <code>suest_newdata(combined)</code> and <code>wts = ".suest_weight"</code>.</p>
+<p>Pweights are supported for linear, binary logit/probit, Poisson, negative-binomial, ordered logit/probit, and multinomial logit models. They are not yet supported for complementary-log-log, other general GLMs, or fractional response models.</p>
 </div>
 <div class="section level2">
 <h2 id="worked-examples">Worked examples<a class="anchor" aria-label="anchor" href="#worked-examples"></a>
@@ -117,6 +171,20 @@
 </ol>
 <p>It also documents cross-engine comparisons using <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code> and <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code>.</p>
 <p>Bias-reduced, adjusted-score, Firth, and penalized GLM fits, including <code><a href="https://rdrr.io/pkg/brglm2/man/brglmFit.html" class="external-link">brglm2::brglmFit()</a></code>, are rejected rather than being treated incorrectly as ordinary maximum-likelihood GLMs.</p>
+<div class="section level3">
+<h3 id="restricted-survey-weighted-models">Restricted survey-weighted models<a class="anchor" aria-label="anchor" href="#restricted-survey-weighted-models"></a>
+</h3>
+<p>Fit Gaussian identity or binary <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit models from one common one-stage survey design:</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="va">psu</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">strata</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">w</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
+<span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">yb</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">design</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">yb</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, <span class="va">design</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/suest.html">suest</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">m2</span>, survey_design <span class="op">=</span> <span class="va">design</span>, observation_id <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes</a></span><span class="op">(</span><span class="va">fit</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="fu"><a href="reference/suest_newdata.html">suest_newdata</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>, wts <span class="op">=</span> <span class="st">".suest_weight"</span><span class="op">)</span></span></code></pre></div>
+<p>Keep <code>design</code> as the full sampled design if either model uses a domain/subset. The joint covariance incorporates strata, PSU totals, and optional one-stage FPCs. Survey systems contain coefficients only; Gaussian and binary fits are not mixed in the same survey system. Replicate weights, multistage designs, calibration, PPS designs, and other survey families remain deferred. Lonely-PSU settings are restricted to <code>fail</code>, <code>remove</code>, or <code>certainty</code>, with domain-lonely adjustments disabled. Predictions/effects use the joint coefficient covariance and treat averaging covariates as fixed. Default inference remains asymptotic normal; the design DF is recorded in <code>fit$survey$design_df</code>.</p>
+<p>The certified Gaussian route matches six deterministic stacked Stata systems to machine precision. The binary gate shows the same numerical parity for survey logit. Survey probit coefficient estimates agree across R and Stata, but their finite-sample sandwich covariances use different breads: <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> uses expected/Fisher information, while the returned Stata covariance is reproduced by an observed-information bread. The R implementation preserves the native <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm()</a></code> covariance.</p>
+</div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="links">

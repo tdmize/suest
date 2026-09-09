@@ -9,15 +9,16 @@
   are reconstructed from the retained final GLM working residuals,
   working weights, and native expected-information bread, zero-padded to
   the full common design, and required to reproduce each native
-  `svyglm()` covariance block before the joint covariance is formed.
-  Focused coverage includes identical, overlapping, and disjoint
-  domains, factors, formula offsets, and first-stage FPCs. Returned
-  Stata 19.5 systems confirm logit coefficient/covariance parity. Probit
-  coefficients agree, but the returned Stata covariance is reproduced by
-  an observed-information bread whereas `svyglm()` uses expected/Fisher
-  information; the R route deliberately preserves its native covariance
-  convention rather than forcing cross-engine finite-sample VCE
-  equality.
+  [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) covariance
+  block before the joint covariance is formed. Focused coverage includes
+  identical, overlapping, and disjoint domains, factors, formula
+  offsets, and first-stage FPCs. Returned Stata 19.5 systems confirm
+  logit coefficient/covariance parity. Probit coefficients agree, but
+  the returned Stata covariance is reproduced by an observed-information
+  bread whereas [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
+  uses expected/Fisher information; the R route deliberately preserves
+  its native covariance convention rather than forcing cross-engine
+  finite-sample VCE equality.
 
 - Certified the survey binary-response increment under R 4.3.3 and
   `survey` 4.5. The original certification used `marginaleffects`
@@ -32,7 +33,8 @@
 - Added initial survey linear-model support through `survey_design =`
   and explicit observation-ID columns. Joint coefficient covariance uses
   one-stage PSU/stratum linearization, including FPCs and model-specific
-  domains, and is checked against each native `svyglm()` covariance.
+  domains, and is checked against each native
+  [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) covariance.
   This route excludes survey `lnvar`, nonlinear survey families, and
   complex design extensions.
 

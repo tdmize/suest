@@ -1,7 +1,7 @@
 # Stack the estimation samples from a SUEST object
 
 Creates a data frame containing each component model's own estimation
-sample. This is useful when the two models were fitted on different
+sample. This is useful when component models were fitted on different
 samples and marginal effects should be averaged separately within each
 model's observed covariate distribution.
 
@@ -20,9 +20,11 @@ suest_newdata(object)
 
 ## Value
 
-A data frame with the component model frames stacked vertically and two
-internal columns, `.suest_model` and `.suest_rowid`, used to route rows
-to the correct component model.
+A data frame with the component model frames stacked vertically and
+internal columns `.suest_model` and `.suest_rowid`, used to route rows
+to the correct component model. For pweighted and survey models,
+`.suest_weight` contains each row's evaluated sampling weight and can be
+supplied to the `wts` argument of `marginaleffects` averaging functions.
 
 ## Examples
 

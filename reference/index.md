@@ -10,7 +10,7 @@ evaluation data
   [`vcov(`*`<suest_model>`*`)`](https://tdmize.github.io/suest/reference/suest.md)
   [`nobs(`*`<suest_model>`*`)`](https://tdmize.github.io/suest/reference/suest.md)
   [`print(`*`<suest_model>`*`)`](https://tdmize.github.io/suest/reference/suest.md)
-  : Combine two fitted models with seemingly unrelated estimation
+  : Combine fitted models with seemingly unrelated estimation
 - [`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
   [`coef(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)
   [`vcov(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)

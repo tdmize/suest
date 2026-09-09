@@ -1,10 +1,10 @@
 # Getting started with suest
 
 [`suest()`](https://tdmize.github.io/suest/reference/suest.md) combines
-two separately fitted models and supplies the joint robust covariance
-matrix needed to test whether predictions, marginal effects, or other
-quantities differ across models. The package leaves calculation and
-presentation of those quantities to
+two or more separately fitted models and supplies the joint robust
+covariance matrix needed to test whether predictions, marginal effects,
+or other quantities differ across models. The package leaves calculation
+and presentation of those quantities to
 [`marginaleffects`](https://marginaleffects.com/).
 
 The package implements the framework in Mize, Doan, and Long (2019). The
@@ -21,11 +21,11 @@ centered one-standard-deviation contrast around the regressor mean.
 ## Functions at a glance
 
 - [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
-  combines two fitted models and calculates their joint covariance
-  matrix.
+  combines two or more fitted models and calculates their joint
+  covariance matrix.
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-  stacks the two estimation samples so each model’s effects can be
-  averaged over its own sample.
+  stacks the estimation samples so each model’s effects can be averaged
+  over its own sample.
 - Standard `marginaleffects` functions—including
   [`predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
   [`avg_comparisons()`](https://rdrr.io/pkg/marginaleffects/man/comparisons.html),
@@ -71,16 +71,16 @@ effects <- avg_comparisons(combined, variables = "wt", newdata = dat)
 effects
 #> 
 #>     Group Estimate Std. Error     z Pr(>|z|)     S  2.5 % 97.5 %
-#>  Adjusted   -0.355     0.0184 -19.3   <0.001 273.3 -0.391 -0.319
 #>  Base       -0.277     0.0232 -11.9   <0.001 106.5 -0.322 -0.231
+#>  Adjusted   -0.355     0.0184 -19.3   <0.001 273.3 -0.391 -0.319
 #> 
 #> Term: wt
 #> Type: response
 #> Comparison: +1
 hypotheses(effects, hypothesis = difference ~ revpairwise)
 #> 
-#>           Hypothesis Estimate Std. Error     z Pr(>|z|)    S  2.5 %  97.5 %
-#>  (Adjusted) - (Base)  -0.0779     0.0141 -5.54   <0.001 25.0 -0.105 -0.0503
+#>           Hypothesis Estimate Std. Error    z Pr(>|z|)    S  2.5 % 97.5 %
+#>  (Base) - (Adjusted)   0.0779     0.0141 5.54   <0.001 25.0 0.0503  0.105
 ```
 
 The final command tests the difference between the two effects directly.
@@ -92,20 +92,125 @@ while the other is not.
 | Model | Supported functions |
 |----|----|
 | Linear regression | [`stats::lm()`](https://rdrr.io/r/stats/lm.html) |
-| Binary logit and probit | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
+| Binary logit, probit, and complementary-log-log | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
 | Poisson regression | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
+| Other GLMs with supported links | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
+| Fractional response | quasi-binomial logit, probit, complementary-log-log, or user-supplied log-log |
 | Negative binomial regression | [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html) |
+| Parametric survival and censored regression | [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html) with a common scale, including Gaussian interval regression |
+| Beta regression | [`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html) with logit, probit, complementary-log-log, or log-log mean links |
+| Zero-inflated Poisson and negative binomial | [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html) |
+| Truncated Gaussian regression | [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html) |
+| Direct Tobit regression | [`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html); predictions are the latent mean |
+| Instrumental-variable 2SLS | unweighted [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html) without absorbed fixed effects |
+| Heteroskedastic binary probit and logit | [`Rchoice::hetprob()`](https://rdrr.io/pkg/Rchoice/man/hetprob.html) |
+| Instrumental-variable probit ML | [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html); response predictions are average structural probabilities |
+| Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with common regressors across equations and `finalHessian = TRUE` |
+| Linear panel fixed, between, and random effects | unweighted [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects; balanced Swamy-Arora RE has closest Stata parity, while unbalanced RE can differ slightly |
+| Random-intercept Gaussian panel ML | unweighted `nlme::lme(method = "ML")`; variance components included |
+| Population-averaged GEE | unweighted [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html); Gaussian, binary, or Poisson with independence/exchangeable correlation |
 | Ordered logit and probit | [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html), restricted [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) |
 | Multinomial logit | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) |
 
 Models may use identical, partially overlapping, or disjoint samples.
-Supported cross-family comparisons are logit–probit, logit–linear,
-probit–linear, Poisson–negative binomial, and ordered logit–multinomial
-logit.
+All combinations of supported scalar-response models are allowed. All
+combinations of supported categorical-response models are allowed, and
+scalar and categorical models may be combined. Outputs on different
+response scales are labeled separately rather than treated as directly
+commensurate.
 
-Nonunit weights and offsets are not yet supported. Bias-reduced,
-adjusted-score, Firth, and penalized GLM fits are rejected because their
-estimating equations differ from ordinary maximum-likelihood GLM scores.
+Offsets are supported. Bias-reduced, adjusted-score, Firth, and
+penalized GLM fits are rejected because their estimating equations
+differ from ordinary maximum-likelihood GLM scores.
+
+Linear-model blocks also contain Stata-compatible `lnvar` ancillary
+parameters. Unweighted fits use `log(RSS / df.residual)`; pweighted fits
+reproduce `suest2`’s iweight-reference normalization. Their derivatives
+are zero for predictions and comparisons.
+
+## Cluster-robust covariance
+
+Supply a cluster column to aggregate the complete joint score system at
+the cluster level:
+
+``` r
+
+fit_clustered <- suest(base, adjusted, cluster = "person_id")
+avg_comparisons(fit_clustered, variables = "x", newdata = dat)
+```
+
+`cluster` can instead be a list with one vector, matrix, or data frame
+aligned to each model’s estimation sample. Shared observations must have
+matching cluster IDs. Disjoint rows may belong to the same cluster, in
+which case the cross-model covariance can be nonzero.
+
+Supported panel systems cluster on the panel identifier by default. A
+supplied higher-level cluster must contain whole panels.
+
+## Probability weights
+
+Version 0.1.4 supports probability weights for linear, binary
+logit/probit, Poisson, negative-binomial, ordered logit/probit, and
+multinomial logit models. R’s `weights=` argument does not identify a
+weight type, so the interpretation must be declared explicitly in
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md).
+
+``` r
+
+set.seed(376)
+weighted <- data.frame(x = rnorm(500), z = rnorm(500))
+weighted$mediator <- 0.5 * weighted$x - 0.3 * weighted$z + rnorm(500)
+weighted$pw <- exp(0.2 * weighted$z + 0.1 * rnorm(500))
+weighted$y <- 1 + 0.7 * weighted$x - 0.4 * weighted$z +
+  0.6 * weighted$mediator + rnorm(500)
+
+base_w <- lm(y ~ x + z, weights = pw, data = weighted)
+adjusted_w <- lm(y ~ x + z + mediator, weights = pw, data = weighted)
+fit_w <- suest(base_w, adjusted_w, model_names = c("Base", "Adjusted"),
+               weight_type = "pweight")
+fit_w
+#> Seemingly Unrelated Estimation
+#> Models: Base + Adjusted 
+#> Model types: Base=lm, Adjusted=lm 
+#> Model engines: Base=stats::lm, Adjusted=stats::lm 
+#> Comparison scale: fitted values 
+#> Weight type: pweight 
+#> Observations: Base=500, Adjusted=500 
+#> Overlapping observations: 500 
+#> Union observations: 500 
+#> Parameters: 9
+
+effects_w <- avg_comparisons(fit_w, variables = "x", newdata = weighted, wts = "pw")
+effects_w
+#> 
+#>     Group Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 %
+#>  Base        1.003     0.0537 18.7   <0.001 255.9 0.898  1.108
+#>  Adjusted    0.722     0.0480 15.0   <0.001 167.3 0.628  0.816
+#> 
+#> Term: x
+#> Type: response
+#> Comparison: +1
+hypotheses(effects_w, hypothesis = difference ~ revpairwise)
+#> 
+#>           Hypothesis Estimate Std. Error    z Pr(>|z|)    S 2.5 % 97.5 %
+#>  (Base) - (Adjusted)    0.281     0.0322 8.74   <0.001 58.6 0.218  0.345
+```
+
+Pweights must be finite and strictly positive. Their evaluated values
+must agree for observations included in any pair of models. They may
+differ on observations unique to one model, including completely
+disjoint samples. For separate estimation samples,
+[`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
+includes `.suest_weight`:
+
+``` r
+
+nd_w <- suest_newdata(fit_w)
+avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
+```
+
+The binary implementation uses the observed information matrix, matching
+Stata’s `suest` covariance for both links.
 
 ## Replicating Mize, Doan, and Long (2019)
 
