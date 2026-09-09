@@ -5,3 +5,5 @@
 docs/
 data-cache/
 *.Rcheck/
+suest_full_test_output.txt
+suest_full_test_results.csv

@@ -1,10 +1,10 @@
 Package: suest
 Title: Seemingly Unrelated Estimation for Comparing Model Predictions and Effects
-Version: 0.1.3
+Version: 0.1.4
 Authors@R:
     person("Trenton D.", "Mize", email = "tmize@purdue.edu",
            role = c("aut", "cre"))
-Description: Combines two separately fitted cross-sectional regression models
+Description: Combines two or more separately fitted regression models
     using seemingly unrelated estimation and constructs a joint model-robust
     covariance matrix from observation-level score contributions. The combined
     object integrates with 'marginaleffects' to compare predictions, slopes,
@@ -19,17 +19,33 @@ Depends:
 Imports:
     marginaleffects,
     MASS,
-    nnet,
     sandwich,
     stats
 Suggests:
+    betareg,
     brglm2,
+    censReg,
+    fixest,
+    geepack,
     glm2,
     haven,
+    mice,
+    mitools,
+    nlme,
     ordinal,
     knitr,
+    mvProbit,
+    mvtnorm,
+    nnet,
+    plm,
+    pscl,
     rmarkdown,
-    testthat (>= 3.0.0)
+    Rchoice,
+    survival,
+    survey (>= 4.2),
+    testthat (>= 3.0.0),
+    truncreg,
+    withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)

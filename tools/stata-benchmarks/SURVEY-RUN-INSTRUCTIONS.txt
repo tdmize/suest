@@ -1,0 +1,33 @@
+Survey linear-model benchmark, revision 2
+
+Place these TWO files in your current Stata working directory:
+  suest_r_survey_linear_benchmark.do
+  suest_r_survey_linear_benchmark.csv
+
+Run this exact command:
+  do suest_r_survey_linear_benchmark.do
+
+Return this ONE log file:
+  suest_r_survey_linear_benchmark_v2.log
+
+The do-file prints the installed suest2 path/version and runs six cases:
+1. Same sample, stratified design, no FPC.
+2. Same sample with stratum-specific FPCs.
+3. Partial overlap with FPCs.
+4. Disjoint observations sharing PSUs, with FPCs.
+5. Disjoint PSUs within the same strata; other PSUs outside both models.
+6. Disjoint strata.
+
+Each case prints native svy: regress coefficient/covariance results, attempts
+suest2, and prints a mathematically equivalent stacked survey regression that
+identifies the full joint covariance. Cases 1-2 use exactly the same subpop()
+expression for both stored models; cases 3-6 retain genuinely different model
+domains. Errors from suest2 are captured so the stacked reference and remaining
+cases still run. No Stata source files are changed. Expected completion marker:
+  SURVEY_LINEAR_BENCHMARK_V2_COMPLETE=1
+
+Revision 2 also imports all floating-point CSV columns as double precision.
+This is a comparison gate, not a claim that full Stata parity has already passed.
+R coefficient order is intercept, x, then z when present. Stata usually prints
+x, z, then _cons; comparison must align equation/term names. Any Stata ancillary
+parameters must be separated from the R coefficient-only survey route.
