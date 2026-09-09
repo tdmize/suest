@@ -115,7 +115,7 @@
 </ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.1" id="suest-011">suest 0.1.1<a class="anchor" aria-label="anchor" href="#suest-011"></a></h2>
-<ul><li><p>Made the acceptance-test runners remove stale global <code><a href="../reference/suest.html">suest()</a></code> and <code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> functions before <code><a href="https://devtools.r-lib.org/reference/load_all.html" class="external-link">devtools::load_all()</a></code>. This prevents a previously sourced standalone implementation from masking the package code.</p></li>
+<ul><li><p>Made the acceptance-test runners remove stale global <code><a href="../reference/suest.html">suest()</a></code> and <code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> functions before <code>devtools::load_all()</code>. This prevents a previously sourced standalone implementation from masking the package code.</p></li>
 <li><p>Added a test-runner guard and log entry confirming that tests use the package namespace and model-adapter implementation.</p></li>
 <li><p>Added a model-adapter layer that separates the statistical model family from the package or function used to fit it.</p></li>
 <li><p>Added tested support for <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code> binary logit, binary probit, and Poisson models.</p></li>

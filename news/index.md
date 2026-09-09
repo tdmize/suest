@@ -392,10 +392,8 @@
 - Made the acceptance-test runners remove stale global
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md) and
   [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-  functions before
-  [`devtools::load_all()`](https://devtools.r-lib.org/reference/load_all.html).
-  This prevents a previously sourced standalone implementation from
-  masking the package code.
+  functions before `devtools::load_all()`. This prevents a previously
+  sourced standalone implementation from masking the package code.
 
 - Added a test-runner guard and log entry confirming that tests use the
   package namespace and model-adapter implementation.
