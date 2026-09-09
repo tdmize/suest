@@ -36,3 +36,13 @@ jobs:
     - name: Run acceptance tests
       run: source("tools/acceptance-tests/run_all_tests.R")
       shell: Rscript {0}
+
+    - name: Upload acceptance-test diagnostics
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: acceptance-test-results
+        path: |
+          suest_full_test_output.txt
+          suest_full_test_results.csv
+        if-no-files-found: ignore

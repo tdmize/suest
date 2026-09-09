@@ -1,7 +1,7 @@
 # Survey binary-response final R validation — 2026-09-09
 
-Package: `suest` 0.1.4 certified candidate
-Runtime: R 4.3.3 on x86_64 Ubuntu 24.04.3 LTS
+Package: `suest` 0.1.4 certified candidate  
+Runtime: R 4.3.3 on x86_64 Ubuntu 24.04.3 LTS  
 Key versions in the original certification: `survey` 4.5,
 `marginaleffects` 0.31.0, `sandwich` 3.1-0, `MASS` 7.3-60.0.1
 

@@ -15,7 +15,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
 options(width = 100)
 ```
 
-`suest()` combines two separately fitted models and supplies the joint robust
+`suest()` combines two or more separately fitted models and supplies the joint robust
 covariance matrix needed to test whether predictions, marginal effects, or
 other quantities differ across models. The package leaves calculation and
 presentation of those quantities to
@@ -33,8 +33,8 @@ one-standard-deviation contrast around the regressor mean.
 
 ## Functions at a glance
 
-- `suest()` combines two fitted models and calculates their joint covariance matrix.
-- `suest_newdata()` stacks the two estimation samples so each model's effects
+- `suest()` combines two or more fitted models and calculates their joint covariance matrix.
+- `suest_newdata()` stacks the estimation samples so each model's effects
   can be averaged over its own sample.
 - Standard `marginaleffects` functions—including `predictions()`,
   `avg_comparisons()`, `avg_slopes()`, `hypotheses()`, and the plotting
@@ -76,19 +76,97 @@ other is not.
 | Model | Supported functions |
 |---|---|
 | Linear regression | `stats::lm()` |
-| Binary logit and probit | `stats::glm()`, `glm2::glm2()` |
+| Binary logit, probit, and complementary-log-log | `stats::glm()`, `glm2::glm2()` |
 | Poisson regression | `stats::glm()`, `glm2::glm2()` |
+| Other GLMs with supported links | `stats::glm()`, `glm2::glm2()` |
+| Fractional response | quasi-binomial logit, probit, complementary-log-log, or user-supplied log-log |
 | Negative binomial regression | `MASS::glm.nb()` |
+| Parametric survival and censored regression | `survival::survreg()` with a common scale, including Gaussian interval regression |
+| Beta regression | `betareg::betareg()` with logit, probit, complementary-log-log, or log-log mean links |
+| Zero-inflated Poisson and negative binomial | `pscl::zeroinfl()` |
+| Truncated Gaussian regression | `truncreg::truncreg()` |
+| Direct Tobit regression | `censReg::censReg()`; predictions are the latent mean |
+| Instrumental-variable 2SLS | unweighted `fixest::feols()` without absorbed fixed effects |
+| Heteroskedastic binary probit and logit | `Rchoice::hetprob()` |
+| Instrumental-variable probit ML | `Rchoice::ivpml()`; response predictions are average structural probabilities |
+| Bivariate probit | `mvProbit::mvProbit()` with common regressors across equations and `finalHessian = TRUE` |
+| Linear panel fixed, between, and random effects | unweighted `plm::plm()` with individual effects; balanced Swamy-Arora RE has closest Stata parity, while unbalanced RE can differ slightly |
+| Random-intercept Gaussian panel ML | unweighted `nlme::lme(method = "ML")`; variance components included |
+| Population-averaged GEE | unweighted `geepack::geeglm()`; Gaussian, binary, or Poisson with independence/exchangeable correlation |
 | Ordered logit and probit | `MASS::polr()`, restricted `ordinal::clm()` |
 | Multinomial logit | `nnet::multinom()` |
 
-Models may use identical, partially overlapping, or disjoint samples. Supported
-cross-family comparisons are logit–probit, logit–linear, probit–linear,
-Poisson–negative binomial, and ordered logit–multinomial logit.
+Models may use identical, partially overlapping, or disjoint samples. All
+combinations of supported scalar-response models are allowed. All combinations
+of supported categorical-response models are allowed, and scalar and
+categorical models may be combined. Outputs on different response scales are
+labeled separately rather than treated as directly commensurate.
 
-Nonunit weights and offsets are not yet supported. Bias-reduced,
-adjusted-score, Firth, and penalized GLM fits are rejected because their
-estimating equations differ from ordinary maximum-likelihood GLM scores.
+Offsets are supported. Bias-reduced, adjusted-score, Firth, and penalized GLM
+fits are rejected because their estimating equations differ from ordinary
+maximum-likelihood GLM scores.
+
+Linear-model blocks also contain Stata-compatible `lnvar` ancillary parameters.
+Unweighted fits use `log(RSS / df.residual)`; pweighted fits reproduce
+`suest2`'s iweight-reference normalization. Their derivatives are zero for
+predictions and comparisons.
+
+## Cluster-robust covariance
+
+Supply a cluster column to aggregate the complete joint score system at the
+cluster level:
+
+```{r cluster-example, eval=FALSE}
+fit_clustered <- suest(base, adjusted, cluster = "person_id")
+avg_comparisons(fit_clustered, variables = "x", newdata = dat)
+```
+
+`cluster` can instead be a list with one vector, matrix, or data frame aligned
+to each model's estimation sample. Shared observations must have matching
+cluster IDs. Disjoint rows may belong to the same cluster, in which case the
+cross-model covariance can be nonzero.
+
+Supported panel systems cluster on the panel identifier by default. A supplied
+higher-level cluster must contain whole panels.
+
+## Probability weights
+
+Version 0.1.4 supports probability weights for linear, binary logit/probit,
+Poisson, negative-binomial, ordered logit/probit, and multinomial logit models.
+R's `weights=` argument does not identify a
+weight type, so the interpretation must be declared explicitly in `suest()`.
+
+```{r pweight-example}
+set.seed(376)
+weighted <- data.frame(x = rnorm(500), z = rnorm(500))
+weighted$mediator <- 0.5 * weighted$x - 0.3 * weighted$z + rnorm(500)
+weighted$pw <- exp(0.2 * weighted$z + 0.1 * rnorm(500))
+weighted$y <- 1 + 0.7 * weighted$x - 0.4 * weighted$z +
+  0.6 * weighted$mediator + rnorm(500)
+
+base_w <- lm(y ~ x + z, weights = pw, data = weighted)
+adjusted_w <- lm(y ~ x + z + mediator, weights = pw, data = weighted)
+fit_w <- suest(base_w, adjusted_w, model_names = c("Base", "Adjusted"),
+               weight_type = "pweight")
+fit_w
+
+effects_w <- avg_comparisons(fit_w, variables = "x", newdata = weighted, wts = "pw")
+effects_w
+hypotheses(effects_w, hypothesis = difference ~ revpairwise)
+```
+
+Pweights must be finite and strictly positive. Their evaluated values must
+agree for observations included in any pair of models. They may differ on
+observations unique to one model, including completely disjoint samples. For separate
+estimation samples, `suest_newdata()` includes `.suest_weight`:
+
+```{r pweight-model-specific, eval=FALSE}
+nd_w <- suest_newdata(fit_w)
+avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
+```
+
+The binary implementation uses the observed information matrix, matching
+Stata's `suest` covariance for both links.
 
 ## Replicating Mize, Doan, and Long (2019)
 

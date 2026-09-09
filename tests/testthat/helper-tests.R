@@ -6,9 +6,10 @@ offdiag_vcov <- function(object) {
   ]
 }
 
-robust_vcov_direct <- function(model) {
+robust_vcov_direct <- function(model, correction = TRUE) {
   U <- sandwich::estfun(model)
   B <- sandwich::bread(model)
   n <- nrow(U)
-  B %*% crossprod(U) %*% B / n^2 * n / (n - 1)
+  factor <- if (correction) n / (n - 1) else 1
+  B %*% crossprod(U) %*% B / n^2 * factor
 }

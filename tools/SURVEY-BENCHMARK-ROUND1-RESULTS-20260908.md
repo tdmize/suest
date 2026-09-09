@@ -1,9 +1,9 @@
 # Survey benchmark round 1 results
 
-Date: 2026-09-08
-Stata: 19.5
-`suest2`: 1.0.0, 30aug2026
-Benchmark revision: 1
+Date: 2026-09-08  
+Stata: 19.5  
+`suest2`: 1.0.0, 30aug2026  
+Benchmark revision: 1  
 Completion marker: present
 
 ## Result
@@ -51,3 +51,4 @@ The revised gate:
 
 Full survey parity remains pending revision 2. Do not yet turn the returned
 values into permanent cross-language fixtures.
+

@@ -6,9 +6,16 @@
 \alias{vcov.suest_model}
 \alias{nobs.suest_model}
 \alias{print.suest_model}
-\title{Combine two fitted models with seemingly unrelated estimation}
+\title{Combine fitted models with seemingly unrelated estimation}
 \usage{
-suest(model1, model2, model_names = NULL)
+suest(
+  ...,
+  model_names = NULL,
+  observation_id = NULL,
+  cluster = NULL,
+  weight_type = NULL,
+  survey_design = NULL
+)
 
 \method{coef}{suest_model}(object, ...)
 
@@ -19,23 +26,52 @@ suest(model1, model2, model_names = NULL)
 \method{print}{suest_model}(x, ...)
 }
 \arguments{
-\item{model1, model2}{Two supported fitted model objects.}
+\item{...}{Two or more supported fitted model objects. For backward
+compatibility, a character vector supplied as the third unnamed argument is
+interpreted as \code{model_names} for a two-model system.}
 
-\item{model_names}{Optional character vector containing two display names.
-By default, the object names supplied in the call are used.}
+\item{model_names}{Optional character vector containing one display name per
+model. By default, the object names supplied in the call are used.}
+
+\item{observation_id}{Optional observation identifier used to align models
+fitted from different data objects. Supply one or more column names found in
+every model's original data, such as \code{"id"} or \code{c("id", "wave")},
+or a list containing an ID vector, matrix, or data frame already aligned to
+each model's estimation sample. IDs must be complete and unique within each
+model. The default \code{NULL} uses data-source identity and model-frame row
+names.}
+
+\item{cluster}{Optional cluster identifier for a joint cluster-robust
+covariance matrix. Supply one or more column names found in every model's
+original data, or a list containing a cluster vector, matrix, or data frame
+aligned to each model's estimation sample. Cluster IDs must be complete.
+Shared observations must have the same cluster ID in every model; disjoint
+observations may still share clusters across models. Supported panel systems
+default to the panel identifier when \code{cluster} is omitted.
+Supplied clusters for these models must contain whole panels.}
+
+\item{weight_type}{Optional weight interpretation. The default \code{NULL}
+preserves the unweighted behavior and rejects nonunit estimation weights. Use
+\code{"pweight"} to treat model weights as sampling weights. In version 0.1.4,
+pweights are supported for linear, binary logit/probit, Poisson,
+negative-binomial, ordered logit/probit, and multinomial logit models.}
+
+\item{survey_design}{Full common one-stage \code{survey::svydesign()} object for
+supported \code{survey::svyglm()} models: Gaussian identity or binary
+\code{quasibinomial()} logit/probit. Requires observation-ID column names.
+Retain the full design before domain subsetting and specify weights and clusters
+in the design, without \code{weight_type} or \code{cluster}.}
 
 \item{object, x}{A \code{"suest_model"} object.}
-
-\item{...}{Additional arguments, currently ignored.}
 }
 \value{
-An object of class \code{"suest_model"} containing the two fitted models,
-their joint coefficient vector, a joint model-robust covariance matrix,
-and sample-alignment information.
+An object of class \code{"suest_model"} containing the fitted models, their
+joint coefficient vector, a joint model-robust covariance matrix, and
+sample-alignment information.
 }
 \description{
-\code{suest()} combines two separately fitted models and constructs a joint
-model-robust covariance matrix from their observation-level score
+\code{suest()} combines two or more separately fitted models and constructs a
+joint model-robust covariance matrix from their observation-level score
 contributions. The returned object can be passed directly to
 \code{\link[marginaleffects:predictions]{marginaleffects::predictions()}},
 \code{\link[marginaleffects:avg_comparisons]{marginaleffects::avg_comparisons()}},
@@ -43,35 +79,112 @@ contributions. The returned object can be passed directly to
 \code{\link[marginaleffects:hypotheses]{marginaleffects::hypotheses()}}.
 }
 \details{
-Exactly two models are supported. Models can use identical, partially
-overlapping, or completely disjoint samples. When the model calls refer to
-the same data source, model-frame row names identify overlapping
-observations. Models fitted from different data objects are treated as
-disjoint because shared observations cannot be inferred safely without an
-identifier.
+Two or more models are supported. Models can use identical, partially
+overlapping, or completely disjoint samples. When the model calls refer to the
+same data source, model-frame row names identify overlapping observations.
+Models fitted from different data objects are treated as disjoint by default
+because shared observations cannot be inferred safely. Use
+\code{observation_id} to identify their common observations explicitly.
 
-Same-family comparisons are supported for all listed model types. The
-supported cross-family pairs are logit--probit, logit--linear,
-probit--linear, Poisson--negative binomial, and ordered
-logit--multinomial logit.
+All combinations of the supported scalar-response models can be combined,
+including models whose response variables or response scales differ. All
+combinations of the supported categorical-response models can be combined,
+and scalar and categorical models may appear in the same system. Results on
+different response scales are labeled separately for \code{marginaleffects}.
 
-Negative-binomial models include \code{log(theta)} in the joint parameter
-vector. Ordered and multinomial models use analytic score and
-observed-information calculations for stable robust covariance estimation.
+When \code{cluster} is supplied, observation-level score contributions are
+summed within the system-level clusters before the joint covariance is formed.
+Clusters can span observations from different, even disjoint, model samples.
 
-Offsets, nonunit estimation weights, and aliased parameters are not currently
-supported. Bias-reduced, adjusted-score, Firth, and penalized GLM fits are
-rejected because they do not use ordinary maximum-likelihood score equations.
+Ordinary linear models include an ancillary \code{lnvar} parameter, matching Stata's
+\code{regress}/\code{suest} parameterization. Unweighted fits use
+\code{log(RSS / df.residual)}; pweighted fits follow \code{suest2}'s
+reconstructed iweight-reference normalization. Negative-binomial models
+include \code{log(theta)} in the joint parameter vector. Ordered and
+multinomial models use analytic score and observed-information calculations
+for stable robust covariance estimation.
+
+Aliased parameters are not supported. Nonunit weights are rejected unless
+\code{weight_type = "pweight"}. Pweights must be finite and strictly positive.
+For observations included in any pair of models, evaluated weights must agree;
+weights may differ for observations unique to either model, including
+completely disjoint samples. Pweight support is available for linear, binary
+logit/probit, Poisson, negative-binomial, ordered logit/probit, and multinomial
+logit models.
+
+Bias-reduced, adjusted-score, Firth, and penalized GLM fits are rejected
+because they do not use ordinary maximum-likelihood score equations.
 }
+\section{Survey models}{
+Survey support combines coefficients from Gaussian identity-link and binary
+\code{quasibinomial()} logit/probit \code{svyglm()} fits under one common
+one-stage design. Gaussian and binary fits are not mixed in the same survey
+system. Strata and optional first-stage finite-population corrections are
+supported. Model-specific domains and missing outcomes are aligned by
+observation IDs, with zero influence outside each estimation sample. The full
+design retains PSUs outside all model samples. Each native coefficient
+covariance must be reproduced before the joint matrix is returned. Survey fits
+contain coefficients only and do not add ancillary parameters.
+
+Replicate-weight, multistage, two-phase, calibrated, raked, post-stratified,
+and PPS designs are unsupported. Lonely-PSU options are restricted to
+\code{fail}, \code{remove}, and \code{certainty}, with
+\code{survey.adjust.domain.lonely = FALSE}. A singleton stratum with a certainty
+FPC is supported under \code{fail}. Extra fitting weights are unsupported;
+place offsets in the model formula.
+
+Predictions and effects use the joint design-based coefficient covariance.
+Averaging treats the supplied covariate distribution as fixed and does not add
+design uncertainty from estimating that distribution. Use \code{suest_newdata()}
+and \code{wts = ".suest_weight"} for model-specific weighted averages. Default
+inference is asymptotic normal. The full design degrees of freedom are recorded
+in \code{$survey$design_df}; no automatic survey t or F adjustment is applied.
+}
+
 \section{Supported models}{
 \itemize{
 \item \code{\link[stats:lm]{stats::lm()}}
-\item binary logit and probit models from
+\item Restricted survey-weighted Gaussian identity and binary
+\code{quasibinomial()} logit/probit models from \code{survey::svyglm()}
+\item binary logit, probit, and complementary-log-log models from
 \code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
-\item Poisson log-link models from
-\code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
+\item Poisson log-link models from \code{\link[stats:glm]{stats::glm()}} or
+\code{glm2::glm2()}
+\item other GLMs using identity, log, logit, probit,
+complementary-log-log, or log-log links
+\item fractional-response GLMs using \code{quasibinomial()} with logit,
+probit, complementary-log-log, or a user-supplied log-log link
 \item negative-binomial log-link models from
 \code{\link[MASS:glm.nb]{MASS::glm.nb()}}
+\item parametric survival and censored-regression models from
+\code{survival::survreg()} with a common scale, including Gaussian interval
+regression
+\item beta regressions from \code{betareg::betareg()} using logit, probit,
+complementary-log-log, or log-log mean links
+\item Poisson and negative-binomial zero-inflated models from
+\code{pscl::zeroinfl()}
+\item truncated Gaussian regressions from \code{truncreg::truncreg()}
+\item left-, right-, and two-limit censored Gaussian regressions from
+\code{censReg::censReg()}; response-scale predictions are the latent mean
+\item unweighted two-stage least squares from \code{fixest::feols()} without
+absorbed fixed effects; the original data object must remain available
+\item heteroskedastic binary probit and logit from
+\code{Rchoice::hetprob()}
+\item maximum-likelihood instrumental-variable probit from
+\code{Rchoice::ivpml()}; response predictions use the average structural
+probability
+\item bivariate probit from \code{mvProbit::mvProbit()} when both equations
+use the same regressors; fit with \code{intGrad = TRUE} and
+\code{finalHessian = TRUE}
+\item unweighted individual fixed-effects, between-effects, and Swamy-Arora
+random-effects linear panel models from \code{plm::plm()}; balanced random-
+effects panels have the closest Stata parity, while unbalanced panels can
+retain small engine-specific differences
+\item unweighted single-level random-intercept Gaussian panel models from
+\code{nlme::lme()} fitted with \code{method = "ML"}
+\item unweighted GEE from \code{geepack::geeglm()}: Gaussian identity,
+binary logit/probit/cloglog, and Poisson log, with independence or
+exchangeable correlation and numeric outcomes
 \item ordered logit and probit models from
 \code{\link[MASS:polr]{MASS::polr()}}
 \item ordered logit and probit models from \code{ordinal::clm()} with flexible

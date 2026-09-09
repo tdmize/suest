@@ -35,7 +35,7 @@ run_suest_acceptance_tests <- function() {
   old_options <- options(warn = 1, width = 120, max.print = 200)
   on.exit(options(old_options), add = TRUE)
 
-  devtools::load_all(root, quiet = TRUE)
+  pkgload::load_all(root, quiet = TRUE)
 
   namespace <- asNamespace("suest")
   if (!exists(".suest_model_adapter", envir = namespace, inherits = FALSE))
@@ -88,9 +88,14 @@ run_suest_acceptance_tests <- function() {
 
   tests <- file.path(root, "tools", "acceptance-tests", "tests")
   source(file.path(tests, "test_paper_examples.R"))
+  source(file.path(tests, "test_pweights.R"))
+  source(file.path(tests, "test_pweights_extended.R"))
   source(file.path(tests, "test_invariants.R"))
   source(file.path(tests, "test_comparison_universe.R"))
+  source(file.path(tests, "test_multiple_models.R"))
+  source(file.path(tests, "test_glm_offsets.R"))
   source(file.path(tests, "test_model_adapters.R"))
+  source(file.path(tests, "test_extended_models.R"))
   source(file.path(tests, "test_validation.R"))
 
   results <- test_summary()

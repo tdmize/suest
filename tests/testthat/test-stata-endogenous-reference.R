@@ -18,3 +18,4 @@ test_that("IV probit matches the full returned Stata coefficient and covariance 
   second$hessian <- second$hessian * 0.5
   expect_equal(vcov(suest(first, second)), vcov(fit), tolerance = 1e-12)
 })
+

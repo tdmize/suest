@@ -1,35 +1,43 @@
 cat("\n\nVALIDATION AND FAILURE TESTS\n")
 
-test_case("Validation: unsupported Gaussian glm", {
+test_case("Validation: Gaussian glm is supported", {
   data <- datasets::mtcars
   g1 <- stats::glm(mpg ~ wt, family = stats::gaussian(), data = data)
   g2 <- stats::glm(mpg ~ wt + hp, family = stats::gaussian(), data = data)
-  expect_error(
-    suest(g1, g2),
-    "supported"
-  )
+  combined <- suest(g1, g2)
+  expect_true(all(is.finite(stats::coef(combined))))
+  expect_true(all(is.finite(stats::vcov(combined))))
+  expect_true(combined$nobs_overlap == nrow(data))
+  combined
 })
 
-test_case("Validation: unsupported binary logit-Poisson pair", {
+test_case("Validation: scalar-categorical pair is supported", {
   data <- datasets::mtcars
   data$am <- factor(data$am)
+  data$cyl_ord <- ordered(data$cyl)
   logit <- stats::glm(
     am ~ wt,
     family = stats::binomial(),
     data = data
   )
-  poisson <- stats::glm(
-    cyl ~ wt,
-    family = stats::poisson(),
-    data = data
+  ordered <- MASS::polr(
+    cyl_ord ~ wt,
+    data = data,
+    method = "logistic",
+    Hess = TRUE
   )
-  expect_error(
-    suest(logit, poisson),
-    "not supported"
+  combined <- suest(logit, ordered, model_names = c("Logit", "Ordered"))
+  effects <- marginaleffects::avg_comparisons(
+    combined,
+    variables = "wt",
+    newdata = data
   )
+  expect_true(nrow(effects) == 4L)
+  expect_true(all(is.finite(effects$std.error)))
+  effects
 })
 
-test_case("Validation: ordered logit-ordered probit is rejected", {
+test_case("Validation: ordered logit-ordered probit is supported", {
   data <- MASS::housing[
     rep(seq_len(nrow(MASS::housing)), MASS::housing$Freq),
     c("Sat", "Infl", "Type", "Cont")
@@ -47,13 +55,13 @@ test_case("Validation: ordered logit-ordered probit is rejected", {
     method = "probit",
     Hess = TRUE
   )
-  expect_error(
-    suest(ol, op),
-    "not supported"
-  )
+  combined <- suest(ol, op)
+  expect_true(all(is.finite(stats::coef(combined))))
+  expect_true(all(is.finite(stats::vcov(combined))))
+  expect_true(combined$nobs_overlap == nrow(data))
 })
 
-test_case("Validation: incompatible categorical outcome levels", {
+test_case("Validation: different categorical outcome levels are supported", {
   data <- datasets::iris
   data$Species2 <- factor(
     data$Species,
@@ -71,10 +79,11 @@ test_case("Validation: incompatible categorical outcome levels", {
     Hess = TRUE,
     trace = FALSE
   )
-  expect_error(
-    suest(m1, m2),
-    "same outcome categories"
-  )
+  combined <- suest(m1, m2, model_names = c("Forward", "Reverse"))
+  predictions <- marginaleffects::avg_predictions(combined, newdata = data)
+  expect_true(nrow(predictions) == 6L)
+  expect_true(all(is.finite(predictions$std.error)))
+  predictions
 })
 
 test_case("Validation: nonunit weights", {
@@ -87,7 +96,7 @@ test_case("Validation: nonunit weights", {
   )
 })
 
-test_case("Validation: offsets", {
+test_case("Validation: offsets are supported", {
   data <- datasets::warpbreaks
   p1 <- stats::glm(
     breaks ~ wool + offset(rep(0.5, nrow(data))),
@@ -99,10 +108,11 @@ test_case("Validation: offsets", {
     family = stats::poisson(),
     data = data
   )
-  expect_error(
-    suest(p1, p2),
-    "Offsets"
-  )
+  combined <- suest(p1, p2)
+  expect_true(all(is.finite(stats::coef(combined))))
+  expect_true(all(is.finite(stats::vcov(combined))))
+  expect_true(combined$nobs_overlap == nrow(data))
+  combined
 })
 
 test_case("Validation: aliased parameters", {

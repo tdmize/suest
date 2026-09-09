@@ -1,10 +1,10 @@
 # Survey linear-model cross-language certification
 
-Date: 2026-09-08
-R route: one-stage Gaussian identity `survey::svyglm()`
-Stata: 19.5
-`suest2`: 1.0.0, 30aug2026
-Benchmark revision: 2
+Date: 2026-09-08  
+R route: one-stage Gaussian identity `survey::svyglm()`  
+Stata: 19.5  
+`suest2`: 1.0.0, 30aug2026  
+Benchmark revision: 2  
 Completion marker: present
 
 ## Certification result

@@ -698,51 +698,44 @@ for (family_name in names(universe_specs)) {
 # Allowed cross-family pairs
 ############################################################
 
-cross_family_specs <- list(
-  list(
-    name = "logit-probit",
-    type1 = "logit",
-    type2 = "probit",
-    outcome1 = "y_bin",
-    outcome2 = "y_bin"
-  ),
-  list(
-    name = "logit-linear",
-    type1 = "logit",
-    type2 = "lm",
-    outcome1 = "y_bin",
-    outcome2 = "y_bin"
-  ),
-  list(
-    name = "probit-linear",
-    type1 = "probit",
-    type2 = "lm",
-    outcome1 = "y_bin",
-    outcome2 = "y_bin"
-  ),
-  list(
-    name = "Poisson-negative binomial",
-    type1 = "poisson",
-    type2 = "negbin",
-    outcome1 = "y_nb",
-    outcome2 = "y_nb"
-  ),
-  list(
-    name = "ordered-multinomial",
-    type1 = "ologit",
-    type2 = "multinom",
-    outcome1 = "y_ord",
-    outcome2 = "y_ord"
-  )
-)
-
 # Multinomial needs an unordered response with the same category labels.
 universe_data$y_ord_nom <- factor(
   universe_data$y_ord,
   levels = levels(universe_data$y_ord)
 )
 assign("universe_data", universe_data, envir = globalenv())
-cross_family_specs[[5L]]$outcome2 <- "y_ord_nom"
+
+scalar_types <- c("lm", "logit", "probit", "poisson", "negbin")
+scalar_outcomes <- c(
+  lm = "y_lm",
+  logit = "y_bin",
+  probit = "y_bin",
+  poisson = "y_pois",
+  negbin = "y_nb"
+)
+categorical_types <- c("ologit", "oprobit", "multinom")
+categorical_outcomes <- c(
+  ologit = "y_ord",
+  oprobit = "y_ord",
+  multinom = "y_ord_nom"
+)
+
+make_cross_family_specs <- function(types, outcomes) {
+  lapply(utils::combn(types, 2L, simplify = FALSE), function(pair) {
+    list(
+      name = paste(pair, collapse = "-"),
+      type1 = pair[1L],
+      type2 = pair[2L],
+      outcome1 = unname(outcomes[pair[1L]]),
+      outcome2 = unname(outcomes[pair[2L]])
+    )
+  })
+}
+
+cross_family_specs <- c(
+  make_cross_family_specs(scalar_types, scalar_outcomes),
+  make_cross_family_specs(categorical_types, categorical_outcomes)
+)
 
 for (specification in cross_family_specs) {
   local({
@@ -878,6 +871,50 @@ test_case("Comparison universe: separately filtered data objects are disjoint", 
 
   list(
     behavior = "different data objects treated as disjoint",
+    contrasts = nrow(result$differences)
+  )
+})
+
+test_case("Comparison universe: IDs align separate data objects", {
+  universe_early <- universe_data[universe_data$id <= 750, , drop = FALSE]
+  universe_late <- universe_data[universe_data$id >= 251, , drop = FALSE]
+  assign("universe_early", universe_early, envir = globalenv())
+  assign("universe_late", universe_late, envir = globalenv())
+
+  early <- universe_fit(
+    "logit",
+    "y_bin",
+    "x + mediator + z",
+    data_name = "universe_early"
+  )
+  late <- universe_fit(
+    "probit",
+    "y_bin_2",
+    "x + mediator + z",
+    data_name = "universe_late"
+  )
+  combined <- suest(
+    early,
+    late,
+    model_names = c("Early", "Late"),
+    observation_id = "id"
+  )
+
+  expect_true(combined$nobs_overlap == 500L)
+  expect_true(combined$nobs_union == 1000L)
+  expect_true(max(abs(offdiag_vcov(combined))) > 0)
+
+  result <- universe_effects(
+    combined,
+    variables = "x",
+    newdata = suest_newdata(combined),
+    model1 = "Early",
+    model2 = "Late"
+  )
+
+  list(
+    behavior = "explicit ID alignment across data objects",
+    overlap = combined$nobs_overlap,
     contrasts = nrow(result$differences)
   )
 })

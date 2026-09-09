@@ -1,7 +1,7 @@
 # Survey binary-response benchmark results — 2026-09-08
 
-Package: suest 0.1.4 development candidate
-R target: `survey::svyglm()` with `quasibinomial("logit")` or `quasibinomial("probit")`
+Package: suest 0.1.4 development candidate  
+R target: `survey::svyglm()` with `quasibinomial("logit")` or `quasibinomial("probit")`  
 Stata gate: Stata 19.5, `svy: logit` / `svy: probit`, `suest2` 1.0.0
 
 ## Returned gate

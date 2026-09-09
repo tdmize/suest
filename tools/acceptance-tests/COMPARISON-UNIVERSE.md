@@ -25,18 +25,15 @@ For every cell, the suite verifies:
 7. Category-specific effects are matched correctly for ordered and
    multinomial outcomes.
 
-The suite also tests every allowed cross-family pair on both the same sample
-and disjoint men/women samples:
+The suite also tests every pair of supported scalar-response families and every
+pair of supported categorical-response families on both the same sample and
+disjoint men/women samples. This includes all combinations among linear,
+binary logit, binary probit, Poisson, and negative-binomial models, as well as
+all combinations among ordered logit, ordered probit, and multinomial logit.
 
-- logit versus probit;
-- logit versus linear probability model;
-- probit versus linear probability model;
-- Poisson versus negative binomial;
-- ordered logit versus multinomial logit.
-
-Finally, a separate test confirms the documented behavior that models fitted
-from separately filtered data objects are treated as disjoint when common
-observations cannot be inferred safely.
+Finally, separate tests confirm that models fitted from separately filtered
+data objects are treated as disjoint by default and are aligned correctly when
+the user supplies an explicit observation identifier.
 
 
 ## Alternative engines

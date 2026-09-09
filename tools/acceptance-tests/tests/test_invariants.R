@@ -9,16 +9,25 @@ test_case("Invariants: two linear models", {
   m1 <- stats::lm(mpg ~ wt, data = data)
   m2 <- stats::lm(mpg ~ wt + hp, data = data)
   s <- suest(m1, m2, model_names = c("L1", "L2"))
+  linear_vcov_block <- function(object, model) {
+    index <- object$index[[model]]
+    index <- index[object$local_names[[model]] != "lnvar"]
+    out <- object$vcov[index, index, drop = FALSE]
+    local_names <- object$local_names[[model]]
+    local_names <- local_names[local_names != "lnvar"]
+    dimnames(out) <- list(local_names, local_names)
+    out
+  }
 
   check_basic_invariants(s)
   expect_near(
-    vcov_block(s, 1),
+    linear_vcov_block(s, 1),
     robust_vcov_direct(m1),
     1e-10,
     "linear block 1"
   )
   expect_near(
-    vcov_block(s, 2),
+    linear_vcov_block(s, 2),
     robust_vcov_direct(m2),
     1e-10,
     "linear block 2"
@@ -34,13 +43,13 @@ test_case("Invariants: two linear models", {
       m1,
       variables = "wt",
       newdata = data,
-      vcov = vcov_block(s, 1)
+      vcov = linear_vcov_block(s, 1)
     )$estimate,
     marginaleffects::avg_slopes(
       m2,
       variables = "wt",
       newdata = data,
-      vcov = vcov_block(s, 2)
+      vcov = linear_vcov_block(s, 2)
     )$estimate
   )
   expect_near(combined$estimate, separate, 1e-10, "linear slopes")

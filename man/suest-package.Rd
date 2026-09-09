@@ -5,20 +5,45 @@
 \alias{suest-package}
 \title{Seemingly Unrelated Estimation for Model Comparisons}
 \description{
-The \code{suest} package combines two separately fitted cross-sectional
-regression models into a single object with a joint model-robust covariance
+The \code{suest} package combines two or more separately fitted regression
+models into a single object with a joint model-robust covariance
 matrix. The combined object works with the
 \href{https://marginaleffects.com/}{marginaleffects package} to compare
 predictions, slopes, and average comparisons across models.
 }
 \section{Supported models}{
-\code{lm()}, binary logit and probit models fitted by \code{glm()} or
-\code{glm2::glm2()}, Poisson models fitted by either GLM engine,
+\code{lm()}, binary logit, probit, and complementary-log-log models fitted by
+\code{glm()} or \code{glm2::glm2()}, Poisson and other supported GLMs,
 negative-binomial models fitted by \code{\link[MASS:glm.nb]{MASS::glm.nb()}},
 ordered logit and probit models fitted by
 \code{\link[MASS:polr]{MASS::polr()}} or restricted
-\code{ordinal::clm()} specifications, and multinomial logit models fitted by
-\code{\link[nnet:multinom]{nnet::multinom()}}.
+\code{ordinal::clm()} specifications, multinomial logit models fitted by
+\code{\link[nnet:multinom]{nnet::multinom()}}, parametric survival and censored
+regression fitted by \code{survival::survreg()}, beta regression fitted by
+\code{betareg::betareg()}, zero-inflated Poisson and negative-binomial models
+fitted by \code{pscl::zeroinfl()}, truncated Gaussian regression fitted by
+\code{truncreg::truncreg()}, and direct Tobit models fitted by
+\code{censReg::censReg()}, and unweighted two-stage least squares fitted by
+\code{fixest::feols()} without absorbed fixed effects. Heteroskedastic binary
+probit and logit fitted by \code{Rchoice::hetprob()} are supported.
+Maximum-likelihood IV probit fitted by \code{Rchoice::ivpml()} and bivariate
+probit fitted by \code{mvProbit::mvProbit()} are supported with their documented
+adapter restrictions. Unweighted individual fixed-effects, between-effects,
+and Swamy-Arora random-effects linear panel models fitted by \code{plm::plm()}
+are supported; unbalanced random-effects fits can retain small engine-specific
+differences. Single-level random-intercept Gaussian models fitted by
+\code{nlme::lme()} with \code{method = "ML"} are supported, including both
+variance components. Unweighted GEE fitted by \code{geepack::geeglm()} is
+supported for Gaussian identity, binary logit/probit/cloglog, and Poisson log
+models with independence or exchangeable correlation. Explicit
+\code{weight_type = "pweight"} support is available for the model families
+corresponding to Stata \code{suest2}'s ordinary pweight route.
+Joint cluster-robust covariance is available through the \code{cluster}
+argument to \code{\link[=suest]{suest()}}.
+Compatible systems fitted in multiple imputed datasets can be pooled with
+\code{\link[=suest_mi]{suest_mi()}} using Rubin's rules. The initial MI interface
+supports joint coefficients, covariance, summaries, and coefficient-level
+hypotheses.
 }
 \section{Reference}{
 Mize, Trenton D., Long Doan, and J. Scott Long. 2019.

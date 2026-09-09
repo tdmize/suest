@@ -1,15 +1,17 @@
 #' Stack the estimation samples from a SUEST object
 #'
 #' Creates a data frame containing each component model's own estimation
-#' sample. This is useful when the two models were fitted on different samples
+#' sample. This is useful when component models were fitted on different samples
 #' and marginal effects should be averaged separately within each model's
 #' observed covariate distribution.
 #'
 #' @param object A `"suest_model"` returned by [suest()].
 #'
 #' @return A data frame with the component model frames stacked vertically and
-#'   two internal columns, `.suest_model` and `.suest_rowid`, used to route rows
-#'   to the correct component model.
+#'   internal columns `.suest_model` and `.suest_rowid`, used to route rows
+#'   to the correct component model. For pweighted and survey models, `.suest_weight`
+#'   contains each row's evaluated sampling weight and can be supplied to the
+#'   `wts` argument of `marginaleffects` averaging functions.
 #'
 #' @examples
 #' dat <- mtcars
@@ -27,6 +29,8 @@ suest_newdata <- function(object) {
     stop("'object' must be a suest_model.", call. = FALSE)
 
   reserved <- c(".suest_model", ".suest_rowid")
+  if (any(object$weight_type %in% c("pweight", "survey")))
+    reserved <- c(reserved, ".suest_weight")
   if (any(vapply(
     object$model_frames,
     function(x) any(reserved %in% names(x)),
@@ -53,6 +57,8 @@ suest_newdata <- function(object) {
 
     x$.suest_model <- object$model_names[i]
     x$.suest_rowid <- row_offset[i] + seq_len(nrow(x))
+    if (any(object$weight_type %in% c("pweight", "survey")))
+      x$.suest_weight <- object$model_weights[[i]]
     x
   })
 

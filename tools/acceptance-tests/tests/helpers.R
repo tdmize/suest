@@ -167,13 +167,20 @@ test_summary <- function() {
 require_test_packages <- function() {
   packages <- c(
     "brglm2",
+    "betareg",
+    "censReg",
+    "fixest",
     "glm2",
     "haven",
     "marginaleffects",
     "ordinal",
+    "pscl",
+    "Rchoice",
     "sandwich",
     "MASS",
-    "nnet"
+    "nnet",
+    "survival",
+    "truncreg"
   )
 
   missing <- packages[

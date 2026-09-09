@@ -146,6 +146,72 @@ test_that("nested comparisons work for every supported family", {
   }
 })
 
+test_that("all scalar and categorical cross-family pairs work", {
+  dat <- comparison_universe_data()
+  scalar_models <- list(
+    lm = stats::lm(y_lm ~ x + z, data = dat),
+    logit = stats::glm(y_bin ~ x + z, family = binomial(), data = dat),
+    probit = stats::glm(
+      y_bin ~ x + z,
+      family = binomial("probit"),
+      data = dat
+    ),
+    poisson = stats::glm(y_pois ~ x + z, family = poisson(), data = dat),
+    negbin = MASS::glm.nb(y_nb ~ x + z, data = dat)
+  )
+
+  dat$y_nom <- factor(dat$y_ord, levels = levels(dat$y_ord))
+  categorical_models <- list(
+    ologit = MASS::polr(
+      y_ord ~ x + z,
+      data = dat,
+      method = "logistic",
+      Hess = TRUE
+    ),
+    oprobit = MASS::polr(
+      y_ord ~ x + z,
+      data = dat,
+      method = "probit",
+      Hess = TRUE
+    ),
+    multinom = nnet::multinom(
+      y_nom ~ x + z,
+      data = dat,
+      Hess = TRUE,
+      trace = FALSE
+    )
+  )
+
+  for (models in list(scalar_models, categorical_models)) {
+    for (pair in utils::combn(names(models), 2L, simplify = FALSE)) {
+      fit <- suest(
+        models[[pair[1L]]],
+        models[[pair[2L]]],
+        model_names = pair
+      )
+      effects <- marginaleffects::avg_comparisons(
+        fit,
+        variables = "x",
+        newdata = dat
+      )
+      cross_block <- fit$vcov[
+        fit$index[[1L]],
+        fit$index[[2L]],
+        drop = FALSE
+      ]
+
+      expect_true(all(is.finite(fit$coefficients)), info = paste(pair, collapse = "+"))
+      expect_true(all(is.finite(fit$vcov)), info = paste(pair, collapse = "+"))
+      expect_true(all(is.finite(effects$estimate)), info = paste(pair, collapse = "+"))
+      expect_true(all(is.finite(effects$std.error)), info = paste(pair, collapse = "+"))
+      expect_true(
+        max(abs(cross_block)) > 0,
+        info = paste(pair, collapse = "+")
+      )
+    }
+  }
+})
+
 test_that("sex-stratified subset comparisons are disjoint", {
   dat <- comparison_universe_data()
 

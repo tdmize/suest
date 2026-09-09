@@ -1,7 +1,7 @@
 # SUEST R survey binary-response session closeout
 
-Implementation date: 2026-09-08
-Final validation: 2026-09-09
+Implementation date: 2026-09-08  
+Final validation: 2026-09-09  
 Package: suest 0.1.4 certified candidate
 
 ## Outcome

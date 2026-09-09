@@ -31,7 +31,7 @@ run_suest_model_adapter_tests <- function() {
   old_options <- options(warn = 1, width = 120, max.print = 200)
   on.exit(options(old_options), add = TRUE)
 
-  devtools::load_all(root, quiet = TRUE)
+  pkgload::load_all(root, quiet = TRUE)
 
   namespace <- asNamespace("suest")
   if (!exists(".suest_model_adapter", envir = namespace, inherits = FALSE))

@@ -1,8 +1,8 @@
 # SUEST R package development handoff — survey binary-response increment
 
-Implementation date: 2026-09-08
-Final R validation: 2026-09-09
-Package version: 0.1.4 certified candidate
+Implementation date: 2026-09-08  
+Final R validation: 2026-09-09  
+Package version: 0.1.4 certified candidate  
 Authoritative source for the next session: `suest_r_0.1.4_survey_binary_certified_20260909.zip`
 
 ## Immediate status
