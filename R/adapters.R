@@ -80,10 +80,189 @@
   tolower(link_call)
 }
 
+.suest_is_pglm <- function(model) {
+  inherits(model, "maxLik") &&
+    .suest_call_head(model) %in% c("pglm", "pglm::pglm") &&
+    is.function(model$objectiveFn) &&
+    is.environment(environment(model$objectiveFn))
+}
+
+.suest_pglm_environment <- function(model) {
+  if (!.suest_is_pglm(model))
+    stop("Internal error: invalid pglm model object.", call. = FALSE)
+
+  fit_environment <- environment(model$objectiveFn)
+  required <- c(
+    "data", "effect", "family", "formula", "id", "link", "model",
+    "X", "y"
+  )
+  if (!all(vapply(
+    required,
+    exists,
+    logical(1),
+    envir = fit_environment,
+    inherits = FALSE
+  )))
+    stop(
+      "The pglm fit does not retain the data needed to reconstruct its likelihood.",
+      call. = FALSE
+    )
+
+  fit_environment
+}
+
+.suest_pglm_formula <- function(model) {
+  get("formula", .suest_pglm_environment(model), inherits = FALSE)
+}
+
+.suest_pglm_xlevels <- function(model) {
+  frame <- get(
+    "data",
+    .suest_pglm_environment(model),
+    inherits = FALSE
+  )
+  factors <- vapply(frame, is.factor, logical(1))
+  lapply(frame[factors], levels)
+}
+
+.suest_glmmtmb_xlevels <- function(model) {
+  frame <- stats::model.frame(model)
+  variables <- all.vars(stats::delete.response(stats::terms(model)))
+  factors <- names(frame) %in% variables & vapply(frame, is.factor, logical(1))
+  lapply(frame[factors], levels)
+}
+
+.suest_normal_quadrature <- function(points) {
+  points <- as.integer(points)
+  if (length(points) != 1L || is.na(points) || points < 1L)
+    stop("Internal error: invalid normal-quadrature order.", call. = FALSE)
+
+  jacobi <- matrix(0, nrow = points, ncol = points)
+  if (points > 1L) {
+    off_diagonal <- sqrt(seq_len(points - 1L))
+    jacobi[cbind(seq_len(points - 1L), 2:points)] <- off_diagonal
+    jacobi[cbind(2:points, seq_len(points - 1L))] <- off_diagonal
+  }
+  decomposition <- eigen(jacobi, symmetric = TRUE)
+  order <- order(decomposition$values)
+  list(
+    nodes = decomposition$values[order],
+    weights = decomposition$vectors[1L, order]^2
+  )
+}
+
+.suest_glmmtmb_random_info <- function(model) {
+  random <- model$modelInfo$reTrms$cond
+  if (!is.list(random) || length(random$cnms) != 1L ||
+      length(random$flist) != 1L ||
+      !identical(unname(random$cnms[[1L]]), "(Intercept)"))
+    stop(
+      paste0(
+        "glmmTMB support is currently limited to one grouping variable ",
+        "with one conditional random intercept."
+      ),
+      call. = FALSE
+    )
+
+  structure <- model$modelInfo$reStruc$condReStruc
+  if (length(structure) != 1L || structure[[1L]]$blockSize != 1L ||
+      structure[[1L]]$blockNumTheta != 1L)
+    stop(
+      "Structured glmmTMB random effects are not supported.",
+      call. = FALSE
+    )
+
+  list(
+    name = names(random$flist)[1L],
+    id = droplevels(random$flist[[1L]])
+  )
+}
+
 .suest_model_adapter <- function(model) {
   if (inherits(model, "svyglm"))
     stop("Survey models require the dedicated survey_design route in suest().", call. = FALSE)
   .suest_reject_adjusted_glm(model)
+
+  if (inherits(model, "glmmTMB")) {
+    family <- model$modelInfo$family
+    model_type <- if (identical(family$family, "binomial") &&
+                      identical(family$link, "logit")) {
+      "glmm_logit_ri"
+    } else if (identical(family$family, "poisson") &&
+               identical(family$link, "log")) {
+      "glmm_poisson_ri"
+    } else {
+      stop(
+        paste0(
+          "glmmTMB support is currently limited to binomial-logit and ",
+          "Poisson-log models with one conditional random intercept."
+        ),
+        call. = FALSE
+      )
+    }
+
+    random <- .suest_glmmtmb_random_info(model)
+    if (length(model$modelInfo$reStruc$ziReStruc) ||
+        length(model$modelInfo$reStruc$dispReStruc) ||
+        length(glmmTMB::fixef(model)$zi) ||
+        length(glmmTMB::fixef(model)$disp))
+      stop(
+        "Zero-inflation and dispersion submodels are not supported for glmmTMB models.",
+        call. = FALSE
+      )
+    if (isTRUE(model$modelInfo$REML))
+      stop("glmmTMB models must use maximum likelihood.", call. = FALSE)
+    if (!is.null(model$modelInfo$priors) && nrow(model$modelInfo$priors))
+      stop("glmmTMB models with priors are not supported.", call. = FALSE)
+
+    fit_data <- model$obj$env$data
+    if (!is.null(model$call$weights) ||
+        length(fit_data$weights) != nrow(model$frame) ||
+        any(!is.finite(fit_data$weights)) || any(fit_data$weights != 1))
+      stop("Weighted glmmTMB models are not supported.", call. = FALSE)
+    if (length(fit_data$offset) != nrow(model$frame) ||
+        any(!is.finite(fit_data$offset)) || any(fit_data$offset != 0))
+      stop("Offsets are not supported for glmmTMB models.", call. = FALSE)
+    if (model_type == "glmm_logit_ri" &&
+        (length(fit_data$size) != nrow(model$frame) ||
+         any(fit_data$size != 1)))
+      stop(
+        "Grouped-binomial glmmTMB responses are not supported; use Bernoulli 0/1 outcomes.",
+        call. = FALSE
+      )
+    if (length(random$id) != nrow(model$frame) || anyNA(random$id))
+      stop(
+        "The glmmTMB grouping variable does not align with its estimation sample.",
+        call. = FALSE
+      )
+    if (!identical(model$fit$convergence, 0L) || !isTRUE(model$sdr$pdHess))
+      stop(
+        "The glmmTMB model must converge with a positive-definite Hessian.",
+        call. = FALSE
+      )
+
+    theta <- model$fit$par[names(model$fit$par) == "theta"]
+    if (length(theta) != 1L || !is.finite(theta) ||
+        exp(theta) <= sqrt(.Machine$double.eps))
+      stop(
+        paste0(
+          "The glmmTMB random-intercept standard deviation must be finite ",
+          "and strictly away from its zero boundary."
+        ),
+        call. = FALSE
+      )
+
+    if (utils::packageVersion("glmmTMB") < "1.1.14")
+      stop(
+        paste0(
+          "This glmmTMB version does not expose the full cluster scores and ",
+          "covariance required by suest; use glmmTMB 1.1.14 or later."
+        ),
+        call. = FALSE
+      )
+
+    return(list(engine = "glmmTMB::glmmTMB", type = model_type))
+  }
 
   if (inherits(model, "geeglm")) {
     family <- model$family$family
@@ -109,6 +288,98 @@
         (family == "poisson" && any(y < 0 | abs(y - round(y)) > 1e-8)))
       stop("GEE outcomes must be numeric: binary 0/1, integer counts, or Gaussian responses.", call. = FALSE)
     return(list(engine = "geepack::geeglm", type = "panel_gee"))
+  }
+
+  if (.suest_is_pglm(model)) {
+    fit_environment <- .suest_pglm_environment(model)
+    family <- get("family", fit_environment, inherits = FALSE)
+    link <- get("link", fit_environment, inherits = FALSE)
+    panel_model <- get("model", fit_environment, inherits = FALSE)
+    effect <- get("effect", fit_environment, inherits = FALSE)
+    terms <- attr(get("data", fit_environment, inherits = FALSE), "terms")
+    parameters <- stats::coef(model)
+
+    binary <- identical(family, "binomial") && link %in% c("logit", "probit")
+    poisson <- identical(family, "poisson") && identical(link, "log")
+    if ((!binary && !poisson) || !identical(panel_model, "random") ||
+        !identical(effect, "individual"))
+      stop(
+        paste0(
+          "pglm support is currently limited to individual random-effects ",
+          "binary logit/probit or Poisson log models."
+        ),
+        call. = FALSE
+      )
+    if (binary) {
+      quadrature <- get("rn", fit_environment, inherits = FALSE)
+      if (!is.list(quadrature) || length(quadrature$nodes) != 12L ||
+          length(quadrature$weights) != 12L)
+        stop(
+          "Refit the pglm random-effects binary model with R = 12.",
+          call. = FALSE
+        )
+    }
+    if (poisson) {
+      other <- get("other", fit_environment, inherits = FALSE)
+      if (!identical(other, "sd"))
+        stop(
+          paste0(
+            "Refit the pglm random-effects Poisson model with other = \"sd\" ",
+            "so its ancillary parameter is the natural-scale gamma variance."
+          ),
+          call. = FALSE
+        )
+    }
+    if (!is.null(terms) && length(attr(terms, "offset")))
+      stop(
+        "Offsets are not supported for pglm random-effects models.",
+        call. = FALSE
+      )
+    if (!is.null(model$call$weights))
+      stop(
+        "Weighted pglm random-effects models are not supported.",
+        call. = FALSE
+      )
+    if (!identical(model$code, 0L))
+      stop(
+        "The pglm random-effects model did not converge.",
+        call. = FALSE
+      )
+    if (binary) {
+      if (!"sigma" %in% names(parameters) ||
+          !is.finite(unname(parameters["sigma"])) ||
+          abs(unname(parameters["sigma"])) <= sqrt(.Machine$double.eps))
+        stop(
+          paste0(
+            "The pglm random-intercept standard deviation must be finite and ",
+            "strictly away from its zero boundary."
+          ),
+          call. = FALSE
+        )
+    } else if (!is.finite(parameters[length(parameters)]) ||
+               parameters[length(parameters)] <= sqrt(.Machine$double.eps)) {
+      stop(
+        paste0(
+          "The pglm gamma random-effect variance must be finite and strictly ",
+          "away from its zero boundary."
+        ),
+        call. = FALSE
+      )
+    }
+    if (!is.matrix(model$gradientObs) || !is.matrix(model$hessian))
+      stop(
+        "The pglm fit must retain its analytic scores and Hessian.",
+        call. = FALSE
+      )
+
+    type <- if (identical(link, "logit")) {
+      "panel_logit_re"
+    } else if (identical(link, "probit")) {
+      "panel_probit_re"
+    } else {
+      "panel_poisson_re"
+    }
+    return(list(engine = "pglm::pglm", type = type))
   }
 
   if (inherits(model, "mvProbit")) {
@@ -370,6 +641,24 @@
   if (identical(engine, "Rchoice::ivpml"))
     return(model$mf)
 
+  if (identical(engine, "glmmTMB::glmmTMB")) {
+    frame <- as.data.frame(stats::model.frame(model))
+    formula <- stats::formula(model)
+    original <- try(
+      eval(model$call$data, envir = environment(formula)),
+      silent = TRUE
+    )
+    if (!inherits(original, "try-error") && is.data.frame(original)) {
+      index <- match(rownames(frame), rownames(original))
+      if (!anyNA(index)) {
+        extra <- setdiff(names(original), names(frame))
+        for (variable in extra)
+          frame[[variable]] <- original[[variable]][index]
+      }
+    }
+    return(frame)
+  }
+
   if (identical(engine, "mvProbit::mvProbit")) {
     fit_environment <- environment(model$objectiveFn)
     formula <- if (is.environment(fit_environment) &&
@@ -420,6 +709,37 @@
     extra <- setdiff(names(data), names(frame))
     for (variable in extra)
       frame[[variable]] <- data[[variable]][index]
+    return(frame)
+  }
+
+  if (identical(engine, "pglm::pglm")) {
+    fit_environment <- .suest_pglm_environment(model)
+    retained <- get("data", fit_environment, inherits = FALSE)
+    frame <- as.data.frame(retained)
+    attr(frame, "terms") <- attr(retained, "terms")
+    rownames(frame) <- rownames(retained)
+
+    index <- attr(retained, "index")
+    if (is.data.frame(index) && nrow(index) == nrow(frame)) {
+      for (variable in names(index))
+        if (!variable %in% names(frame))
+          frame[[variable]] <- index[[variable]]
+    }
+
+    formula <- .suest_pglm_formula(model)
+    original <- try(
+      eval(model$call$data, envir = environment(formula)),
+      silent = TRUE
+    )
+    if (!inherits(original, "try-error") && is.data.frame(original)) {
+      original_index <- match(rownames(frame), rownames(original))
+      if (!anyNA(original_index)) {
+        extra <- setdiff(names(original), names(frame))
+        for (variable in extra)
+          frame[[variable]] <- original[[variable]][original_index]
+      }
+    }
+
     return(frame)
   }
 
@@ -511,6 +831,10 @@
 
 .suest_set_parameters <- function(model, parameters, type, engine) {
   engine <- .suest_engine_name(engine)
+  if (type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+    model$suest_parameters <- parameters
+    return(model)
+  }
   if (identical(engine, "ordinal::clm")) {
     n_alpha <- length(model$alpha)
     n_beta <- length(model$beta)
@@ -640,6 +964,18 @@
     return(model)
   }
 
+  if (type %in% c("panel_logit_re", "panel_probit_re")) {
+    model$estimate[] <- parameters[names(model$estimate)]
+    return(model)
+  }
+
+  if (type == "panel_poisson_re") {
+    beta_names <- names(model$estimate)[-length(model$estimate)]
+    model$estimate[beta_names] <- parameters[beta_names]
+    model$estimate[length(model$estimate)] <- parameters["alpha"]
+    return(model)
+  }
+
   if (type == "biprobit") {
     raw_names <- names(model$estimate)
     beta_names <- raw_names[-length(raw_names)]
@@ -698,6 +1034,49 @@
     return(model$family$linkinv(eta))
   }
   engine <- .suest_engine_name(engine)
+
+  if (model_type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+    parameters <- if (!is.null(model$suest_parameters)) {
+      model$suest_parameters
+    } else {
+      .suest_extract_parameters(model, model_type, engine)
+    }
+    beta_names <- setdiff(names(parameters), "log_sigma")
+    terms <- stats::delete.response(stats::terms(model))
+    prediction_frame <- stats::model.frame(
+      terms, newdata, na.action = stats::na.pass,
+      xlev = .suest_glmmtmb_xlevels(model)
+    )
+    X <- stats::model.matrix(
+      terms, prediction_frame,
+      contrasts.arg = model$modelInfo$contrasts$cond[
+        intersect(names(model$modelInfo$contrasts$cond), names(prediction_frame))
+      ]
+    )
+    missing <- setdiff(beta_names, colnames(X))
+    if (length(missing))
+      stop(
+        "Unable to construct the glmmTMB random-intercept prediction matrix.",
+        call. = FALSE
+      )
+    eta <- as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+    if (identical(type, "link"))
+      return(eta)
+
+    sigma <- exp(unname(parameters["log_sigma"]))
+    if (model_type == "glmm_poisson_ri")
+      return(exp(eta + sigma^2/2))
+
+    quadrature <- .suest_normal_quadrature(20L)
+    probabilities <- vapply(
+      seq_along(quadrature$nodes),
+      function(i) quadrature$weights[i] * stats::plogis(
+        eta + sigma * quadrature$nodes[i]
+      ),
+      numeric(length(eta))
+    )
+    return(rowSums(probabilities))
+  }
 
   if (model_type == "censreg") {
     beta <- stats::coef(model)
@@ -765,6 +1144,76 @@
         call. = FALSE
       )
     return(as.numeric(X[, names(beta), drop = FALSE] %*% beta))
+  }
+
+  if (model_type %in% c("panel_logit_re", "panel_probit_re")) {
+    fit_environment <- .suest_pglm_environment(model)
+    training <- get("data", fit_environment, inherits = FALSE)
+    training_matrix <- get("X", fit_environment, inherits = FALSE)
+    terms <- stats::delete.response(attr(training, "terms"))
+    prediction_frame <- stats::model.frame(
+      terms,
+      newdata,
+      na.action = stats::na.pass,
+      xlev = .suest_pglm_xlevels(model)
+    )
+    X <- stats::model.matrix(
+      terms,
+      prediction_frame,
+      contrasts.arg = attr(training_matrix, "contrasts")
+    )
+    parameters <- stats::coef(model)
+    beta_names <- setdiff(names(parameters), "sigma")
+    missing <- setdiff(beta_names, colnames(X))
+    if (length(missing))
+      stop(
+        "Unable to construct the pglm random-effects binary prediction matrix.",
+        call. = FALSE
+      )
+    eta <- as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+    if (identical(type, "link"))
+      return(eta)
+
+    sigma <- unname(parameters["sigma"])
+    quadrature <- get("rn", fit_environment, inherits = FALSE)
+    inverse_link <- if (model_type == "panel_logit_re") {
+      stats::plogis
+    } else {
+      stats::pnorm
+    }
+    probabilities <- vapply(
+      seq_along(quadrature$nodes),
+      function(i) quadrature$weights[i] * inverse_link(
+        eta + sqrt(2) * sigma * quadrature$nodes[i]
+      ),
+      numeric(length(eta))
+    )
+    return(rowSums(probabilities) / sqrt(pi))
+  }
+
+  if (model_type == "panel_poisson_re") {
+    fit_environment <- .suest_pglm_environment(model)
+    training <- get("data", fit_environment, inherits = FALSE)
+    training_matrix <- get("X", fit_environment, inherits = FALSE)
+    terms <- stats::delete.response(attr(training, "terms"))
+    prediction_frame <- stats::model.frame(
+      terms, newdata, na.action = stats::na.pass,
+      xlev = .suest_pglm_xlevels(model)
+    )
+    X <- stats::model.matrix(
+      terms, prediction_frame,
+      contrasts.arg = attr(training_matrix, "contrasts")
+    )
+    parameters <- stats::coef(model)
+    beta_names <- names(parameters)[-length(parameters)]
+    missing <- setdiff(beta_names, colnames(X))
+    if (length(missing))
+      stop(
+        "Unable to construct the pglm random-effects Poisson prediction matrix.",
+        call. = FALSE
+      )
+    eta <- as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+    return(if (identical(type, "link")) eta else exp(eta))
   }
 
   if (model_type == "biprobit") {

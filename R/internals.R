@@ -11,7 +11,8 @@
     "fraclogit", "fracprobit", "fraccloglog", "fracloglog", "survreg", "betareg",
     "zip", "zinb", "truncreg", "censreg", "ivreg", "ivprobit", "hetprobit",
     "hetlogit", "biprobit", "panel_fe", "panel_be", "panel_re", "panel_ml",
-    "panel_gee"
+    "panel_gee", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
+    "glmm_logit_ri", "glmm_poisson_ri"
   )
   categorical <- types %in% c("ologit", "oprobit", "multinom")
 
@@ -19,8 +20,11 @@
     "category probabilities"
   } else if (all(types %in% c("poisson", "negbin"))) {
     "expected counts"
+  } else if (all(types %in% c("panel_poisson_re", "glmm_poisson_ri"))) {
+    "expected counts"
   } else if (all(types %in% c(
-               "logit", "probit", "cloglog", "ivprobit", "biprobit"
+               "logit", "probit", "cloglog", "ivprobit", "biprobit",
+               "panel_logit_re", "panel_probit_re", "glmm_logit_ri"
              ))) {
     "predicted probabilities"
   } else if (all(types %in% c("hetprobit", "hetlogit"))) {
@@ -50,7 +54,9 @@
 
 .suest_data_source <- function(model) {
   data_call <- model$call$data
-  env <- if (inherits(model, "mvProbit")) {
+  env <- if (.suest_is_pglm(model)) {
+    environment(.suest_pglm_formula(model))
+  } else if (inherits(model, "mvProbit")) {
     fit_environment <- environment(model$objectiveFn)
     source_formula <- if (is.environment(fit_environment) &&
                           exists("formula", fit_environment, inherits = FALSE)) {
@@ -410,10 +416,14 @@
 .suest_panel_id <- function(model) {
   if (inherits(model, "geeglm")) {
     model$id
+  } else if (.suest_is_pglm(model)) {
+    get("id", .suest_pglm_environment(model), inherits = FALSE)
   } else if (inherits(model, "plm")) {
     plm::index(model)[[1L]]
   } else if (inherits(model, "lme")) {
     model$groups[[1L]]
+  } else if (inherits(model, "glmmTMB")) {
+    .suest_glmmtmb_random_info(model)$id
   } else {
     stop("Internal error: unsupported panel-model object.", call. = FALSE)
   }
@@ -490,10 +500,24 @@
 
 .suest_extract_parameters <- function(model, type, engine) {
   engine <- .suest_engine_name(engine)
-  if (type == "panel_fe") {
+  if (type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+    if (!is.null(model$suest_parameters))
+      return(model$suest_parameters)
+    beta <- glmmTMB::fixef(model)$cond
+    theta <- model$fit$par[names(model$fit$par) == "theta"]
+    c(beta, log_sigma = unname(theta))
+  } else if (type == "panel_fe") {
     .suest_plm_fe_parameters(model)
   } else if (type == "panel_ml") {
     .suest_lme_parameters(model)
+  } else if (type %in% c("panel_logit_re", "panel_probit_re")) {
+    parameters <- stats::coef(model)
+    parameters["sigma"] <- abs(parameters["sigma"])
+    parameters
+  } else if (type == "panel_poisson_re") {
+    parameters <- stats::coef(model)
+    names(parameters)[length(parameters)] <- "alpha"
+    parameters
   } else if (type == "biprobit") {
     raw <- stats::coef(model)
     c(raw[-length(raw)], athrho = atanh(unname(raw[length(raw)])))
@@ -991,6 +1015,182 @@
     )
 
   list(score = U, bread = B, parameters = parameters)
+}
+
+.suest_pglm_binary_re_components <- function(model, type) {
+  raw_parameters <- stats::coef(model)
+  parameters <- .suest_extract_parameters(
+    model,
+    type,
+    "pglm::pglm"
+  )
+  sigma_sign <- sign(unname(raw_parameters["sigma"]))
+  transformation <- diag(length(parameters))
+  transformation[length(parameters), length(parameters)] <- sigma_sign
+  dimnames(transformation) <- list(names(parameters), names(parameters))
+  raw_score <- model$gradientObs %*% transformation
+  hessian <- t(transformation) %*% model$hessian %*% transformation
+  frame <- .suest_model_frame(model, "pglm::pglm")
+  panel <- as.character(.suest_panel_id(model))
+  n <- nrow(frame)
+  p <- length(parameters)
+
+  if (!is.matrix(raw_score) || nrow(raw_score) != n || ncol(raw_score) != p ||
+      !is.matrix(hessian) || any(dim(hessian) != p) || length(panel) != n)
+    stop(
+      "The pglm random-effects binary scores and Hessian do not align.",
+      call. = FALSE
+    )
+  if (!identical(colnames(raw_score), names(parameters)))
+    stop(
+      "The pglm score parameter order does not match its coefficients.",
+      call. = FALSE
+    )
+
+  score <- matrix(
+    0,
+    nrow = n,
+    ncol = p,
+    dimnames = list(rownames(frame), names(parameters))
+  )
+  for (rows in split(seq_len(n), panel))
+    score[rows[length(rows)], ] <- colSums(raw_score[rows, , drop = FALSE])
+
+  information <- -(hessian + t(hessian)) / 2
+  covariance <- .suest_information_inverse(information)
+  native_covariance <- t(transformation) %*%
+    as.matrix(stats::vcov(model)) %*% transformation
+  if (any(dim(native_covariance) != p) ||
+      max(abs(covariance - native_covariance)) >
+        1e-8 * max(1, abs(native_covariance)))
+    stop(
+      "The reconstructed pglm information does not reproduce its native covariance.",
+      call. = FALSE
+    )
+
+  B <- n * covariance
+  dimnames(B) <- list(names(parameters), names(parameters))
+  if (any(!is.finite(score)) || any(!is.finite(B)))
+    stop(
+      "Unable to construct finite pglm random-effects binary scores.",
+      call. = FALSE
+    )
+
+  list(score = score, bread = B, parameters = parameters)
+}
+
+.suest_glmmtmb_ri_components <- function(model, type) {
+  parameters <- .suest_extract_parameters(
+    model, type, "glmmTMB::glmmTMB")
+  frame <- .suest_model_frame(model, "glmmTMB::glmmTMB")
+  panel <- droplevels(factor(.suest_panel_id(model)))
+  panel_score <- sandwich::estfun(
+    model, full = TRUE, cluster = panel, rawnames = FALSE)
+  covariance <- as.matrix(stats::vcov(model, full = TRUE))
+  n <- nrow(frame)
+  p <- length(parameters)
+
+  if (!is.matrix(panel_score) || ncol(panel_score) != p ||
+      nrow(panel_score) != nlevels(panel) ||
+      !is.matrix(covariance) || any(dim(covariance) != p) ||
+      length(panel) != n)
+    stop(
+      "The glmmTMB random-intercept scores and covariance do not align.",
+      call. = FALSE
+    )
+  if (!setequal(rownames(panel_score), levels(panel)))
+    stop(
+      "The glmmTMB cluster scores do not align with its grouping variable.",
+      call. = FALSE
+    )
+
+  colnames(panel_score) <- names(parameters)
+  dimnames(covariance) <- list(names(parameters), names(parameters))
+  retained_covariance <- as.matrix(model$sdr$cov.fixed)
+  dimnames(retained_covariance) <- list(names(parameters), names(parameters))
+  if (max(abs(covariance - retained_covariance)) >
+      1e-10 * max(1, abs(retained_covariance)))
+    stop(
+      "The glmmTMB full covariance does not match its retained TMB covariance.",
+      call. = FALSE
+    )
+
+  score <- matrix(
+    0, nrow = n, ncol = p,
+    dimnames = list(rownames(frame), names(parameters))
+  )
+  for (level in levels(panel)) {
+    rows <- which(panel == level)
+    score[rows[length(rows)], ] <- panel_score[level, ]
+  }
+
+  B <- n * covariance
+  if (any(!is.finite(score)) || any(!is.finite(B)))
+    stop(
+      "Unable to construct finite glmmTMB random-intercept scores.",
+      call. = FALSE
+    )
+
+  list(score = score, bread = B, parameters = parameters)
+}
+
+.suest_glmmtmb_logit_ri_components <- function(model) {
+  .suest_glmmtmb_ri_components(model, "glmm_logit_ri")
+}
+
+.suest_glmmtmb_poisson_ri_components <- function(model) {
+  .suest_glmmtmb_ri_components(model, "glmm_poisson_ri")
+}
+
+.suest_pglm_logit_re_components <- function(model) {
+  .suest_pglm_binary_re_components(model, "panel_logit_re")
+}
+
+.suest_pglm_poisson_re_components <- function(model) {
+  parameters <- .suest_extract_parameters(
+    model, "panel_poisson_re", "pglm::pglm")
+  score <- model$gradientObs
+  hessian <- model$hessian
+  colnames(score)[ncol(score)] <- "alpha"
+  dimnames(hessian) <- list(names(parameters), names(parameters))
+  frame <- .suest_model_frame(model, "pglm::pglm")
+  panel <- as.character(.suest_panel_id(model))
+  n <- nrow(frame)
+  p <- length(parameters)
+
+  if (!is.matrix(score) || nrow(score) != n || ncol(score) != p ||
+      !is.matrix(hessian) || any(dim(hessian) != p) || length(panel) != n)
+    stop(
+      "The pglm random-effects Poisson scores and Hessian do not align.",
+      call. = FALSE
+    )
+  collapsed <- matrix(
+    0, nrow = n, ncol = p,
+    dimnames = list(rownames(frame), names(parameters))
+  )
+  for (rows in split(seq_len(n), panel))
+    collapsed[rows[length(rows)], ] <- colSums(score[rows, , drop = FALSE])
+
+  information <- -(hessian + t(hessian))/2
+  covariance <- .suest_information_inverse(information)
+  native_covariance <- as.matrix(stats::vcov(model))
+  dimnames(native_covariance) <- list(names(parameters), names(parameters))
+  if (any(dim(native_covariance) != p) ||
+      max(abs(covariance - native_covariance)) >
+        1e-8 * max(1, abs(native_covariance)))
+    stop(
+      "The reconstructed pglm information does not reproduce its native covariance.",
+      call. = FALSE
+    )
+
+  B <- n * covariance
+  dimnames(B) <- list(names(parameters), names(parameters))
+  if (any(!is.finite(collapsed)) || any(!is.finite(B)))
+    stop(
+      "Unable to construct finite pglm random-effects Poisson scores.",
+      call. = FALSE
+    )
+  list(score = collapsed, bread = B, parameters = parameters)
 }
 
 .suest_biprobit_components <- function(model) {
@@ -1643,6 +1843,8 @@
   engine <- .suest_engine_name(engine)
   if (identical(weight_type, "pweight") && type == "lm") {
     .suest_lm_pweight_components(model)
+  } else if (type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+    .suest_glmmtmb_ri_components(model, type)
   } else if (type == "panel_fe") {
     .suest_plm_fe_components(model)
   } else if (type == "panel_be") {
@@ -1651,6 +1853,10 @@
     .suest_plm_re_components(model)
   } else if (type == "panel_ml") {
     .suest_lme_ml_components(model)
+  } else if (type %in% c("panel_logit_re", "panel_probit_re")) {
+    .suest_pglm_binary_re_components(model, type)
+  } else if (type == "panel_poisson_re") {
+    .suest_pglm_poisson_re_components(model)
   } else if (type == "panel_gee") {
     .suest_gee_components(model)
   } else if (type == "biprobit") {

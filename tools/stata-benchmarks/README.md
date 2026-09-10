@@ -60,6 +60,43 @@ output.
     full versus restricted data, prints native `xtreg, mle` covariance, and
     tests unbalanced random effects without the time-indicator design that is
     singular in `plm`.
+16. `suest_r_panel_logit_re_crosslang_benchmark.do` validates the restricted
+    `pglm` random-effects panel-logit route. Nonadaptive 12-point component
+    fits match the R likelihood exactly; the joint cases use 12-point adaptive
+    quadrature because `suest2` rejects nonadaptive fits. The returned reference
+    is encoded by `build_panel_logit_re_stata_fixture.R`.
+17. `suest_r_panel_probit_re_crosslang_benchmark.do` applies the same two-track
+    nonadaptive component/adaptive `suest2` design to the restricted random-
+    effects panel-probit route. Generate its CSV with
+    `make_panel_probit_re_crosslang_data.R`; the matching R systems are produced
+    by `run_panel_probit_re_reference.R`.
+18. `suest_r_panel_poisson_re_crosslang_benchmark.do` checks the restricted
+    gamma random-effects panel-Poisson route, including native component fits,
+    expected-count predictions and slopes, default/higher clusters, partial
+    overlap, and disjoint panels. Generate its CSV with
+    `make_panel_poisson_re_crosslang_data.R`; the matching R systems are
+    produced by `run_panel_poisson_re_reference.R`. The returned Stata 19.5
+    reference is encoded by `build_panel_poisson_re_stata_fixture.R`; see
+    `PANEL-POISSON-RE-DESIGN-20260910.md` for the documented ancillary-score
+    and higher-cluster differences in `suest2` 1.0.0.
+19. `suest_r_glmmtmb_logit_ri_crosslang_benchmark.do` checks the restricted
+    `glmmTMB` Laplace random-intercept logit route against Stata `melogit`.
+    It compares Laplace component fits, marginal predictions, and slopes;
+    records the expected `suest2` refusal of Laplace fits; runs balanced,
+    partial-overlap, higher-cluster, and disjoint `suest2` systems with 12-point
+    adaptive quadrature; and repeats the joint systems with Laplace `gsem` and
+    robust covariance for the exact-integration comparison. Generate its CSV
+    with `make_glmmtmb_logit_ri_crosslang_data.R`; the matching R systems are
+    produced by `run_glmmtmb_logit_ri_reference.R`. The returned Stata 19.5
+    reference is encoded by `build_glmmtmb_logit_ri_stata_fixture.R`; no further
+    Stata run is required for this increment.
+20. `suest_r_glmmtmb_poisson_ri_crosslang_benchmark.do` applies the same
+    component, adaptive-`suest2`, and Laplace-`gsem` design to the restricted
+    `glmmTMB` random-intercept Poisson-log route. Generate its CSV with
+    `make_glmmtmb_poisson_ri_crosslang_data.R`; the matching R systems are
+    produced by `run_glmmtmb_poisson_ri_reference.R`. The returned Stata 19.5
+    reference is encoded by `build_glmmtmb_poisson_ri_stata_fixture.R`; no
+    further Stata run is required for this increment.
 
 From the repository root, generate the two CSV inputs with:
 

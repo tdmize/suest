@@ -1,3 +1,56 @@
+# suest 0.1.5
+
+* Added initial `glmmTMB::glmmTMB()` support for unweighted binomial-logit and
+  Poisson-log models with one grouping variable and one conditional random intercept.
+  The SUEST parameter vector includes the log random-intercept standard
+  deviation, and response predictions integrate over the Gaussian random
+  effect for use with `marginaleffects`. Returned Stata `melogit`, adaptive
+  `suest2`, and Laplace `gsem` benchmarks certify the component and joint-system
+  behavior. Returned Stata `mepoisson` benchmarks match Laplace component
+  coefficients, covariance, and log likelihoods within `5.41e-6`, `1.31e-7`,
+  and `1.83e-7`; marginal means and slopes agree within `1.07e-5` and
+  `4.02e-6`. Joint Laplace `gsem` coefficients and covariance agree within
+  `7.35e-6` and `0.00110`. As for `melogit`, `suest2` requires adaptive
+  quadrature, so those results are retained as a separate approximation
+  comparison rather than used as the Laplace equality gate.
+* Added a deliberately narrow random-effects panel-logit route through
+  `pglm::pglm()`: binary logit, one individual random intercept, unweighted
+  maximum likelihood, and exactly 12-point nonadaptive Gauss-Hermite
+  quadrature. The complete fixed-effect plus random-intercept SD parameter
+  system, panel-level integrated-likelihood scores, native-information bread,
+  default panel clustering, higher nested clusters, partial/disjoint samples,
+  integrated response predictions, and `marginaleffects` are tested.
+* The returned Stata 19.5 benchmark confirms the nonadaptive component-model
+  coefficients and log likelihoods to below `9e-8`, and predictions/slopes to
+  below `4e-9`. `suest2` requires adaptive quadrature for this model, so the
+  joint cross-language gate uses explicit 12-point adaptive fits: fixed-effect
+  covariance elements differ by at most `1.17e-4`, all covariance elements by
+  at most `0.00310`, and disjoint-panel cross-blocks are exactly zero. The
+  larger maximum is confined to an ancillary variance element in the
+  disjoint-panel case.
+* Extended the same restricted `pglm` architecture to random-effects panel
+  probit. The analytic panel scores, native-information bread, panel/higher
+  clustering, partial and disjoint samples, integrated normal-probability
+  predictions, coefficient replacement, and `marginaleffects` pass. The
+  returned Stata benchmark matches nonadaptive component coefficients within
+  `9.29e-7` and native covariance within `6.89e-8`. In the adaptive-only
+  `suest2` comparison, fixed-effect covariance elements differ by at most
+  `1.33e-4`, all covariance elements by at most `0.00117`, and disjoint-panel
+  cross-blocks are exactly zero.
+* Added an R-side gamma random-effects panel-Poisson route through
+  `pglm::pglm()`: individual random intercepts, log link, unweighted maximum
+  likelihood, and `other = "sd"`. The full fixed-effect plus natural-scale
+  gamma variance `alpha` system, analytic panel scores, native-information
+  bread, panel/higher clustering, partial and disjoint samples, expected-count
+  predictions, coefficient replacement, and `marginaleffects` pass focused
+  tests. The returned Stata 19.5 benchmark matches component coefficients,
+  native covariance, log likelihoods, predictions, and slopes within
+  `1.44e-7`, `8.05e-9`, `5.80e-7`, `1.35e-7`, and `4.71e-8`, respectively.
+  Joint covariance is not used as an equality gate: `suest2` 1.0.0 repeats the
+  full `lnalpha` cluster score on every observation and, for a requested higher
+  cluster, reconstructs the integrated likelihood at that cluster rather than
+  at the panel. R retains one exact integrated-likelihood score per panel.
+
 # suest 0.1.4
 
 * Extended the narrow one-stage survey route to binary-response

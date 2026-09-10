@@ -1,0 +1,16 @@
+Copy these two files from the flat ZIP into the same Stata working directory:
+
+suest_r_glmmtmb_poisson_ri_crosslang_benchmark.do
+suest_r_glmmtmb_poisson_ri_crosslang_benchmark.csv
+
+In Stata, change to that working directory and run exactly:
+
+do suest_r_glmmtmb_poisson_ri_crosslang_benchmark.do
+
+Return this log file:
+
+suest_r_glmmtmb_poisson_ri_crosslang_benchmark.log
+
+The do-file compares Laplace mepoisson components, checks whether suest2 accepts
+Laplace fits, runs 12-point adaptive suest2 systems, and runs matching joint
+Laplace gsem systems with robust covariance.

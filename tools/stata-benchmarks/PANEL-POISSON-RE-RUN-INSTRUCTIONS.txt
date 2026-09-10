@@ -1,0 +1,22 @@
+Gamma random-effects panel Poisson benchmark
+=============================================
+
+Place these files together in the current Stata working directory:
+
+- suest_r_panel_poisson_re_crosslang_benchmark.do
+- suest_r_panel_poisson_re_crosslang_benchmark.csv
+
+Run exactly:
+
+do suest_r_panel_poisson_re_crosslang_benchmark.do
+
+Expected log file:
+
+suest_r_panel_poisson_re_crosslang_benchmark.log
+
+Please return that log file without editing it.
+
+The benchmark compares Stata's default gamma random-effects `xtpoisson, re`
+likelihood with the restricted R `pglm` route. The R reference converts the
+natural-scale gamma variance `alpha` to Stata's `lnalpha` scale before
+coefficient and covariance comparisons.

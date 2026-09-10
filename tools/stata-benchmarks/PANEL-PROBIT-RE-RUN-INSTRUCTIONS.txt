@@ -1,0 +1,22 @@
+Random-effects panel probit benchmark
+=====================================
+
+Place these files together in the current Stata working directory:
+
+- suest_r_panel_probit_re_crosslang_benchmark.do
+- suest_r_panel_probit_re_crosslang_benchmark.csv
+
+Run exactly:
+
+do suest_r_panel_probit_re_crosslang_benchmark.do
+
+Expected log file:
+
+suest_r_panel_probit_re_crosslang_benchmark.log
+
+Please return that log file without editing it.
+
+The benchmark retains nonadaptive 12-point Gauss-Hermite fits for exact
+single-model comparison with the R pglm likelihood contract. It then refits
+with 12-point adaptive Gauss-Hermite quadrature for the joint cases, because
+suest2 requires adaptive quadrature for random-effects panel binary models.

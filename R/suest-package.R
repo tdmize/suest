@@ -29,6 +29,12 @@
 #' unbalanced random-effects fits can retain small engine-specific differences.
 #' Single-level random-intercept Gaussian models fitted by `nlme::lme()` with
 #' `method = "ML"` are supported, including both variance components.
+#' Unweighted individual random-intercept binary logit/probit and gamma
+#' random-effects Poisson models fitted by `pglm::pglm()` are supported under
+#' the restrictions documented in [suest()].
+#' Unweighted binomial-logit and Poisson-log models fitted by
+#' `glmmTMB::glmmTMB()` with one conditional random intercept are supported
+#' under the restrictions documented in [suest()].
 #' Unweighted GEE fitted by `geepack::geeglm()` is supported for Gaussian
 #' identity, binary logit/probit/cloglog, and Poisson log models with
 #' independence or exchangeable correlation.

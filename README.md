@@ -73,6 +73,12 @@ essential when the models use the same or overlapping observations.
   effects panels can retain small engine-specific differences from Stata
 - unweighted random-intercept Gaussian panel models using `nlme::lme()` with
   `method = "ML"`; both variance components are included in the joint system
+- unweighted individual random-intercept binary logit or probit using `pglm::pglm()`
+  with `model = "random"`, `effect = "individual"`, and exactly 12-point
+  nonadaptive quadrature; response predictions integrate over the random effect
+- unweighted gamma random-effects panel Poisson using `pglm::pglm()` with a log
+  link, `model = "random"`, `effect = "individual"`, and `other = "sd"`; the
+  natural-scale gamma variance `alpha` is included in the joint system
 - unweighted GEE using `geepack::geeglm()`: Gaussian identity,
   binary logit/probit/cloglog, and Poisson log, with independence or exchangeable
   correlation; numeric outcomes only, with default panel or higher nested clusters

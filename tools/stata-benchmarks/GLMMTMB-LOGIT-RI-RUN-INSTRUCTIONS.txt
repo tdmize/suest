@@ -1,0 +1,20 @@
+Copy both files from the flat ZIP into the same Stata working directory:
+
+suest_r_glmmtmb_logit_ri_crosslang_benchmark.do
+suest_r_glmmtmb_logit_ri_crosslang_benchmark.csv
+
+In Stata, change to that working directory and run exactly:
+
+do suest_r_glmmtmb_logit_ri_crosslang_benchmark.do
+
+Return this log file:
+
+suest_r_glmmtmb_logit_ri_crosslang_benchmark.log
+
+The do-file intentionally checks that suest2 refuses the Laplace fits, then
+uses 12-point adaptive Gaussian-Hermite fits for the joint suest2 systems.
+
+Benchmark file revision 3 corrects the display of Stata's matrix-valued
+multilevel group-count result, e(N_g), and adds joint Laplace gsem systems.
+The gsem cases provide an exact-integration comparison because Stata documents
+gsem with robust covariance as the SUEST mechanism for random-effects models.

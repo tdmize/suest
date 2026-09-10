@@ -137,6 +137,17 @@
 #'   retain small engine-specific differences
 #' * unweighted single-level random-intercept Gaussian panel models from
 #'   `nlme::lme()` fitted with `method = "ML"`
+#' * unweighted individual random-intercept binary logit and probit models from
+#'   `pglm::pglm()` fitted with `model = "random"`, `effect = "individual"`,
+#'   and `R = 12`; response predictions integrate over the random effect
+#' * unweighted gamma random-effects Poisson log models from `pglm::pglm()`
+#'   fitted with `model = "random"`, `effect = "individual"`, and
+#'   `other = "sd"`; the final parameter is exposed as gamma variance `alpha`
+#' * unweighted binomial-logit and Poisson-log models from
+#'   `glmmTMB::glmmTMB()` with one grouping variable and one conditional random
+#'   intercept; the final parameter is the log random-intercept standard
+#'   deviation, and response predictions integrate over the Gaussian random
+#'   effect
 #' * unweighted GEE from `geepack::geeglm()`: Gaussian identity,
 #'   binary logit/probit/cloglog, and Poisson log, with independence or
 #'   exchangeable correlation and numeric outcomes
@@ -223,14 +234,21 @@ suest <- function(
         "truncreg::truncreg, censReg::censReg, MASS::polr, ordinal::clm, ",
         "nnet::multinom, mvProbit::mvProbit, Rchoice::hetprob/ivpml, a supported ",
         "plm::plm linear ",
-        "panel model, an nlme::lme random-intercept ML model, a supported geepack::geeglm model, ",
+        "panel model, an nlme::lme random-intercept ML model, a pglm::pglm ",
+        "random-effects binary or Poisson model, a supported ",
+        "glmmTMB::glmmTMB random-intercept model, a supported ",
+        "geepack::geeglm model, ",
         "or a fixest::feols IV model."
       ),
       call. = FALSE
     )
 
   plm_panel_types <- c("panel_fe", "panel_be", "panel_re")
-  panel_types <- c(plm_panel_types, "panel_ml", "panel_gee")
+  panel_types <- c(
+    plm_panel_types, "panel_ml", "panel_gee", "panel_logit_re",
+    "panel_probit_re", "panel_poisson_re", "glmm_logit_ri",
+    "glmm_poisson_ri"
+  )
   if (any(model_types %in% panel_types) &&
       (length(unique(model_types)) != 1L || !all(model_types %in% panel_types)))
     stop(
@@ -318,6 +336,22 @@ suest <- function(
       call. = FALSE
     )
 
+  if (any(model_types %in% c(
+        "panel_logit_re", "panel_probit_re", "panel_poisson_re"
+      )) &&
+      !requireNamespace("pglm", quietly = TRUE))
+    stop(
+      "Package 'pglm' is required for random-effects panel models.",
+      call. = FALSE
+    )
+
+  if (any(model_types %in% c("glmm_logit_ri", "glmm_poisson_ri")) &&
+      !requireNamespace("glmmTMB", quietly = TRUE))
+    stop(
+      "Package 'glmmTMB' is required for GLMM random-intercept models.",
+      call. = FALSE
+    )
+
   categorical <- model_types %in% c("ologit", "oprobit", "multinom")
 
   category_levels <- Map(
@@ -376,7 +410,9 @@ suest <- function(
 
     y <- stats::model.response(mf)
 
-    if (type %in% c("lm", panel_types) &&
+    if (type %in% c(
+          "lm", "panel_fe", "panel_be", "panel_re", "panel_ml", "panel_gee"
+        ) &&
         (!is.numeric(y) || is.matrix(y)))
       stop("Linear-model outcomes must be numeric vectors.",
            call. = FALSE)
@@ -387,8 +423,17 @@ suest <- function(
         call. = FALSE
       )
 
+    if (type %in% c("panel_poisson_re", "glmm_poisson_ri") &&
+        (!is.numeric(y) || is.matrix(y) ||
+         any(y < 0 | abs(y - round(y)) > 1e-8)))
+      stop(
+        "Random-effects Poisson outcomes must be nonnegative integer counts.",
+        call. = FALSE
+      )
+
     if (type %in% c(
-      "logit", "probit", "cloglog", "ivprobit", "hetprobit", "hetlogit"
+      "logit", "probit", "cloglog", "ivprobit", "hetprobit", "hetlogit",
+      "panel_logit_re", "panel_probit_re", "glmm_logit_ri"
     )) {
       binary <- if (is.factor(y)) {
         nlevels(y) == 2L
@@ -497,7 +542,10 @@ suest <- function(
   parameters <- lapply(components, `[[`, "parameters")
   local_names <- lapply(parameters, names)
 
-  for (i in which(model_types == "panel_fe"))
+  for (i in which(model_types %in% c(
+    "panel_fe", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
+    "glmm_logit_ri", "glmm_poisson_ri"
+  )))
     models[[i]] <- .suest_set_parameters(
       models[[i]],
       parameters[[i]],
@@ -627,7 +675,11 @@ suest <- function(
       # Ordinary suest models use the system-level G/(G-1) correction.
       correction <- if (model_types[i] == "ivreg") {
         1
-      } else if (model_types[i] %in% c("panel_ml", "panel_gee")) {
+      } else if (model_types[i] %in% c(
+                   "panel_ml", "panel_gee", "panel_logit_re",
+                   "panel_probit_re", "panel_poisson_re", "glmm_logit_ri",
+                   "glmm_poisson_ri"
+                 )) {
         model_clusters <- length(unique(cluster_info[[i]]$keys))
         if (model_clusters < 2L)
           stop(

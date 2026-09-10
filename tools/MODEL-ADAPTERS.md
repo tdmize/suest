@@ -41,6 +41,8 @@ covariance and `marginaleffects` interfaces.
 | `mvProbit::mvProbit()` | bivariate probit | same regressors in both equations; observed final Hessian required; joint-success prediction |
 | `plm::plm()` | linear panel fixed, between, and random effects | individual effects; unweighted; Swamy-Arora random-effects method; same panel type within a system; unbalanced RE can differ slightly from Stata |
 | `nlme::lme()` | Gaussian random-intercept panel ML | one grouping level and random intercept; ML; unweighted; independent homoskedastic residuals |
+| `pglm::pglm()` | binary random-intercept panel logit/probit; gamma random-effects panel Poisson | individual effects; random intercept; unweighted; binary models require exactly 12-point nonadaptive Gauss-Hermite quadrature and integrated response prediction; Poisson requires log link and `other = "sd"` and predicts the marginal expected count |
+| `glmmTMB::glmmTMB()` | binomial-logit or Poisson-log GLMM | one grouping variable and one conditional random intercept; unweighted Laplace ML; fixed effects plus log random-intercept SD; integrated population response prediction |
 | `geepack::geeglm()` | population-averaged GEE | unweighted numeric Gaussian identity, binary logit/probit/cloglog, Poisson log; independence/exchangeable correlation; panel or higher nested clusters |
 
 ## Explicitly rejected GLM-like estimators

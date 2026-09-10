@@ -9,3 +9,4 @@ suest_full_test_output.txt
 suest_full_test_results.csv
 suest_pweight_test_output.txt
 suest_pweight_test_results.csv
+tools/stata-benchmarks/*_r_reference.rds

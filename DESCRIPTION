@@ -1,6 +1,6 @@
 Package: suest
 Title: Seemingly Unrelated Estimation for Comparing Model Predictions and Effects
-Version: 0.1.4
+Version: 0.1.5
 Authors@R:
     person("Trenton D.", "Mize", email = "tmize@purdue.edu",
            role = c("aut", "cre"))
@@ -27,6 +27,7 @@ Suggests:
     censReg,
     fixest,
     geepack,
+    glmmTMB (>= 1.1.14),
     glm2,
     haven,
     mice,
@@ -37,6 +38,7 @@ Suggests:
     mvProbit,
     mvtnorm,
     nnet,
+    pglm,
     plm,
     pscl,
     rmarkdown,
@@ -49,9 +51,9 @@ Suggests:
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
 Config/Needs/website:
     pkgdown,
     haven,
     glm2,
     ordinal
+Config/roxygen2/version: 8.1.0

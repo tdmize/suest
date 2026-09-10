@@ -30,7 +30,7 @@ a result list returned by \code{mitools::with.imputationList()}.}
 
 \item{...}{Additional arguments; currently ignored.}
 
-\item{conf.level}{Confidence level for \code{summary.suest_mi()}.}
+\item{conf.level}{Confidence level for \code{\link[=summary.suest_mi]{summary.suest_mi()}}.}
 }
 \value{
 A \code{"suest_mi"} object containing pooled coefficients, total,
@@ -40,17 +40,17 @@ large-sample degrees of freedom, and the original SUEST fits.
 \description{
 \code{suest_mi()} pools complete joint SUEST coefficient vectors and covariance
 matrices using Rubin's rules. Supply either a list whose elements are
-compatible \code{suest()} results fitted in separate imputed datasets, or the
+compatible \code{\link[=suest]{suest()}} results fitted in separate imputed datasets, or the
 \code{mice::mira} object returned by \code{with()} when that expression fits a SUEST
 system. Result lists created by \code{mitools::with.imputationList()} are also
 accepted directly.
 }
 \details{
 The pooled covariance is
-\code{Ubar + (1 + 1 / m) B}, where \code{Ubar} is the mean within-imputation
-joint covariance, \code{B} is the between-imputation covariance of the complete
-joint coefficient vector, and \code{m} is the number of imputations. Because
-each within-imputation input is a complete SUEST system, cross-model covariance
+\verb{Ubar + (1 + 1 / m) B}, where \code{Ubar} is the mean within-imputation joint
+covariance, \code{B} is the between-imputation covariance of the complete joint
+coefficient vector, and \code{m} is the number of imputations. Because each
+within-imputation input is a complete SUEST system, cross-model covariance
 is retained in both components.
 
 A \code{"mira"} object from \code{mice::with()} is read through its public

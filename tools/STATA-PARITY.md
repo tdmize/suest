@@ -1,6 +1,6 @@
 # Stata `suest2` parity tracker
 
-Audit date: 2026-09-07. This is a development tracker, not a published support
+Audit date: 2026-09-10. This is a development tracker, not a published support
 claim. The Stata reference is the attached 1.0.0 `suest2.ado` and help file.
 "Implemented" means the R adapter has unit tests, numerical covariance tests,
 and an end-to-end `marginaleffects` test unless a narrower qualification is
@@ -40,8 +40,14 @@ shown.
 | `xtreg, mle` | Verified within native engine precision through `nlme::lme(method = "ML")` | Single-level random-intercept Gaussian models include fixed effects, `sigma_u`, and `sigma_e`; default panel clusters, higher nested clusters, likelihood scores, observed bread, and `marginaleffects` pass R tests. Returned joint systems differ by at most 7.58e-7, or 0.00808% on a covariance diagonal. Stata's native model covariance already differs from R's independently verified likelihood covariance by up to 0.00412%, so this is classified as a small fitting-engine convention/precision difference. |
 | `xtreg/xtlogit/xtprobit/xtcloglog/xtpoisson, pa` | Supported subset through `geepack::geeglm()` | Unweighted numeric outcomes, independence/exchangeable correlation. Ten single-family full covariance matrices match Stata to 4.61e-10. Unequal samples, mixed families, higher clusters, offsets, interactions, and prediction delta-method SEs pass R tests. Stata `suest2` 1.0.0 fails on a mixed-family unequal-sample case because native `predict, score` sees excluded rows in the panels; the same prediction succeeds after keeping only `e(sample)`. AR1, unstructured, and negative-binomial GEE remain unsupported. |
 | correlated random effects | Provisional candidate through explicit panel means plus `plm::plm(model = "random")` | Uses the provisional Swamy-Arora random-effects route. A dedicated CRE comparison, including the treatment of unequal samples when constructing panel means, is still required. |
-| `xtlogit`, `xtprobit`, `xtcloglog`, `xtologit`, `xtoprobit`, `xtmlogit`, `xtpoisson`, `xtnbreg` | Pending | Conditional likelihood, integrated random-effects scores, and panel-level alignment require family-specific verification. |
-| `mixed`, `melogit`, `meprobit`, `mecloglog`, `mepoisson`, `menbreg`, `meologit`, `meoprobit`, `meglm`, `mestreg` | Pending | Integrated likelihood scores must be aggregated at the common highest-level group and matched to Stata's finite-sample correction. |
+| `xtlogit, re` | Verified narrow route through `pglm::pglm()` | Binary logit with one individual random intercept, unweighted ML, and exactly 12-point nonadaptive quadrature. Fixed effects plus natural-scale `sigma`, panel-level scores, native-information bread, default/higher clustering, overlap/disjoint samples, integrated response predictions, and `marginaleffects` pass. Stata's nonadaptive coefficients/log likelihoods match below `9e-8`; because `suest2` requires adaptive quadrature, its joint covariance differs slightly as documented below. |
+| `xtprobit, re` | Verified narrow route through `pglm::pglm()` | Same restricted contract as panel logit, with integrated normal-probability response predictions. Nonadaptive component coefficients and covariance match Stata within `9.29e-7` and `6.89e-8`. Because `suest2` requires adaptive quadrature, joint covariance differs slightly: fixed-effect elements by at most `1.33e-4` and all elements by at most `0.00117`. |
+| `xtpoisson, re` | Component likelihood verified through `pglm::pglm()`; joint Stata covariance difference documented | Gamma random effects with individual panels, log link, unweighted ML, and `other = "sd"`. Fixed effects plus natural-scale gamma variance `alpha`, analytic panel scores, native-information bread, panel/higher clustering, overlap/disjoint samples, expected-count predictions, and `marginaleffects` pass. After converting `alpha` to `lnalpha`, component coefficients, native covariance, log likelihoods, predictions, and slopes match Stata within `1.44e-7`, `8.05e-9`, `5.80e-7`, `1.35e-7`, and `4.71e-8`. `suest2` 1.0.0 repeats the full ancillary cluster score on every observation, inflating `lnalpha` rows/columns and propagating through the bread; its higher-cluster route also integrates at the higher cluster rather than the panel. R preserves the exact panel likelihood instead. |
+| `xtlogit, fe` | Deferred | `pglm(model = "within")` fails in its binomial likelihood implementation. `survival::clogit(method = "exact")` does not expose exact score residuals and its native `marginaleffects` support is Cox-style link/risk rather than the probability-scale contract needed here. No currently audited engine satisfies both the score and prediction requirements. |
+| `xtcloglog`, `xtologit`, `xtoprobit`, `xtmlogit`, `xtpoisson, fe`, `xtnbreg` | Pending | Conditional likelihood, integrated random-effects scores, and panel-level alignment require family-specific verification. |
+| `melogit` | Verified narrow route through `glmmTMB::glmmTMB()` | Binary logit with one Gaussian random intercept, unweighted Laplace ML, fixed effects plus log SD, full group scores/covariance, default and higher clustering, overlap/disjoint samples, integrated population predictions, and `marginaleffects` pass. Laplace component coefficients and covariance match Stata within `1.22e-5` and `6.61e-7`. Joint Laplace `gsem` coefficients and covariance agree within `2.14e-5` and `0.00113`; the R and adaptive `suest2` disjoint cross-blocks are exactly zero. `suest2` rejects Laplace fits, so its 12-point adaptive results are retained as a separate approximation comparison. |
+| `mepoisson` | Verified narrow route through `glmmTMB::glmmTMB()` | Poisson log with one Gaussian random intercept, unweighted Laplace ML, fixed effects plus log SD, full group scores/covariance, default and higher clustering, overlap/disjoint samples, exact integrated population means, and `marginaleffects` pass. Laplace component coefficients, covariance, and log likelihoods match Stata within `5.41e-6`, `1.31e-7`, and `1.83e-7`; joint Laplace `gsem` coefficients and covariance agree within `7.35e-6` and `0.00110`. `suest2` rejects Laplace fits, so its 12-point adaptive results are retained as a separate approximation comparison. |
+| `mixed`, `meprobit`, `mecloglog`, `menbreg`, `meologit`, `meoprobit`, `meglm`, `mestreg` | Pending | Integrated likelihood scores must be aggregated at the common highest-level group and matched to Stata's finite-sample correction. |
 | linearized `svy:` | Gaussian and binary logit passed; binary probit has a documented bread-convention difference | One-stage common-design `svyglm`, explicit IDs, strata/FPCs, coefficient covariance only. The certified Gaussian route matches six stacked Stata systems to machine precision. The binary gate confirms full logit coefficient/covariance parity. Probit coefficients agree, but `survey::svyglm()` uses expected/Fisher information while the returned Stata survey-probit covariance is reproduced by an observed-information bread, producing finite-sample covariance differences up to about 7.9% on the returned benchmark diagonals. R preserves the exact native `svyglm()` covariance by contract. Different-subpopulation `suest2` systems return code 322. See `SURVEY-BENCHMARK-FINAL-RESULTS-20260908.md` and `SURVEY-BINARY-BENCHMARK-RESULTS-20260908.md`. |
 | `mi estimate, post:` | Initial coefficient-level support through `suest_mi()` | Compatible per-imputation SUEST systems are pooled with Rubin's rules over the complete joint coefficient vector, preserving within- and between-imputation cross-model covariance. Direct `mice::mira`, `mice::getfit()`, and `mitools::with.imputationList()` inputs are supported. Nonlinear predictions, slopes, and comparisons remain pending. |
 | pweighted ordinary models | Implemented subset | Linear, logit/probit, Poisson, NB, ordered logit/probit, and multinomial match the documented Stata pweight family list. The 2026-09-06 Stata 19.5 benchmark confirms the extended NB and three-model categorical systems numerically. |
@@ -61,6 +67,14 @@ shown.
 5. `Rchoice::predict.hetprob()` fails when the documented default probit link
    is omitted from the fit call. The combined object restores the default on
    its internal copy before prediction.
+6. Stata `suest2` 1.0.0's specialized gamma `xtpoisson, re` route repeats each
+   full ancillary cluster score on every observation. With six observations
+   per panel, the benchmark's `lnalpha` meat is therefore inflated by roughly
+   (6^2). When a higher cluster is requested, that route also reconstructs
+   one gamma-integrated likelihood per higher cluster rather than retaining
+   the original panel likelihood. The R adapter does neither: it uses one exact
+   integrated-likelihood score per panel and then aggregates panels to valid
+   higher clusters.
 6. The provisional IV-probit adapter previously selected Rchoice's
    residual-conditioned response probability despite documenting the
    structural probability. It now evaluates `pnorm(X beta)`; independent
@@ -96,8 +110,9 @@ runs all 11 cases in the matching Stata benchmark. Ten returned single-family
 cases verify cross-language equality. The eleventh fails in Stata's native
 score extraction, while the corresponding R mixed-family system passes.
 
-All returned follow-up logs have been reviewed. No further Stata run is needed
-for the 0.1.4 closeout.
+All returned 0.1.4 follow-up logs and the nonlinear-panel and multilevel
+logit, probit, and Poisson benchmarks have been reviewed. No further Stata run
+is needed for the 0.1.5 panel/multilevel increment.
 
 ## Stata documentation discrepancies and items to verify
 
@@ -156,6 +171,14 @@ absolute R/Stata differences were:
 | GEE: ten single-family cases | 5.55e-8 | 4.61e-10 |
 | Bivariate probit, after curvature correction | 1.08e-8 | 8.67e-11 |
 | IV probit, after curvature correction and tighter R fit | 3.78e-7 | 3.51e-9 |
+| Random-effects panel logit, nonadaptive component fits | 6.95e-8 | 5.35e-9 native model covariance |
+| Random-effects panel logit, adaptive Stata `suest2` comparison | 1.06e-3 | 3.10e-3; fixed-effect elements at most 1.17e-4 |
+| Random-effects panel probit, nonadaptive component fits | 9.29e-7 | 6.89e-8 native model covariance |
+| Random-effects panel probit, adaptive Stata `suest2` comparison | 1.13e-3 | 1.17e-3; fixed-effect elements at most 1.33e-4 |
+| `glmmTMB`/`melogit`, Laplace component fits | 1.22e-5 | 6.61e-7 native model covariance |
+| `glmmTMB`/`melogit`, joint Laplace `gsem` | 2.14e-5 | 1.13e-3 |
+| `glmmTMB`/`mepoisson`, Laplace component fits | 5.41e-6 | 1.31e-7 native model covariance |
+| `glmmTMB`/`mepoisson`, joint Laplace `gsem` | 7.35e-6 | 1.10e-3 |
 
 The categorical differences are consistent with optimizer stopping
 tolerances. These Stata results are now fixed numerical references in the R
