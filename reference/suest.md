@@ -86,9 +86,10 @@ print(x, ...)
   [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
   models: Gaussian identity or binary
   [`quasibinomial()`](https://rdrr.io/r/stats/family.html) logit/probit.
-  Requires observation-ID column names. Retain the full design before
-  domain subsetting and specify weights and clusters in the design,
-  without `weight_type` or `cluster`.
+  Requires `observation_id` column names. Retain the design before
+  model-specific domain subsetting. Specify weights and clusters in this
+  design, without `weight_type` or `cluster`. Ordinary models leave this
+  argument `NULL`.
 
 - object, x:
 
@@ -117,11 +118,6 @@ can be combined, and scalar and categorical models may appear in the
 same system. Results on different response scales are labeled separately
 for `marginaleffects`.
 
-When `cluster` is supplied, observation-level score contributions are
-summed within the system-level clusters before the joint covariance is
-formed. Clusters can span observations from different, even disjoint,
-model samples.
-
 Ordinary linear models include an ancillary `lnvar` parameter, matching
 Stata's `regress`/`suest` parameterization. Unweighted fits use
 `log(RSS / df.residual)`; pweighted fits follow `suest2`'s reconstructed
@@ -147,36 +143,36 @@ Survey support combines coefficients from Gaussian identity-link and
 binary [`quasibinomial()`](https://rdrr.io/r/stats/family.html)
 logit/probit [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
 fits under one common one-stage design. Gaussian and binary fits are not
-mixed in the same survey system. Strata and optional first-stage
-finite-population corrections are supported. Model-specific domains and
-missing outcomes are aligned by observation IDs, with zero influence
-outside each estimation sample. The full design retains PSUs outside all
-model samples. Each native coefficient covariance must be reproduced
-before the joint matrix is returned. Survey fits contain coefficients
-only and do not add ancillary parameters.
+mixed in the same survey system. Strata and first-stage
+finite-population corrections are supported. Model-specific subsets and
+missing outcomes are aligned using observation IDs, with zero influence
+outside each model's estimation sample. The full design retains PSUs
+outside all model samples. Each native coefficient covariance must be
+reproduced before the joint matrix is returned. Survey fits contain
+coefficients only and do not add ancillary parameters.
 
 Replicate-weight, multistage, two-phase, calibrated, raked,
 post-stratified, and PPS designs are unsupported. Lonely-PSU options are
-restricted to `fail`, `remove`, and `certainty`, with
+restricted to `fail`, `remove`, or `certainty`, with
 `survey.adjust.domain.lonely = FALSE`. A singleton stratum with a
 certainty FPC is supported under `fail`. Extra fitting weights are
 unsupported; place offsets in the model formula.
 
 Predictions and effects use the joint design-based coefficient
 covariance. Averaging treats the supplied covariate distribution as
-fixed and does not add design uncertainty from estimating that
+fixed; it does not add design uncertainty from estimating that
 distribution. Use
 [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
 and `wts = ".suest_weight"` for model-specific weighted averages.
-Default inference is asymptotic normal. The full design degrees of
-freedom are recorded in `$survey$design_df`; no automatic survey t or F
-adjustment is applied.
+Inference uses the usual asymptotic normal default. The full design's
+degrees of freedom are recorded in `$survey$design_df`; no automatic
+survey t or F adjustment is applied.
 
 ## Supported models
 
 - [`stats::lm()`](https://rdrr.io/r/stats/lm.html)
 
-- Restricted survey-weighted Gaussian identity and binary
+- restricted survey-weighted Gaussian identity and binary
   [`quasibinomial()`](https://rdrr.io/r/stats/family.html) logit/probit
   models from
   [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
@@ -244,6 +240,22 @@ adjustment is applied.
   [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) fitted with
   `method = "ML"`
 
+- unweighted individual random-intercept binary logit and probit models
+  from [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) fitted
+  with `model = "random"`, `effect = "individual"`, and `R = 12`;
+  response predictions integrate over the random effect
+
+- unweighted gamma random-effects Poisson log models from
+  [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) fitted with
+  `model = "random"`, `effect = "individual"`, and `other = "sd"`; the
+  final parameter is exposed as gamma variance `alpha`
+
+- unweighted binomial-logit and Poisson-log models from
+  [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
+  with one grouping variable and one conditional random intercept; the
+  final parameter is the log random-intercept standard deviation, and
+  response predictions integrate over the Gaussian random effect
+
 - unweighted GEE from
   [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):
   Gaussian identity, binary logit/probit/cloglog, and Poisson log, with
@@ -267,6 +279,7 @@ dat$am <- factor(dat$am)
 
 model1 <- glm(am ~ wt, family = binomial(), data = dat)
 model2 <- glm(am ~ wt + hp, family = binomial(), data = dat)
+
 fit <- suest(model1, model2, model_names = c("Base", "Adjusted"))
 fit
 #> Seemingly Unrelated Estimation

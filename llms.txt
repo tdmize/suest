@@ -97,6 +97,16 @@ the models use the same or overlapping observations.
   [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) with
   `method = "ML"`; both variance components are included in the joint
   system
+- unweighted individual random-intercept binary logit or probit using
+  [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) with
+  `model = "random"`, `effect = "individual"`, and exactly 12-point
+  nonadaptive quadrature; response predictions integrate over the random
+  effect
+- unweighted gamma random-effects panel Poisson using
+  [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) with a log
+  link, `model = "random"`, `effect = "individual"`, and `other = "sd"`;
+  the natural-scale gamma variance `alpha` is included in the joint
+  system
 - unweighted GEE using
   [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):
   Gaussian identity, binary logit/probit/cloglog, and Poisson log, with

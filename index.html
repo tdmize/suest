@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -111,6 +111,8 @@
 <li>bivariate probit using <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> when both outcome equations use the same regressors and an observed final Hessian is retained</li>
 <li>unweighted individual fixed-effects, between-effects, and Swamy-Arora random-effects linear panel models using <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code>; unbalanced random- effects panels can retain small engine-specific differences from Stata</li>
 <li>unweighted random-intercept Gaussian panel models using <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> with <code>method = "ML"</code>; both variance components are included in the joint system</li>
+<li>unweighted individual random-intercept binary logit or probit using <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code> with <code>model = "random"</code>, <code>effect = "individual"</code>, and exactly 12-point nonadaptive quadrature; response predictions integrate over the random effect</li>
+<li>unweighted gamma random-effects panel Poisson using <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code> with a log link, <code>model = "random"</code>, <code>effect = "individual"</code>, and <code>other = "sd"</code>; the natural-scale gamma variance <code>alpha</code> is included in the joint system</li>
 <li>unweighted GEE using <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity, binary logit/probit/cloglog, and Poisson log, with independence or exchangeable correlation; numeric outcomes only, with default panel or higher nested clusters</li>
 <li>ordered logit and probit using <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code>
 </li>

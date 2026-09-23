@@ -18,18 +18,18 @@ logit and probit models fitted by
 [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html) or restricted
 [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html)
 specifications, multinomial logit models fitted by
-[`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html),
-parametric survival and censored regression fitted by
+[`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html), and
+parametric survival or censored-regression models fitted by
 [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html),
-beta regression fitted by
-[`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html),
-zero-inflated Poisson and negative-binomial models fitted by
-[`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html),
-truncated Gaussian regression fitted by
-[`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html),
-and direct Tobit models fitted by
-[`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html),
-and unweighted two-stage least squares fitted by
+and beta regressions fitted by
+[`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html).
+Poisson and negative-binomial zero-inflated models fitted by
+[`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html) are
+also supported. Truncated Gaussian regressions fitted by
+[`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html)
+are supported as well, as are direct Tobit models fitted by
+[`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html) and
+unweighted two-stage least squares fitted by
 [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html)
 without absorbed fixed effects. Heteroskedastic binary probit and logit
 fitted by
@@ -46,6 +46,16 @@ unbalanced random-effects fits can retain small engine-specific
 differences. Single-level random-intercept Gaussian models fitted by
 [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) with
 `method = "ML"` are supported, including both variance components.
+Unweighted individual random-intercept binary logit/probit and gamma
+random-effects Poisson models fitted by
+[`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) are supported
+under the restrictions documented in
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md).
+Unweighted binomial-logit and Poisson-log models fitted by
+[`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
+with one conditional random intercept are supported under the
+restrictions documented in
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md).
 Unweighted GEE fitted by
 [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html) is
 supported for Gaussian identity, binary logit/probit/cloglog, and
@@ -66,3 +76,23 @@ Mize, Trenton D., Long Doan, and J. Scott Long. 2019. "A General
 Framework for Comparing Predictions and Marginal Effects Across Models."
 *Sociological Methodology* 49(1):152–189.
 [doi:10.1177/0081175019852763](https://doi.org/10.1177/0081175019852763)
+
+## See also
+
+Useful links:
+
+- <https://tdmize.github.io/suest/>
+
+- <https://github.com/tdmize/suest>
+
+- <https://www.trentonmize.com/software/mecompare>
+
+- Report bugs at <https://github.com/tdmize/suest/issues>
+
+## Author
+
+**Maintainer**: Trenton D. Mize <tmize@purdue.edu>
+
+Authors:
+
+- Trenton D. Mize <tmize@purdue.edu>

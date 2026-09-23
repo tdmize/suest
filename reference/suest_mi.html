@@ -17,7 +17,7 @@ accepted directly."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -104,10 +104,10 @@ large-sample degrees of freedom, and the original SUEST fits.</p>
     <div class="section level2">
     <h2 id="details">Details<a class="anchor" aria-label="anchor" href="#details"></a></h2>
     <p>The pooled covariance is
-<code>Ubar + (1 + 1 / m) B</code>, where <code>Ubar</code> is the mean within-imputation
-joint covariance, <code>B</code> is the between-imputation covariance of the complete
-joint coefficient vector, and <code>m</code> is the number of imputations. Because
-each within-imputation input is a complete SUEST system, cross-model covariance
+<code>Ubar + (1 + 1 / m) B</code>, where <code>Ubar</code> is the mean within-imputation joint
+covariance, <code>B</code> is the between-imputation covariance of the complete joint
+coefficient vector, and <code>m</code> is the number of imputations. Because each
+within-imputation input is a complete SUEST system, cross-model covariance
 is retained in both components.</p>
 <p>A <code>"mira"</code> object from <code><a href="https://amices.org/mice/reference/with.mids.html" class="external-link">mice::with()</a></code> is read through its public
 <code>analyses</code> component. The list returned by <code><a href="https://amices.org/mice/reference/getfit.html" class="external-link">mice::getfit()</a></code> is accepted as

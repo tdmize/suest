@@ -15,7 +15,7 @@ predictions, slopes, and average comparisons across models."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.4</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -53,46 +53,69 @@ predictions, slopes, and average comparisons across models.</p>
 
     <div class="section level2">
     <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a></h2>
-    <p><code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>, binary logit, probit, and complementary-log-log models fitted by
+
+
+<p><code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code>, binary logit, probit, and complementary-log-log models fitted by
 <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>, Poisson and other supported GLMs,
-negative-binomial models fitted by <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code>,
-ordered logit and probit models fitted by
-<code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> or restricted
-<code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> specifications, multinomial logit models fitted by
-<code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code>, parametric survival and censored
-regression fitted by <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code>, beta regression fitted by
-<code><a href="https://rdrr.io/pkg/betareg/man/betareg.html" class="external-link">betareg::betareg()</a></code>, zero-inflated Poisson and negative-binomial models
-fitted by <code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code>, truncated Gaussian regression fitted by
-<code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code>, and direct Tobit models fitted by
-<code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code>, and unweighted two-stage least squares fitted by
+negative-binomial models fitted by <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code>, ordered logit and
+probit models fitted by <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code> or restricted <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code>
+specifications, multinomial logit models fitted by <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code>, and
+parametric survival or censored-regression models fitted by
+<code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code>, and beta regressions fitted by <code><a href="https://rdrr.io/pkg/betareg/man/betareg.html" class="external-link">betareg::betareg()</a></code>.
+Poisson and negative-binomial zero-inflated models fitted by
+<code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code> are also supported.
+Truncated Gaussian regressions fitted by <code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code> are
+supported as well, as are direct Tobit models fitted by
+<code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code> and unweighted two-stage least squares fitted by
 <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code> without absorbed fixed effects. Heteroskedastic binary
 probit and logit fitted by <code><a href="https://rdrr.io/pkg/Rchoice/man/hetprob.html" class="external-link">Rchoice::hetprob()</a></code> are supported.
 Maximum-likelihood IV probit fitted by <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code> and bivariate
 probit fitted by <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> are supported with their documented
-adapter restrictions. Unweighted individual fixed-effects, between-effects,
-and Swamy-Arora random-effects linear panel models fitted by <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code>
-are supported; unbalanced random-effects fits can retain small engine-specific
-differences. Single-level random-intercept Gaussian models fitted by
-<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> with <code>method = "ML"</code> are supported, including both
-variance components. Unweighted GEE fitted by <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code> is
-supported for Gaussian identity, binary logit/probit/cloglog, and Poisson log
-models with independence or exchangeable correlation. Explicit
-<code>weight_type = "pweight"</code> support is available for the model families
-corresponding to Stata <code>suest2</code>'s ordinary pweight route.
-Joint cluster-robust covariance is available through the <code>cluster</code>
-argument to <code><a href="suest.html">suest()</a></code>.
+adapter restrictions.
+Unweighted individual fixed-effects, between-effects, and Swamy-Arora
+random-effects linear panel models fitted by <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code> are supported;
+unbalanced random-effects fits can retain small engine-specific differences.
+Single-level random-intercept Gaussian models fitted by <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> with
+<code>method = "ML"</code> are supported, including both variance components.
+Unweighted individual random-intercept binary logit/probit and gamma
+random-effects Poisson models fitted by <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code> are supported under
+the restrictions documented in <code><a href="suest.html">suest()</a></code>.
+Unweighted binomial-logit and Poisson-log models fitted by
+<code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with one conditional random intercept are supported
+under the restrictions documented in <code><a href="suest.html">suest()</a></code>.
+Unweighted GEE fitted by <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code> is supported for Gaussian
+identity, binary logit/probit/cloglog, and Poisson log models with
+independence or exchangeable correlation.
+Explicit <code>weight_type = "pweight"</code> support is available for the model
+families corresponding to Stata <code>suest2</code>'s ordinary pweight route.
+Joint cluster-robust covariance is available through the <code>cluster</code> argument
+to <code><a href="suest.html">suest()</a></code>.
 Compatible systems fitted in multiple imputed datasets can be pooled with
-<code><a href="suest_mi.html">suest_mi()</a></code> using Rubin's rules. The initial MI interface
-supports joint coefficients, covariance, summaries, and coefficient-level
-hypotheses.</p>
+<code><a href="suest_mi.html">suest_mi()</a></code> using Rubin's rules. The initial MI interface supports joint
+coefficients, covariance, summaries, and coefficient-level hypotheses.</p>
     </div>
     <div class="section level2">
     <h2 id="reference">Reference<a class="anchor" aria-label="anchor" href="#reference"></a></h2>
-    <p>Mize, Trenton D., Long Doan, and J. Scott Long. 2019.
+
+
+<p>Mize, Trenton D., Long Doan, and J. Scott Long. 2019.
 "A General Framework for Comparing Predictions and Marginal Effects Across
 Models." <em>Sociological Methodology</em> 49(1):152–189.
 <a href="https://doi.org/10.1177/0081175019852763" class="external-link">doi:10.1177/0081175019852763</a></p>
     </div>
+    <div class="section level2">
+    <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>
+    <div class="dont-index"><p>Useful links:</p><ul><li><p><a href="https://tdmize.github.io/suest/">https://tdmize.github.io/suest/</a></p></li>
+<li><p><a href="https://github.com/tdmize/suest" class="external-link">https://github.com/tdmize/suest</a></p></li>
+<li><p><a href="https://www.trentonmize.com/software/mecompare" class="external-link">https://www.trentonmize.com/software/mecompare</a></p></li>
+<li><p>Report bugs at <a href="https://github.com/tdmize/suest/issues" class="external-link">https://github.com/tdmize/suest/issues</a></p></li>
+</ul></div>
+    </div>
+    <div class="section level2">
+    <h2 id="author">Author<a class="anchor" aria-label="anchor" href="#author"></a></h2>
+    <p><strong>Maintainer</strong>: Trenton D. Mize <a href="mailto:tmize@purdue.edu">tmize@purdue.edu</a></p>
+<p>Authors:</p><ul><li><p>Trenton D. Mize <a href="mailto:tmize@purdue.edu">tmize@purdue.edu</a></p></li>
+</ul></div>
 
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
