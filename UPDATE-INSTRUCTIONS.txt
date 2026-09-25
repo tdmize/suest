@@ -1,27 +1,40 @@
-SUEST 0.1.4 RELEASE CANDIDATE
+SUEST 0.1.6 - COPY INTO YOUR EXISTING REPOSITORY
 
-This release candidate includes the certified survey-binary increment together
-with the model adapters, pweights, clustering, panel, GEE, multiple-imputation,
-and numerical acceptance work documented in NEWS.md and tools/STATA-PARITY.md.
+This ZIP contains the complete source folder layout: DESCRIPTION, R, man,
+tests, tools, .github, and the other repository files. There is no .git
+folder, Git bundle, or installable-package archive inside it.
 
-COPY
+1. BEFORE COPYING: open Git Bash and update your existing main branch:
 
-Copy everything inside this archive's top-level suest folder into:
+   cd /c/Users/trent/suest
+   git switch main && git pull --ff-only origin main
 
-C:\Users\trent\suest
+   If this fails, stop and return the output. Do not discard local edits.
 
-Replace existing files.
+2. Extract the ZIP somewhere convenient. Open the extracted folder and copy
+   ALL ITS CONTENTS into C:\Users\trent\suest. Merge folders and replace
+   existing files when Windows asks. DESCRIPTION and R must sit directly
+   inside C:\Users\trent\suest, not inside an additional suest subfolder.
+   Your existing .git folder stays in place. No old source files need deletion
+   relative to the published 0.1.5 tree.
 
-RELEASE VALIDATION
+3. In the same Git Bash window, commit and push:
 
-Restart R, then run from the repository root:
+   git add -u && git add R man tests tools .github &&
+   git commit -m "Release suest 0.1.6" &&
+   git push origin main
 
-setwd("C:/Users/trent/suest")
-devtools::test()
-source("tools/acceptance-tests/run_all_tests.R")
-source("tools/preflight.R")
+   These commands stage source changes and new source files without adding
+   downloaded ZIPs or the old root-level Git bundle.
 
-The certified 2026-09-09 run passed the focused survey tests, full unit suite,
-144-case numerical acceptance suite, vignette build, clean install/load, and
-R CMD check --no-manual with no errors, warnings, or notes. Re-run the release
-gates after any source change made beyond release metadata or documentation.
+4. Return the push output. Check all four R jobs and pkgdown for the new
+   commit at https://github.com/tdmize/suest/actions before tagging v0.1.6.
+
+VALIDATION
+
+This is the tested 0.1.6 source. Only these copy/push directions and the
+handoff workflow changed after release verification: 1,626 assertions passed,
+zero failures/skips, three existing test warnings; package checks returned
+Status: OK, and the pkgdown build and local links passed. Model support and
+known raw-Stata covariance limitations are described in NEWS.md and
+tools/RELEASE-0.1.6.md. No additional Stata run is requested.

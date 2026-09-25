@@ -180,7 +180,7 @@ test_that("glmmTMB validation is deliberately narrow", {
   poisson <- glmmTMB::glmmTMB(
     y1 ~ x + z + (1 | id), data = dat, family = stats::poisson())
   random_slope <- suppressWarnings(glmmTMB::glmmTMB(
-    y1 ~ x + z + (1 + x | id), data = dat,
+    y1 ~ x + z + (1 + x + z | id), data = dat,
     family = stats::binomial("logit")))
   weighted <- glmmtmb_logit_ri_fit(
     y1 ~ x + z + (1 | id), dat, weights = rep(2, nrow(dat)))

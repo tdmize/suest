@@ -12,7 +12,7 @@
     "zip", "zinb", "truncreg", "censreg", "ivreg", "ivprobit", "hetprobit",
     "hetlogit", "biprobit", "panel_fe", "panel_be", "panel_re", "panel_ml",
     "panel_gee", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
-    "glmm_logit_ri", "glmm_poisson_ri"
+    "glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
   )
   categorical <- types %in% c("ologit", "oprobit", "multinom")
 
@@ -20,11 +20,11 @@
     "category probabilities"
   } else if (all(types %in% c("poisson", "negbin"))) {
     "expected counts"
-  } else if (all(types %in% c("panel_poisson_re", "glmm_poisson_ri"))) {
+  } else if (all(types %in% c("panel_poisson_re", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"))) {
     "expected counts"
   } else if (all(types %in% c(
                "logit", "probit", "cloglog", "ivprobit", "biprobit",
-               "panel_logit_re", "panel_probit_re", "glmm_logit_ri"
+               "panel_logit_re", "panel_probit_re", "glmm_logit_ri", "glmm_logit_rs"
              ))) {
     "predicted probabilities"
   } else if (all(types %in% c("hetprobit", "hetlogit"))) {
@@ -500,12 +500,18 @@
 
 .suest_extract_parameters <- function(model, type, engine) {
   engine <- .suest_engine_name(engine)
-  if (type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+  if (type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
     if (!is.null(model$suest_parameters))
       return(model$suest_parameters)
     beta <- glmmTMB::fixef(model)$cond
     theta <- model$fit$par[names(model$fit$par) == "theta"]
-    c(beta, log_sigma = unname(theta))
+    dispersion <- if (type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs")) {
+      c(log_phi = unname(glmmTMB::fixef(model)$disp))
+    } else numeric(0)
+    if (type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs"))
+      return(c(beta, dispersion, log_sd_intercept = unname(theta[1L]),
+        log_sd_slope = unname(theta[2L]), atanh_rho = asinh(unname(theta[3L]))))
+    c(beta, dispersion, log_sigma = unname(theta))
   } else if (type == "panel_fe") {
     .suest_plm_fe_parameters(model)
   } else if (type == "panel_ml") {
@@ -1095,7 +1101,7 @@
       !is.matrix(covariance) || any(dim(covariance) != p) ||
       length(panel) != n)
     stop(
-      "The glmmTMB random-intercept scores and covariance do not align.",
+      "The glmmTMB random-effects scores and covariance do not align.",
       call. = FALSE
     )
   if (!setequal(rownames(panel_score), levels(panel)))
@@ -1115,6 +1121,17 @@
       call. = FALSE
     )
 
+  if (type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+    # Fisher z = asinh(native scaled correlation); transform covariance and
+    # scores in opposite directions before forming coefficient influences.
+    raw_correlation <- utils::tail(model$fit$par, 1L)
+    derivative <- 1/sqrt(1 + raw_correlation^2)
+    J <- diag(c(rep(1, p-1L), unname(derivative)))
+    covariance <- J %*% covariance %*% J
+    dimnames(covariance) <- list(names(parameters), names(parameters))
+    panel_score[, p] <- panel_score[, p]/derivative
+  }
+
   score <- matrix(
     0, nrow = n, ncol = p,
     dimnames = list(rownames(frame), names(parameters))
@@ -1127,7 +1144,7 @@
   B <- n * covariance
   if (any(!is.finite(score)) || any(!is.finite(B)))
     stop(
-      "Unable to construct finite glmmTMB random-intercept scores.",
+      "Unable to construct finite glmmTMB random-effects scores.",
       call. = FALSE
     )
 
@@ -1843,7 +1860,7 @@
   engine <- .suest_engine_name(engine)
   if (identical(weight_type, "pweight") && type == "lm") {
     .suest_lm_pweight_components(model)
-  } else if (type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+  } else if (type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
     .suest_glmmtmb_ri_components(model, type)
   } else if (type == "panel_fe") {
     .suest_plm_fe_components(model)

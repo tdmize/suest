@@ -151,30 +151,74 @@
   )
 }
 
+.suest_logit_normal_mean <- local({
+  rule <- NULL
+  function(eta, sigma) {
+    if (length(eta) != length(sigma) || any(!is.na(sigma) & (!is.finite(sigma) | sigma < 0)))
+      stop("Logit-normal predictions require finite nonnegative standard deviations.", call. = FALSE)
+    result <- stats::plogis(eta)
+    result[is.na(sigma)] <- NA_real_
+    regular <- which(is.finite(eta) & !is.na(sigma) & sigma <= 3)
+    if (length(regular)) {
+      if (is.null(rule)) {
+        rule <<- .suest_normal_quadrature(320L)
+        # Remove eigensolver asymmetry before joining the integration branches.
+        rule$nodes <<- (rule$nodes - rev(rule$nodes))/2
+        rule$weights <<- (rule$weights + rev(rule$weights))/2
+        rule$weights <<- rule$weights/sum(rule$weights)
+      }
+      result[regular] <- drop(stats::plogis(outer(sigma[regular], rule$nodes) +
+        eta[regular]) %*% rule$weights)
+    }
+    # Integrating over the logistic density stays smooth at large normal SDs.
+    wide <- which(is.finite(eta) & !is.na(sigma) & sigma > 3)
+    for (i in wide)
+      result[i] <- stats::integrate(function(t)
+        stats::plogis(t)*stats::plogis(-t)*stats::pnorm((eta[i]-t)/sigma[i]),
+        -Inf, Inf, rel.tol = 1e-12, abs.tol = 1e-13)$value
+    result
+  }
+})
+
 .suest_glmmtmb_random_info <- function(model) {
   random <- model$modelInfo$reTrms$cond
+  columns <- if (length(random$cnms) == 1L) unname(random$cnms[[1L]]) else character()
+  slope <- length(columns) == 2L && identical(columns[1L], "(Intercept)") &&
+    ((model$modelInfo$family$family %in% c("poisson", "nbinom2") &&
+      identical(model$modelInfo$family$link, "log")) ||
+     (identical(model$modelInfo$family$family, "binomial") &&
+      identical(model$modelInfo$family$link, "logit")))
   if (!is.list(random) || length(random$cnms) != 1L ||
-      length(random$flist) != 1L ||
-      !identical(unname(random$cnms[[1L]]), "(Intercept)"))
+        length(random$flist) != 1L ||
+      (!identical(columns, "(Intercept)") && !slope))
     stop(
       paste0(
         "glmmTMB support is currently limited to one grouping variable ",
-        "with one conditional random intercept."
+        "with one conditional random intercept, or one ",
+        "intercept and one numeric random slope."
       ),
       call. = FALSE
     )
 
   structure <- model$modelInfo$reStruc$condReStruc
-  if (length(structure) != 1L || structure[[1L]]$blockSize != 1L ||
-      structure[[1L]]$blockNumTheta != 1L)
+  if (length(structure) != 1L || structure[[1L]]$blockSize != (if (slope) 2L else 1L) ||
+      structure[[1L]]$blockNumTheta != (if (slope) 3L else 1L) ||
+      (slope && !identical(names(structure[[1L]]$blockCode), "us")))
     stop(
       "Structured glmmTMB random effects are not supported.",
       call. = FALSE
     )
 
+  if (slope && (!identical(make.names(columns[2L]), columns[2L]) ||
+      !columns[2L] %in% names(model$frame) ||
+      !is.numeric(model$frame[[columns[2L]]]) || is.matrix(model$frame[[columns[2L]]]) ||
+      any(!is.finite(model$frame[[columns[2L]]]))))
+    stop("The random slope must be one untransformed numeric data column.", call. = FALSE)
+
   list(
     name = names(random$flist)[1L],
-    id = droplevels(random$flist[[1L]])
+    id = droplevels(random$flist[[1L]]),
+    slope = if (slope) columns[2L] else NULL
   )
 }
 
@@ -191,25 +235,56 @@
     } else if (identical(family$family, "poisson") &&
                identical(family$link, "log")) {
       "glmm_poisson_ri"
+    } else if (identical(family$family, "nbinom2") &&
+               identical(family$link, "log")) {
+      "glmm_nbinom2_ri"
     } else {
       stop(
         paste0(
-          "glmmTMB support is currently limited to binomial-logit and ",
-          "Poisson-log models with one conditional random intercept."
+          "glmmTMB support is currently limited to binomial-logit, ",
+          "Poisson-log, and nbinom2-log models with one conditional random intercept."
         ),
         call. = FALSE
       )
     }
 
     random <- .suest_glmmtmb_random_info(model)
+    if (!is.null(random$slope)) model_type <- sub("_ri$", "_rs", model_type)
     if (length(model$modelInfo$reStruc$ziReStruc) ||
         length(model$modelInfo$reStruc$dispReStruc) ||
         length(glmmTMB::fixef(model)$zi) ||
-        length(glmmTMB::fixef(model)$disp))
+        (!model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs") && length(glmmTMB::fixef(model)$disp)))
       stop(
         "Zero-inflation and dispersion submodels are not supported for glmmTMB models.",
         call. = FALSE
       )
+    if (model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs")) {
+      dispersion_terms <- stats::terms(model$modelInfo$allForm$dispformula)
+      log_phi <- model$fit$par[names(model$fit$par) == "betadisp"]
+      beta <- glmmTMB::fixef(model)$cond
+      if (length(attr(dispersion_terms, "term.labels")) ||
+          attr(dispersion_terms, "intercept") != 1L ||
+          length(attr(dispersion_terms, "offset")) || length(log_phi) != 1L ||
+          !is.finite(log_phi) || !is.finite(exp(log_phi)) || exp(log_phi) <= 0)
+        stop(
+          "glmmTMB nbinom2 requires one estimated, finite constant dispersion (dispformula = ~1).",
+          call. = FALSE
+        )
+      if (length(model$obj$env$map) ||
+          !identical(names(model$fit$par), c(rep("beta", length(beta)), "betadisp", rep("theta", if (is.null(random$slope)) 1L else 3L))))
+        stop("Mapped or constrained glmmTMB nbinom2 parameters are not supported.", call. = FALSE)
+      reserved <- if (is.null(random$slope)) c("log_phi", "log_sigma") else "log_phi"
+      if (any(names(beta) %in% reserved))
+        stop(paste("glmmTMB nbinom2 reserves coefficient names", paste(reserved, collapse = " and ")), call. = FALSE)
+    }
+    if (model_type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+      beta <- glmmTMB::fixef(model)$cond
+      if (length(model$obj$env$map) || !identical(names(model$fit$par),
+          c(rep("beta", length(beta)), if (model_type == "glmm_nbinom2_rs") "betadisp", rep("theta", 3L))))
+        stop("Mapped or constrained glmmTMB random-slope parameters are not supported.", call. = FALSE)
+      if (any(names(beta) %in% c("log_sd_intercept", "log_sd_slope", "atanh_rho")))
+        stop("Random-slope models reserve names log_sd_intercept, log_sd_slope, and atanh_rho.", call. = FALSE)
+    }
     if (isTRUE(model$modelInfo$REML))
       stop("glmmTMB models must use maximum likelihood.", call. = FALSE)
     if (!is.null(model$modelInfo$priors) && nrow(model$modelInfo$priors))
@@ -220,10 +295,11 @@
         length(fit_data$weights) != nrow(model$frame) ||
         any(!is.finite(fit_data$weights)) || any(fit_data$weights != 1))
       stop("Weighted glmmTMB models are not supported.", call. = FALSE)
-    if (length(fit_data$offset) != nrow(model$frame) ||
+    if (!is.null(model$call$offset) || length(attr(stats::terms(model), "offset")) ||
+        length(fit_data$offset) != nrow(model$frame) ||
         any(!is.finite(fit_data$offset)) || any(fit_data$offset != 0))
       stop("Offsets are not supported for glmmTMB models.", call. = FALSE)
-    if (model_type == "glmm_logit_ri" &&
+    if (model_type %in% c("glmm_logit_ri", "glmm_logit_rs") &&
         (length(fit_data$size) != nrow(model$frame) ||
          any(fit_data$size != 1)))
       stop(
@@ -242,7 +318,20 @@
       )
 
     theta <- model$fit$par[names(model$fit$par) == "theta"]
-    if (length(theta) != 1L || !is.finite(theta) ||
+    if (model_type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+      sd <- exp(theta[1:2]); rho <- tanh(asinh(theta[3L]))
+      x <- model$frame[[random$slope]]
+      center <- mean(x); spread <- stats::sd(x)
+      # Assess the covariance of the linear predictor in a centered,
+      # standardized design basis, so changing predictor units is harmless.
+      L <- rbind(c(sd[1L] + center*rho*sd[2L], center*sd[2L]*sqrt(1-rho^2)),
+        c(spread*rho*sd[2L], spread*sd[2L]*sqrt(1-rho^2)))
+      if (length(theta) != 3L || any(!is.finite(theta)) || any(!is.finite(L)))
+        stop("Random-slope covariance must be finite.", call. = FALSE)
+      eigenvalues <- eigen(tcrossprod(L), symmetric = TRUE, only.values = TRUE)$values
+      if (min(eigenvalues) <= sqrt(.Machine$double.eps)*max(1, eigenvalues))
+        stop("Random-slope covariance must be finite and numerically away from zero-variance or singular-correlation boundaries.", call. = FALSE)
+    } else if (length(theta) != 1L || !is.finite(theta) ||
         exp(theta) <= sqrt(.Machine$double.eps))
       stop(
         paste0(
@@ -251,6 +340,22 @@
         ),
         call. = FALSE
       )
+
+    if (model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs")) {
+      # Numerical support check, not a likelihood-ratio significance test.
+      # At zero random-effect variance the NB2 likelihood is available exactly.
+      X <- stats::model.matrix(model, component = "cond")
+      boundary_ll <- sum(stats::dnbinom(stats::model.response(model$frame),
+        size = exp(log_phi), mu = exp(drop(X %*% beta)), log = TRUE))
+      fitted_ll <- as.numeric(stats::logLik(model))
+      if (!is.finite(boundary_ll) || !is.finite(fitted_ll))
+        stop("Unable to evaluate finite glmmTMB nbinom2 boundary likelihoods.", call. = FALSE)
+      tolerance <- sqrt(.Machine$double.eps)*max(1, abs(fitted_ll))
+      if (fitted_ll - boundary_ll <= tolerance)
+        stop(paste0("The glmmTMB nbinom2 random-effect variance is not numerically ",
+          "distinguishable from its zero boundary; joint variance-parameter inference ",
+          "is unsupported for this fit."), call. = FALSE)
+    }
 
     if (utils::packageVersion("glmmTMB") < "1.1.14")
       stop(
@@ -831,7 +936,7 @@
 
 .suest_set_parameters <- function(model, parameters, type, engine) {
   engine <- .suest_engine_name(engine)
-  if (type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+  if (type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
     model$suest_parameters <- parameters
     return(model)
   }
@@ -1035,13 +1140,13 @@
   }
   engine <- .suest_engine_name(engine)
 
-  if (model_type %in% c("glmm_logit_ri", "glmm_poisson_ri")) {
+  if (model_type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
     parameters <- if (!is.null(model$suest_parameters)) {
       model$suest_parameters
     } else {
       .suest_extract_parameters(model, model_type, engine)
     }
-    beta_names <- setdiff(names(parameters), "log_sigma")
+    beta_names <- names(glmmTMB::fixef(model)$cond)
     terms <- stats::delete.response(stats::terms(model))
     prediction_frame <- stats::model.frame(
       terms, newdata, na.action = stats::na.pass,
@@ -1056,15 +1161,29 @@
     missing <- setdiff(beta_names, colnames(X))
     if (length(missing))
       stop(
-        "Unable to construct the glmmTMB random-intercept prediction matrix.",
+        "Unable to construct the glmmTMB random-effects prediction matrix.",
         call. = FALSE
       )
     eta <- as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
     if (identical(type, "link"))
       return(eta)
 
+    if (model_type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+      variable <- .suest_glmmtmb_random_info(model)$slope
+      z <- newdata[[variable]]
+      if (!is.numeric(z) || is.matrix(z) || length(z) != length(eta))
+        stop("Random-slope predictions require the numeric slope column in newdata.", call. = FALSE)
+      sd0 <- exp(parameters["log_sd_intercept"])
+      sd1 <- exp(parameters["log_sd_slope"])
+      rho <- tanh(parameters["atanh_rho"])
+      variance <- (sd0 + rho*sd1*z)^2 + (sd1*z)^2*(1-rho^2)
+      if (model_type == "glmm_logit_rs")
+        return(.suest_logit_normal_mean(eta, sqrt(variance)))
+      return(exp(eta + variance/2))
+    }
+
     sigma <- exp(unname(parameters["log_sigma"]))
-    if (model_type == "glmm_poisson_ri")
+    if (model_type %in% c("glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"))
       return(exp(eta + sigma^2/2))
 
     quadrature <- .suest_normal_quadrature(20L)

@@ -1,0 +1,7 @@
+* Generated from preflight-checked R Laplace fits; these are R starts, not Stata estimates.
+matrix nb2rs_r_starts = (0.31044021424677942, -0.22972344929097932, 0.87330035134348338, -1.04607457439381868, 0.20632167696955159, 0.26731356185415045, 0.11039330463348232 \ ///
+    0.186918488407279870, 0.118392148454994545, 0.713110787371072030, -0.905748693600669785, 0.237914778082246731, 0.289252735596686128, 0.091291135816403038)
+matrix rownames nb2rs_r_starts = y1_left y2_right
+matrix colnames nb2rs_r_starts = x z _cons lnalpha var_slope var_intercept covariance
+scalar nb2rs_r_y1_left_ll = -1053.3278803122994
+scalar nb2rs_r_y2_right_ll = -1024.2534639965172

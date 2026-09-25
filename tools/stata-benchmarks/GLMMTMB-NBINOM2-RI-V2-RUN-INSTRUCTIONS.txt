@@ -1,0 +1,31 @@
+Use this revision instead of the original benchmark. Extract this one flat ZIP
+into your usual Stata working directory. Keep the v2 .do and .csv together.
+No R installation or GitHub update is needed for this Stata run.
+
+Run exactly:
+
+do suest_r_glmmtmb_nbinom2_ri_crosslang_benchmark_v2.do
+
+Return exactly this log:
+
+suest_r_glmmtmb_nbinom2_ri_crosslang_benchmark_v2.log
+
+Why the revision:
+The original y2_right fit had a random-intercept variance at the zero boundary.
+R also had an effectively zero estimate despite a convergence flag, so the
+original main benchmark was not suitable for ordinary variance-parameter
+inference. That case is now retained as an R rejection test.
+
+Revision 2 keeps the original outcomes, regressors, balanced samples, and
+partial samples. Only the disjoint allocation changes: odd-numbered groups
+for Y1 and even-numbered groups for Y2. Both R fits have positive, well-estimated
+random-intercept variances. The model specification and Laplace method stay
+the same. The do-file reruns the full benchmark for one self-contained log.
+
+The primary completion marker is NBINOM2_PRIMARY_LAPLACE_BENCHMARK_COMPLETE=1.
+The final marker is GLMMTMB_NBINOM2_RI_CROSSLANG_BENCHMARK_COMPLETE=1.
+Optional adaptive suest2 comparisons remain separate from the Laplace gate.
+If Stata stops, return the log as it stands.
+
+The ZIP also contains the updated source checkpoint and diagnostic evidence
+for recovery. You only need the v2 .do and .csv files to run this gate.

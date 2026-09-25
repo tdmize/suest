@@ -143,11 +143,41 @@
 #' * unweighted gamma random-effects Poisson log models from `pglm::pglm()`
 #'   fitted with `model = "random"`, `effect = "individual"`, and
 #'   `other = "sd"`; the final parameter is exposed as gamma variance `alpha`
-#' * unweighted binomial-logit and Poisson-log models from
+#' * unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models from
 #'   `glmmTMB::glmmTMB()` with one grouping variable and one conditional random
 #'   intercept; the final parameter is the log random-intercept standard
 #'   deviation, and response predictions integrate over the Gaussian random
-#'   effect
+#'   effect. NB2 models must use the default constant dispersion model
+#'   (`dispformula = ~1`); its estimated log size parameter `log_phi` precedes
+#'   `log_sigma`, with conditional variance `mu + mu^2/exp(log_phi)`.
+#'   Weights, offsets, and zero inflation are unsupported;
+#'   NB2 additionally excludes mapped or constrained parameters. Its Laplace
+#'   log likelihood must exceed the zero-random-effect NB2 log likelihood at
+#'   the same fixed effects and dispersion by more than
+#'   `sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))`.
+#'   This numerical boundary check is not a significance test and does not
+#'   guarantee an interior global maximum
+#' * unweighted binomial-logit, Poisson-log, and NB2-log `glmmTMB` models with one correlated random
+#'   intercept and numeric slope, `(1 + x | id)`, using an unstructured
+#'   covariance matrix. The slope must be a single untransformed numeric
+#'   column with a syntactically valid name. The nuisance parameters are
+#'   `log_sd_intercept`, `log_sd_slope`, and `atanh_rho`. NB2 requires the
+#'   default estimated constant dispersion (`dispformula = ~1`), includes
+#'   `log_phi` before these three parameters, and uses the NB2 boundary check
+#'   above. Count response predictions
+#'   are `exp(X beta + (var_intercept + 2*x*cov_intercept_slope +
+#'   x^2*var_slope)/2)`. Binomial response predictions integrate the logistic
+#'   probability over this Gaussian variance; responses must be Bernoulli.
+#'   Link predictions are `X beta`. Near-singular random
+#'   covariance is rejected in a centered, standardized predictor basis.
+#'   Weights, offsets, zero inflation, constraints, diagonal covariance,
+#'   multiple slopes, slope-only terms, and other random-slope families are
+#'   unsupported. Random-slope systems must contain models of the same family;
+#'   the slope variable must be supplied for response predictions even when
+#'   it is absent from the fixed-effects formula. Native model covariance is
+#'   used as supplied. Poorly scaled predictors can produce inaccurate native
+#'   numerical curvature even with convergence and a positive-definite Hessian;
+#'   fit predictors in well-scaled units and check sensitivity to rescaling
 #' * unweighted GEE from `geepack::geeglm()`: Gaussian identity,
 #'   binary logit/probit/cloglog, and Poisson log, with independence or
 #'   exchangeable correlation and numeric outcomes
@@ -236,7 +266,7 @@ suest <- function(
         "plm::plm linear ",
         "panel model, an nlme::lme random-intercept ML model, a pglm::pglm ",
         "random-effects binary or Poisson model, a supported ",
-        "glmmTMB::glmmTMB random-intercept model, a supported ",
+        "glmmTMB::glmmTMB random-effects model, a supported ",
         "geepack::geeglm model, ",
         "or a fixest::feols IV model."
       ),
@@ -246,8 +276,8 @@ suest <- function(
   plm_panel_types <- c("panel_fe", "panel_be", "panel_re")
   panel_types <- c(
     plm_panel_types, "panel_ml", "panel_gee", "panel_logit_re",
-    "panel_probit_re", "panel_poisson_re", "glmm_logit_ri",
-    "glmm_poisson_ri"
+    "panel_probit_re", "panel_poisson_re", "glmm_logit_ri", "glmm_logit_rs",
+    "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
   )
   if (any(model_types %in% panel_types) &&
       (length(unique(model_types)) != 1L || !all(model_types %in% panel_types)))
@@ -345,10 +375,10 @@ suest <- function(
       call. = FALSE
     )
 
-  if (any(model_types %in% c("glmm_logit_ri", "glmm_poisson_ri")) &&
+  if (any(model_types %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) &&
       !requireNamespace("glmmTMB", quietly = TRUE))
     stop(
-      "Package 'glmmTMB' is required for GLMM random-intercept models.",
+      "Package 'glmmTMB' is required for GLMM random-effects models.",
       call. = FALSE
     )
 
@@ -423,17 +453,17 @@ suest <- function(
         call. = FALSE
       )
 
-    if (type %in% c("panel_poisson_re", "glmm_poisson_ri") &&
+    if (type %in% c("panel_poisson_re", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs") &&
         (!is.numeric(y) || is.matrix(y) ||
          any(y < 0 | abs(y - round(y)) > 1e-8)))
       stop(
-        "Random-effects Poisson outcomes must be nonnegative integer counts.",
+        "Random-effects count outcomes must be nonnegative integer counts.",
         call. = FALSE
       )
 
     if (type %in% c(
       "logit", "probit", "cloglog", "ivprobit", "hetprobit", "hetlogit",
-      "panel_logit_re", "panel_probit_re", "glmm_logit_ri"
+      "panel_logit_re", "panel_probit_re", "glmm_logit_ri", "glmm_logit_rs"
     )) {
       binary <- if (is.factor(y)) {
         nlevels(y) == 2L
@@ -544,7 +574,7 @@ suest <- function(
 
   for (i in which(model_types %in% c(
     "panel_fe", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
-    "glmm_logit_ri", "glmm_poisson_ri"
+    "glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
   )))
     models[[i]] <- .suest_set_parameters(
       models[[i]],
@@ -677,8 +707,8 @@ suest <- function(
         1
       } else if (model_types[i] %in% c(
                    "panel_ml", "panel_gee", "panel_logit_re",
-                   "panel_probit_re", "panel_poisson_re", "glmm_logit_ri",
-                   "glmm_poisson_ri"
+                   "panel_probit_re", "panel_poisson_re", "glmm_logit_ri", "glmm_logit_rs",
+                   "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
                  )) {
         model_clusters <- length(unique(cluster_info[[i]]$keys))
         if (model_clusters < 2L)

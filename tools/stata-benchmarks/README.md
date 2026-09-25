@@ -98,6 +98,68 @@ output.
     reference is encoded by `build_glmmtmb_poisson_ri_stata_fixture.R`; no
     further Stata run is required for this increment.
 
+The development Poisson random-slope increment has completed its Stata gate.
+All six Laplace components and all three joint models converged. The v4
+balanced and v5 partial/disjoint joint fits each converged in one iteration
+from the returned component estimates. No further Stata run is required for
+this increment; do not rerun the older cold-start scripts.
+
+Raw GSEM covariance remains diagnostic evidence: cluster-aligned standard
+errors differ from R by up to 0.9952%. Independent score/curvature audits agree
+with R within 0.0013% in SE and localize the raw difference chiefly to the
+returned joint model-based covariance. Combining recovered Stata joint score cross-products
+with validated Stata component curvature agrees with R within 0.0009%.
+Raw, cluster-aligned, and reconstructed results are kept separate. See
+`../GLMMTMB-POISSON-RS-VALIDATION-20260923.md` for the complete interpretation.
+
+From this directory, `make_glmmtmb_poisson_rs_crosslang_data.R` and
+`run_glmmtmb_poisson_rs_reference.R` regenerate the data and R reference.
+`build_glmmtmb_poisson_rs_stata_components.R <v2-log>` rebuilds the component
+fixture; `build_glmmtmb_poisson_rs_stata_balanced.R <v4-log>` rebuilds balanced
+results; `build_glmmtmb_poisson_rs_stata_remaining.R <v5-log>` rebuilds partial
+and disjoint results. The two joint builders share `poisson_rs_joint_log_helpers.R`.
+`compare_glmmtmb_poisson_rs_stata_joint.R [output.csv]` compares raw and
+cluster-aligned covariance. `check_glmmtmb_poisson_rs_joint_audits.R [output.rds]`
+runs all three independent audits, including missing-data handling, higher
+cluster aggregation, disjoint correction, and coordinate sensitivity. Earlier
+balanced-only audit scripts remain for historical reproduction.
+
+The development NB2 increment uses
+`suest_r_glmmtmb_nbinom2_ri_crosslang_benchmark_v2.do` and the matching CSV.
+Run `make_glmmtmb_nbinom2_ri_crosslang_data_v2.R` and
+`run_glmmtmb_nbinom2_ri_reference_v2.R` from this directory to regenerate the
+data and R reference. Its six Laplace `menbreg` components and three joint
+Laplace `gsem` systems are the primary gate; optional adaptive `suest2`
+systems are a separate comparison. Revision 1's right-half sample had a
+zero-variance boundary and is now a negative regression test. Revision 2 uses
+odd/even disjoint groups with unchanged base outcomes. The returned Stata 19.5
+revision-2 log completed all six components, all three joint systems, and all
+three optional adaptive systems. No further Stata run is required for this
+increment. Rebuild the full fixture with
+`build_glmmtmb_nbinom2_ri_stata_fixture.R <returned-v2-log>` and compare it with
+the R reference using `compare_glmmtmb_nbinom2_ri_stata.R [output.csv]`, both
+from this directory. The [validation report](../GLMMTMB-NBINOM2-RI-VALIDATION-20260923.md)
+records exact differences and the disjoint cluster-correction adjustment;
+adaptive fits remain a separate approximation comparison.
+
+The development NB2 random-slope route has also completed all three Stata
+gates: `suest_r_glmmtmb_nbinom2_rs_balanced_v1.do`,
+`suest_r_glmmtmb_nbinom2_rs_partial_v2.do`, and
+`suest_r_glmmtmb_nbinom2_rs_disjoint_v3.do`. No new Stata run is required.
+Run `make_glmmtmb_nbinom2_rs_crosslang_data.R` and
+`run_glmmtmb_nbinom2_rs_reference.R` here to regenerate the data and R
+reference. For each case (`balanced`, `partial`, `disjoint`), the corresponding
+`build_glmmtmb_nbinom2_rs_stata_<case>.R <log>` parses raw output,
+`compare_glmmtmb_nbinom2_rs_stata_<case>.R [output.csv]` compares it with R,
+and `check_glmmtmb_nbinom2_rs_<case>_audit.R [output.rds]` independently
+audits likelihood, curvature, and scores. Raw and audited fixtures remain
+separate. The disjoint comparison explicitly aligns the cluster correction
+by 99/98. The shared audit retains Fisher, natural-variance, and native
+correlation-coordinate curvature, including the finite-gradient Hessian
+chain-rule term. The disjoint `*_margins.R` and `*_curvature.R` diagnostics
+check native Stata margins and the coordinate refinement. See the
+[final validation report](../GLMMTMB-NBINOM2-RS-VALIDATION-20260924.md).
+
 From the repository root, generate the two CSV inputs with:
 
 ```sh

@@ -165,9 +165,9 @@ test_that("glmmTMB Poisson validation is deliberately narrow", {
   dat <- glmmtmb_poisson_ri_data(groups = 45L)
   dat$constant_offset <- 0.1
   negative_binomial <- glmmTMB::glmmTMB(
-    y1 ~ x + z + (1 | id), data = dat, family = glmmTMB::nbinom2())
+    y1 ~ x + z + (1 | id), data = dat, family = glmmTMB::nbinom1())
   random_slope <- suppressWarnings(glmmTMB::glmmTMB(
-    y1 ~ x + z + (1 + x | id), data = dat, family = poisson()))
+    y1 ~ x + z + (1 + x + z | id), data = dat, family = poisson()))
   weighted <- glmmtmb_poisson_ri_fit(
     y1 ~ x + z + (1 | id), dat, weights = rep(2, nrow(dat)))
   offset <- glmmtmb_poisson_ri_fit(

@@ -38,7 +38,7 @@ Single-level random-intercept Gaussian models fitted by \code{nlme::lme()} with
 Unweighted individual random-intercept binary logit/probit and gamma
 random-effects Poisson models fitted by \code{pglm::pglm()} are supported under
 the restrictions documented in \code{\link[=suest]{suest()}}.
-Unweighted binomial-logit and Poisson-log models fitted by
+Unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models fitted by
 \code{glmmTMB::glmmTMB()} with one conditional random intercept are supported
 under the restrictions documented in \code{\link[=suest]{suest()}}.
 Unweighted GEE fitted by \code{geepack::geeglm()} is supported for Gaussian

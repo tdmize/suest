@@ -1,5 +1,8 @@
 # Post-0.1.4 development roadmap
 
+Historical roadmap. For the current 0.1.6 scope, status, and next-session work,
+see [the release handoff](SESSION-HANDOFF-0.1.6-20260925.md).
+
 This roadmap records the priority order selected after certification of
 `suest` 0.1.4. Each model family remains a separate, benchmarked increment;
 support is not inferred from a fitting class alone.

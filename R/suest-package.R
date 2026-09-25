@@ -32,7 +32,7 @@
 #' Unweighted individual random-intercept binary logit/probit and gamma
 #' random-effects Poisson models fitted by `pglm::pglm()` are supported under
 #' the restrictions documented in [suest()].
-#' Unweighted binomial-logit and Poisson-log models fitted by
+#' Unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models fitted by
 #' `glmmTMB::glmmTMB()` with one conditional random intercept are supported
 #' under the restrictions documented in [suest()].
 #' Unweighted GEE fitted by `geepack::geeglm()` is supported for Gaussian

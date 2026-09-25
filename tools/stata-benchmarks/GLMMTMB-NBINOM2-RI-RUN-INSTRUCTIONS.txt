@@ -1,0 +1,27 @@
+Extract the flat ZIP into your usual Stata working directory. Keep the .do and
+.csv files together. No package installation or GitHub update is needed.
+
+In Stata, change to that directory and run:
+
+do suest_r_glmmtmb_nbinom2_ri_crosslang_benchmark.do
+
+Return this file:
+
+suest_r_glmmtmb_nbinom2_ri_crosslang_benchmark.log
+
+The primary comparison uses six Laplace menbreg component fits and three
+Laplace gsem systems: balanced, partially overlapping with higher clustering,
+and disjoint groups. The balanced component checks include integrated means,
+slopes, and their native standard errors.
+
+If suest2 is installed, the script also records whether it accepts Laplace
+fits and compares 12-point adaptive fits as a separate approximation check.
+An unsupported suest2 route is logged without blocking the primary results.
+
+The R parameter log_phi is the negative of Stata's lnalpha. The random-effect
+parameter log_sigma is log(SD); when Stata reports a variance, conversion and
+the corresponding covariance Jacobian are required.
+
+A successful primary run prints NBINOM2_PRIMARY_LAPLACE_BENCHMARK_COMPLETE=1.
+The last line prints GLMMTMB_NBINOM2_RI_CROSSLANG_BENCHMARK_COMPLETE=1.
+If Stata stops early, return the log as it stands; it will show the failing step.
