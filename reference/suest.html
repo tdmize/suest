@@ -15,7 +15,7 @@ marginaleffects::avg_slopes(), and marginaleffects::hypotheses()."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -238,10 +238,40 @@ and <code>R = 12</code>; response predictions integrate over the random effect</
 <li><p>unweighted gamma random-effects Poisson log models from <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code>
 fitted with <code>model = "random"</code>, <code>effect = "individual"</code>, and
 <code>other = "sd"</code>; the final parameter is exposed as gamma variance <code>alpha</code></p></li>
-<li><p>unweighted binomial-logit and Poisson-log models from
+<li><p>unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models from
 <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with one grouping variable and one conditional random
-intercept; the final parameter is the log random-intercept standard deviation,
-and response predictions integrate over the Gaussian random effect</p></li>
+intercept; the final parameter is the log random-intercept standard
+deviation, and response predictions integrate over the Gaussian random
+effect. NB2 models must use the default constant dispersion model
+(<code>dispformula = ~1</code>); its estimated log size parameter <code>log_phi</code> precedes
+<code>log_sigma</code>, with conditional variance <code>mu + mu^2/exp(log_phi)</code>.
+Weights, offsets, and zero inflation are unsupported;
+NB2 additionally excludes mapped or constrained parameters. Its Laplace
+log likelihood must exceed the zero-random-effect NB2 log likelihood at
+the same fixed effects and dispersion by more than
+<code>sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))</code>.
+This numerical boundary check is not a significance test and does not
+guarantee an interior global maximum</p></li>
+<li><p>unweighted binomial-logit, Poisson-log, and NB2-log <code>glmmTMB</code> models with one correlated random
+intercept and numeric slope, <code>(1 + x | id)</code>, using an unstructured
+covariance matrix. The slope must be a single untransformed numeric
+column with a syntactically valid name. The nuisance parameters are
+<code>log_sd_intercept</code>, <code>log_sd_slope</code>, and <code>atanh_rho</code>. NB2 requires the
+default estimated constant dispersion (<code>dispformula = ~1</code>), includes
+<code>log_phi</code> before these three parameters, and uses the NB2 boundary check
+above. Count response predictions
+are <code>exp(X beta + (var_intercept + 2*x*cov_intercept_slope + x^2*var_slope)/2)</code>. Binomial response predictions integrate the logistic
+probability over this Gaussian variance; responses must be Bernoulli.
+Link predictions are <code>X beta</code>. Near-singular random
+covariance is rejected in a centered, standardized predictor basis.
+Weights, offsets, zero inflation, constraints, diagonal covariance,
+multiple slopes, slope-only terms, and other random-slope families are
+unsupported. Random-slope systems must contain models of the same family;
+the slope variable must be supplied for response predictions even when
+it is absent from the fixed-effects formula. Native model covariance is
+used as supplied. Poorly scaled predictors can produce inaccurate native
+numerical curvature even with convergence and a positive-definite Hessian;
+fit predictors in well-scaled units and check sensitivity to rescaling</p></li>
 <li><p>unweighted GEE from <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity,
 binary logit/probit/cloglog, and Poisson log, with independence or
 exchangeable correlation and numeric outcomes</p></li>

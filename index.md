@@ -107,6 +107,62 @@ the models use the same or overlapping observations.
   link, `model = "random"`, `effect = "individual"`, and `other = "sd"`;
   the natural-scale gamma variance `alpha` is included in the joint
   system
+- unweighted binomial-logit and Poisson-log using
+  [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
+  with one Gaussian random intercept; predictions integrate over the
+  random effect
+- negative-binomial NB2 log using
+  [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
+  with one Gaussian random intercept and default constant dispersion
+  (`dispformula = ~1`); both `log_phi` (NB2 size) and `log_sigma`
+  (random-intercept SD) enter the joint system. Returned Stata Laplace
+  benchmarks validate component fits, joint covariance, and marginal
+  effects; the [NB2 validation
+  report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RI-VALIDATION-20260923.md)
+  records the cluster-correction and numerical comparison limits. The
+  glmmTMB routes exclude weights, offsets, and zero inflation
+- Poisson-log `glmmTMB` models with one Gaussian random intercept and
+  one correlated numeric random slope, `(1 + x | id)`. Both log SDs and
+  the Fisher correlation enter the joint system. Population predictions
+  and marginal effects include the covariate-dependent random variance.
+  Returned Stata component fits and joint covariance audits validate
+  balanced, partial-overlap, and disjoint systems; the [Poisson
+  random-slope validation
+  report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-POISSON-RS-VALIDATION-20260923.md)
+  distinguishes this agreement from residual differences in raw GSEM
+  curvature.
+- NB2-log `glmmTMB` models with the same correlated random intercept and
+  numeric slope, plus estimated constant dispersion. The joint system
+  includes `log_phi`, both log SDs, and the Fisher correlation. R
+  likelihood, score, covariance, and marginal-effects checks are
+  covered. Returned Stata fits and independent covariance audits cover
+  balanced, partial-overlap, and disjoint samples. Raw GSEM SE
+  differences reach 1.16%, chiefly from numerical curvature; those raw
+  results remain separate from the independent reference. The disjoint
+  audit aligns cluster corrections and retains the Hessian chain-rule
+  term for glmmTMB’s native correlation coordinate. See the [NB2
+  random-slope validation
+  report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RS-VALIDATION-20260924.md).
+  Fit predictors in well-scaled units: glmmTMB’s numerical curvature can
+  be inaccurate under extreme rescaling despite reported convergence.
+  `suest` uses the supplied native covariance
+- Bernoulli binomial-logit `glmmTMB` models with one correlated random
+  intercept and numeric slope, `(1 + x | id)`. Probabilities integrate
+  over both Gaussian effects, and inference retains both log SDs and the
+  Fisher correlation. R checks cover likelihoods, scores, marginal
+  effects, and all three sample patterns. The returned balanced,
+  partial-overlap, and disjoint Stata components and independent
+  covariance audits agree with R. Raw joint GSEM SEs differ by up to
+  4.23%, 1.14%, and 1.57%, respectively, after aligning cluster
+  corrections. Numerical curvature explains the main differences; one
+  disjoint raw-covariance reconstruction diagnostic remains outside its
+  absolute bound. See the [logit random-slope
+  report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-LOGIT-RS-VALIDATION-20260924.md).
+  For accurate numerical slope SEs, use
+  `numderiv = list("fdcenter", eps = 1e-4)` in
+  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
+  and check sensitivity to the step size. Other random-slope families
+  and more complex random-effects structures remain unsupported
 - unweighted GEE using
   [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):
   Gaussian identity, binary logit/probit/cloglog, and Poisson log, with

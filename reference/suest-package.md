@@ -51,7 +51,8 @@ random-effects Poisson models fitted by
 [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) are supported
 under the restrictions documented in
 [`suest()`](https://tdmize.github.io/suest/reference/suest.md).
-Unweighted binomial-logit and Poisson-log models fitted by
+Unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log
+models fitted by
 [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
 with one conditional random intercept are supported under the
 restrictions documented in

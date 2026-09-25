@@ -250,11 +250,47 @@ survey t or F adjustment is applied.
   `model = "random"`, `effect = "individual"`, and `other = "sd"`; the
   final parameter is exposed as gamma variance `alpha`
 
-- unweighted binomial-logit and Poisson-log models from
+- unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log
+  models from
   [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
   with one grouping variable and one conditional random intercept; the
   final parameter is the log random-intercept standard deviation, and
-  response predictions integrate over the Gaussian random effect
+  response predictions integrate over the Gaussian random effect. NB2
+  models must use the default constant dispersion model
+  (`dispformula = ~1`); its estimated log size parameter `log_phi`
+  precedes `log_sigma`, with conditional variance
+  `mu + mu^2/exp(log_phi)`. Weights, offsets, and zero inflation are
+  unsupported; NB2 additionally excludes mapped or constrained
+  parameters. Its Laplace log likelihood must exceed the
+  zero-random-effect NB2 log likelihood at the same fixed effects and
+  dispersion by more than
+  `sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))`. This
+  numerical boundary check is not a significance test and does not
+  guarantee an interior global maximum
+
+- unweighted binomial-logit, Poisson-log, and NB2-log `glmmTMB` models
+  with one correlated random intercept and numeric slope,
+  `(1 + x | id)`, using an unstructured covariance matrix. The slope
+  must be a single untransformed numeric column with a syntactically
+  valid name. The nuisance parameters are `log_sd_intercept`,
+  `log_sd_slope`, and `atanh_rho`. NB2 requires the default estimated
+  constant dispersion (`dispformula = ~1`), includes `log_phi` before
+  these three parameters, and uses the NB2 boundary check above. Count
+  response predictions are
+  `exp(X beta + (var_intercept + 2*x*cov_intercept_slope + x^2*var_slope)/2)`.
+  Binomial response predictions integrate the logistic probability over
+  this Gaussian variance; responses must be Bernoulli. Link predictions
+  are `X beta`. Near-singular random covariance is rejected in a
+  centered, standardized predictor basis. Weights, offsets, zero
+  inflation, constraints, diagonal covariance, multiple slopes,
+  slope-only terms, and other random-slope families are unsupported.
+  Random-slope systems must contain models of the same family; the slope
+  variable must be supplied for response predictions even when it is
+  absent from the fixed-effects formula. Native model covariance is used
+  as supplied. Poorly scaled predictors can produce inaccurate native
+  numerical curvature even with convergence and a positive-definite
+  Hessian; fit predictors in well-scaled units and check sensitivity to
+  rescaling
 
 - unweighted GEE from
   [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):

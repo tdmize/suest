@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -33,6 +33,16 @@
       <small>Source: <a href="https://github.com/tdmize/suest/blob/main/NEWS.md" class="external-link"><code>NEWS.md</code></a></small>
     </div>
 
+    <div class="section level2">
+<h2 class="pkg-version" data-toc-text="0.1.6" id="suest-016">suest 0.1.6<a class="anchor" aria-label="anchor" href="#suest-016"></a></h2>
+<ul><li>Added unweighted negative-binomial NB2-log <code>glmmTMB</code> models with one Gaussian random intercept and estimated constant dispersion. The joint system retains fixed effects, log NB2 size, and log random-intercept SD with their covariance.</li>
+<li>Added correlated random-intercept and single numeric-slope <code>glmmTMB</code> models, <code>(1 + x | id)</code>, for Bernoulli binomial-logit, Poisson-log, and NB2-log families. Both log SDs and the Fisher correlation participate in joint inference; NB2 also retains log size. Population predictions, slopes, and comparisons include random-effect integration and nuisance-parameter uncertainty through <code>marginaleffects</code>.</li>
+<li>Added independent likelihood, score, covariance, and marginal-effect checks, plus returned Stata benchmarks for balanced, partial-overlap, and disjoint samples. Component-cluster corrections are aligned explicitly in disjoint comparisons. Independent covariance audits retain the observed-information chain-rule term for glmmTMB’s native correlation coordinate.</li>
+<li>Added covariance-boundary checks in a centered, standardized predictor basis. NB2 random-intercept models also require a numerical likelihood improvement over the zero-random-effect boundary. The original boundary benchmark is retained as a rejection test.</li>
+<li>Tightened the existing glmmTMB offset restriction to reject offset specifications even when their training values are all zero.</li>
+<li>Documented numerical limits: raw GSEM covariance does not exactly match the independently validated R covariance. Maximum raw joint SE differences reach about 1% for Poisson slopes, 1.16% for NB2 slopes, and 4.23% for logit slopes, chiefly from numerical curvature. One disjoint logit raw-reconstruction check remains outside its 1e-6 absolute bound (1.052e-6); it is recorded separately from the passing independent-R gate. Detailed reports and original fixtures preserve these distinctions. Poor predictor scaling can also compromise glmmTMB’s supplied native covariance despite reported convergence.</li>
+<li>For accurate numerical logit slope SEs, recommend centered coefficient differences via <code>numderiv = list("fdcenter", eps = 1e-4)</code> and step-size checks. The package does not change marginaleffects’ global numerical settings.</li>
+</ul></div>
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.5" id="suest-015">suest 0.1.5<a class="anchor" aria-label="anchor" href="#suest-015"></a></h2>
 <ul><li>Added initial <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> support for unweighted binomial-logit and Poisson-log models with one grouping variable and one conditional random intercept. The SUEST parameter vector includes the log random-intercept standard deviation, and response predictions integrate over the Gaussian random effect for use with <code>marginaleffects</code>. Returned Stata <code>melogit</code>, adaptive <code>suest2</code>, and Laplace <code>gsem</code> benchmarks certify the component and joint-system behavior. Returned Stata <code>mepoisson</code> benchmarks match Laplace component coefficients, covariance, and log likelihoods within <code>5.41e-6</code>, <code>1.31e-7</code>, and <code>1.83e-7</code>; marginal means and slopes agree within <code>1.07e-5</code> and <code>4.02e-6</code>. Joint Laplace <code>gsem</code> coefficients and covariance agree within <code>7.35e-6</code> and <code>0.00110</code>. As for <code>melogit</code>, <code>suest2</code> requires adaptive quadrature, so those results are retained as a separate approximation comparison rather than used as the Laplace equality gate.</li>

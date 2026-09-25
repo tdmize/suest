@@ -1,5 +1,43 @@
 # Changelog
 
+## suest 0.1.6
+
+- Added unweighted negative-binomial NB2-log `glmmTMB` models with one
+  Gaussian random intercept and estimated constant dispersion. The joint
+  system retains fixed effects, log NB2 size, and log random-intercept
+  SD with their covariance.
+- Added correlated random-intercept and single numeric-slope `glmmTMB`
+  models, `(1 + x | id)`, for Bernoulli binomial-logit, Poisson-log, and
+  NB2-log families. Both log SDs and the Fisher correlation participate
+  in joint inference; NB2 also retains log size. Population predictions,
+  slopes, and comparisons include random-effect integration and
+  nuisance-parameter uncertainty through `marginaleffects`.
+- Added independent likelihood, score, covariance, and marginal-effect
+  checks, plus returned Stata benchmarks for balanced, partial-overlap,
+  and disjoint samples. Component-cluster corrections are aligned
+  explicitly in disjoint comparisons. Independent covariance audits
+  retain the observed-information chain-rule term for glmmTMB’s native
+  correlation coordinate.
+- Added covariance-boundary checks in a centered, standardized predictor
+  basis. NB2 random-intercept models also require a numerical likelihood
+  improvement over the zero-random-effect boundary. The original
+  boundary benchmark is retained as a rejection test.
+- Tightened the existing glmmTMB offset restriction to reject offset
+  specifications even when their training values are all zero.
+- Documented numerical limits: raw GSEM covariance does not exactly
+  match the independently validated R covariance. Maximum raw joint SE
+  differences reach about 1% for Poisson slopes, 1.16% for NB2 slopes,
+  and 4.23% for logit slopes, chiefly from numerical curvature. One
+  disjoint logit raw-reconstruction check remains outside its 1e-6
+  absolute bound (1.052e-6); it is recorded separately from the passing
+  independent-R gate. Detailed reports and original fixtures preserve
+  these distinctions. Poor predictor scaling can also compromise
+  glmmTMB’s supplied native covariance despite reported convergence.
+- For accurate numerical logit slope SEs, recommend centered coefficient
+  differences via `numderiv = list("fdcenter", eps = 1e-4)` and
+  step-size checks. The package does not change marginaleffects’ global
+  numerical settings.
+
 ## suest 0.1.5
 
 - Added initial

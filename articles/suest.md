@@ -108,6 +108,8 @@ while the other is not.
 | Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with common regressors across equations and `finalHessian = TRUE` |
 | Linear panel fixed, between, and random effects | unweighted [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects; balanced Swamy-Arora RE has closest Stata parity, while unbalanced RE can differ slightly |
 | Random-intercept Gaussian panel ML | unweighted `nlme::lme(method = "ML")`; variance components included |
+| Gaussian random-intercept GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log with constant dispersion |
+| Gaussian random-intercept and numeric-slope GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log, `(1 + x | id)`, unstructured covariance; balanced, partial-overlap, and disjoint samples independently audited; raw GSEM covariance discrepancies documented |
 | Population-averaged GEE | unweighted [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html); Gaussian, binary, or Poisson with independence/exchangeable correlation |
 | Ordered logit and probit | [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html), restricted [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) |
 | Multinomial logit | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) |
@@ -118,6 +120,21 @@ combinations of supported categorical-response models are allowed, and
 scalar and categorical models may be combined. Outputs on different
 response scales are labeled separately rather than treated as directly
 commensurate.
+
+Panel and GLMM systems currently require models of the same supported
+type. For supported random-slope GLMMs, population means integrate over
+both Gaussian effects. The joint covariance includes their log SDs,
+Fisher correlation, and, for NB2, log size. Use well-scaled predictors
+when fitting these models: native glmmTMB numerical covariance can be
+inaccurate under extreme rescaling despite a convergence flag and
+positive-definite Hessian. `suest` uses that native covariance as
+supplied. For logit random-slope models, predictions integrate the
+logistic probability over the random effects, and continuous slopes
+include changes in the random-effect variance. To reduce cancellation in
+nested numerical derivatives, use
+`numderiv = list("fdcenter", eps = 1e-4)` in
+[`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
+and check step-size sensitivity.
 
 Offsets are supported. Bias-reduced, adjusted-score, Firth, and
 penalized GLM fits are rejected because their estimating equations

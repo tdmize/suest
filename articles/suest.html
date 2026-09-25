@@ -22,7 +22,7 @@
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.5</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -244,6 +244,18 @@ slightly</td>
 components included</td>
 </tr>
 <tr class="even">
+<td>Gaussian random-intercept GLMM</td>
+<td>unweighted <code>glmmTMB</code>; binomial-logit, Poisson-log, or
+NB2-log with constant dispersion</td>
+</tr>
+<tr class="odd">
+<td>Gaussian random-intercept and numeric-slope GLMM</td>
+<td>unweighted <code>glmmTMB</code>; binomial-logit, Poisson-log, or
+NB2-log, <code>(1 + x | id)</code>, unstructured covariance; balanced,
+partial-overlap, and disjoint samples independently audited; raw GSEM
+covariance discrepancies documented</td>
+</tr>
+<tr class="even">
 <td>Population-averaged GEE</td>
 <td>unweighted <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>; Gaussian, binary, or
 Poisson with independence/exchangeable correlation</td>
@@ -267,6 +279,20 @@ combinations of supported categorical-response models are allowed, and
 scalar and categorical models may be combined. Outputs on different
 response scales are labeled separately rather than treated as directly
 commensurate.</p>
+<p>Panel and GLMM systems currently require models of the same supported
+type. For supported random-slope GLMMs, population means integrate over
+both Gaussian effects. The joint covariance includes their log SDs,
+Fisher correlation, and, for NB2, log size. Use well-scaled predictors
+when fitting these models: native glmmTMB numerical covariance can be
+inaccurate under extreme rescaling despite a convergence flag and
+positive-definite Hessian. <code>suest</code> uses that native
+covariance as supplied. For logit random-slope models, predictions
+integrate the logistic probability over the random effects, and
+continuous slopes include changes in the random-effect variance. To
+reduce cancellation in nested numerical derivatives, use
+<code>numderiv = list("fdcenter", eps = 1e-4)</code> in
+<code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">marginaleffects::avg_slopes()</a></code> and check step-size
+sensitivity.</p>
 <p>Offsets are supported. Bias-reduced, adjusted-score, Firth, and
 penalized GLM fits are rejected because their estimating equations
 differ from ordinary maximum-likelihood GLM scores.</p>

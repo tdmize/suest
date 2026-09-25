@@ -1,16 +1,20 @@
 # Development notes
 
-Version 0.1.4 is the certified survey-binary release candidate. Its
-expanded model adapters, pweights, linear ancillary parameter, sample
-alignment, cluster-robust covariance, linear-panel, random-intercept
-Gaussian ML, bivariate-probit, IV-probit, GEE, multiple-imputation, and
-narrow one-stage survey routes are covered by focused unit tests. The
-established families are also covered by the full numerical acceptance
-suite. Cross-language benchmarks live in `tools/stata-benchmarks/`.
+Version 0.1.6 adds NB2 random-intercept support and correlated
+random-intercept/ numeric-slope support for Poisson, NB2, and
+Bernoulli-logit glmmTMB models. Independent validation covers balanced,
+partial-overlap, and disjoint samples. Raw GSEM covariance differences
+remain documented; strict raw-Stata parity is not claimed. Existing
+survey, MI, panel, and single-level contracts are unchanged.
 
-Post-0.1.4 development prioritizes nonlinear panel families first and
-general GLMM/multilevel models second. See
-`tools/ROADMAP-POST-0.1.4-20260909.md` for the scoped sequence.
+See the [release
+notes](https://github.com/tdmize/suest/blob/main/tools/RELEASE-0.1.6.md)
+and [current
+handoff](https://github.com/tdmize/suest/blob/main/tools/SESSION-HANDOFF-0.1.6-20260925.md)
+for scope, validation, and publication status. Cross-language benchmarks
+live in `tools/stata-benchmarks/`. The post-0.1.4 roadmap and earlier
+handoffs are historical records; choose subsequent model additions
+explicitly.
 
 ## First local setup
 
