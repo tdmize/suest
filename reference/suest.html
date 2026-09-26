@@ -15,7 +15,7 @@ marginaleffects::avg_slopes(), and marginaleffects::hypotheses()."></head><body>
 
     <a class="navbar-brand me-2" href="../index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -38,7 +38,7 @@ marginaleffects::avg_slopes(), and marginaleffects::hypotheses()."></head><body>
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Combine fitted models with seemingly unrelated estimation</h1>
-      <small class="dont-index">Source: <a href="https://github.com/tdmize/suest/blob/v0.1.6/R/suest.R" class="external-link"><code>R/suest.R</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/tdmize/suest/blob/main/R/suest.R" class="external-link"><code>R/suest.R</code></a></small>
       <div class="d-none name"><code>suest.Rd</code></div>
     </div>
 
@@ -271,7 +271,13 @@ the slope variable must be supplied for response predictions even when
 it is absent from the fixed-effects formula. Native model covariance is
 used as supplied. Poorly scaled predictors can produce inaccurate native
 numerical curvature even with convergence and a positive-definite Hessian;
-fit predictors in well-scaled units and check sensitivity to rescaling</p></li>
+center and rescale continuous predictors before fitting, then compare
+predictions and effects after converting them to the same original units.
+For logit random-slope <code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes()</a></code>, use
+<code>numderiv = list("fdcenter", eps = 1e-4)</code> and compare results at nearby
+steps (for example, <code>5e-5</code> and <code>2e-4</code>). An unstable standard error
+requires further investigation; changing the finite-difference step
+does not repair an inaccurate native model covariance</p></li>
 <li><p>unweighted GEE from <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity,
 binary logit/probit/cloglog, and Poisson log, with independence or
 exchangeable correlation and numeric outcomes</p></li>

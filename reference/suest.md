@@ -289,8 +289,14 @@ survey t or F adjustment is applied.
   absent from the fixed-effects formula. Native model covariance is used
   as supplied. Poorly scaled predictors can produce inaccurate native
   numerical curvature even with convergence and a positive-definite
-  Hessian; fit predictors in well-scaled units and check sensitivity to
-  rescaling
+  Hessian; center and rescale continuous predictors before fitting, then
+  compare predictions and effects after converting them to the same
+  original units. For logit random-slope
+  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),
+  use `numderiv = list("fdcenter", eps = 1e-4)` and compare results at
+  nearby steps (for example, `5e-5` and `2e-4`). An unstable standard
+  error requires further investigation; changing the finite-difference
+  step does not repair an inaccurate native model covariance
 
 - unweighted GEE from
   [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):

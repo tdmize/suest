@@ -7,7 +7,7 @@
 
     <a class="navbar-brand me-2" href="index.html">suest</a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="">0.1.6.9000</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -30,12 +30,13 @@
   <main id="main" class="col-md-9"><div class="page-header">
 
       <h1>Development notes</h1>
-      <small class="dont-index">Source: <a href="https://github.com/tdmize/suest/blob/v0.1.6/DEVELOPMENT.md" class="external-link"><code>DEVELOPMENT.md</code></a></small>
+      <small class="dont-index">Source: <a href="https://github.com/tdmize/suest/blob/main/DEVELOPMENT.md" class="external-link"><code>DEVELOPMENT.md</code></a></small>
     </div>
 
 <div id="development-notes" class="section level1">
 
 <p>Version 0.1.6 adds NB2 random-intercept support and correlated random-intercept/ numeric-slope support for Poisson, NB2, and Bernoulli-logit glmmTMB models. Independent validation covers balanced, partial-overlap, and disjoint samples. Raw GSEM covariance differences remain documented; strict raw-Stata parity is not claimed. Existing survey, MI, panel, and single-level contracts are unchanged.</p>
+<p>The 0.1.6.9000 development pass improves unsupported-specification messages and documents predictor scaling and numerical marginal-effect SE checks in <code>tools/STABILITY-USABILITY-20260925.md</code>. It preserves the native glmmTMB covariance and the distinction between independent R validation and unresolved raw Stata GSEM discrepancies. The 0.1.6 release instructions are complete.</p>
 <p>See the <a href="https://github.com/tdmize/suest/blob/main/tools/RELEASE-0.1.6.md" class="external-link">release notes</a> and <a href="https://github.com/tdmize/suest/blob/main/tools/SESSION-HANDOFF-0.1.6-20260925.md" class="external-link">current handoff</a> for scope, validation, and publication status. Cross-language benchmarks live in <code>tools/stata-benchmarks/</code>. The post-0.1.4 roadmap and earlier handoffs are historical records; choose subsequent model additions explicitly.</p>
 <div class="section level2">
 <h2 id="first-local-setup">First local setup<a class="anchor" aria-label="anchor" href="#first-local-setup"></a></h2>

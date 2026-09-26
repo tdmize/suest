@@ -1,5 +1,15 @@
 # Changelog
 
+## suest 0.1.6.9000 (development)
+
+- Improved unsupported-model errors to name the offending model and its
+  class; unsupported `glmmTMB` family errors now name the family and
+  link.
+- Added a practical predictor-rescaling and centered finite-difference
+  sensitivity workflow for random-slope marginal effects. These checks
+  are diagnostic: they do not change `glmmTMB`’s native covariance or
+  resolve the documented raw Stata GSEM discrepancy.
+
 ## suest 0.1.6
 
 - Added unweighted negative-binomial NB2-log `glmmTMB` models with one

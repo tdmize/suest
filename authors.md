@@ -7,7 +7,7 @@
 ## Citation
 
 Source:
-[`inst/CITATION`](https://github.com/tdmize/suest/blob/v0.1.6/inst/CITATION)
+[`inst/CITATION`](https://github.com/tdmize/suest/blob/main/inst/CITATION)
 
 Mize, Trenton D., Long Doan, and J. Scott Long. 2019. "A General
 Framework for Comparing Predictions and Marginal Effects Across Models."
