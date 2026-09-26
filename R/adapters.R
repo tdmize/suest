@@ -242,7 +242,9 @@
       stop(
         paste0(
           "glmmTMB support is currently limited to binomial-logit, ",
-          "Poisson-log, and nbinom2-log models with one conditional random intercept."
+          "Poisson-log, and nbinom2-log models with one conditional random intercept ",
+          "or one correlated intercept and numeric slope; ",
+          "received family '", family$family, "' with link '", family$link, "'."
         ),
         call. = FALSE
       )

@@ -214,7 +214,13 @@ the slope variable must be supplied for response predictions even when
 it is absent from the fixed-effects formula. Native model covariance is
 used as supplied. Poorly scaled predictors can produce inaccurate native
 numerical curvature even with convergence and a positive-definite Hessian;
-fit predictors in well-scaled units and check sensitivity to rescaling
+center and rescale continuous predictors before fitting, then compare
+predictions and effects after converting them to the same original units.
+For logit random-slope \code{avg_slopes()}, use
+\code{numderiv = list("fdcenter", eps = 1e-4)} and compare results at nearby
+steps (for example, \code{5e-5} and \code{2e-4}). An unstable standard error
+requires further investigation; changing the finite-difference step
+does not repair an inaccurate native model covariance
 \item unweighted GEE from \code{geepack::geeglm()}: Gaussian identity,
 binary logit/probit/cloglog, and Poisson log, with independence or
 exchangeable correlation and numeric outcomes

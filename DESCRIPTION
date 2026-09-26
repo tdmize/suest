@@ -1,6 +1,6 @@
 Package: suest
 Title: Seemingly Unrelated Estimation for Comparing Model Predictions and Effects
-Version: 0.1.6
+Version: 0.1.6.9000
 Authors@R:
     person("Trenton D.", "Mize", email = "tmize@purdue.edu",
            role = c("aut", "cre"))

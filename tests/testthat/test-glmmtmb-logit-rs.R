@@ -172,6 +172,14 @@ test_that("logit random slopes propagate all parameters into marginal-effect unc
   expect_equal(comparison$estimate, comparisons, tolerance = 1e-10)
   for (pair in list(list(pred, G), list(slope, H), list(comparison, D)))
     expect_equal(pair[[1]]$std.error, sqrt(diag(pair[[2]] %*% vcov(fit) %*% t(pair[[2]]))), tolerance = 2e-5)
+  # The documented centered-difference step check remains close to an
+  # independent analytic gradient at both neighboring step sizes.
+  for (step in c(5e-5, 2e-4)) {
+    checked <- marginaleffects::avg_slopes(fit, variables = "x", newdata = nd,
+      numderiv = list("fdcenter", eps = step))
+    expect_equal(checked$std.error, sqrt(diag(H %*% vcov(fit) %*% t(H))),
+      tolerance = 2e-5)
+  }
   contrast <- suppressWarnings(marginaleffects::hypotheses(pred, "b1-b2=0"))
   delta <- G[1, ]-G[2, ]
   expect_equal(contrast$std.error, sqrt(drop(delta %*% vcov(fit) %*% delta)), tolerance = 2e-6)

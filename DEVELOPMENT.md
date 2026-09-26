@@ -6,6 +6,12 @@ Independent validation covers balanced, partial-overlap, and disjoint samples.
 Raw GSEM covariance differences remain documented; strict raw-Stata parity is
 not claimed. Existing survey, MI, panel, and single-level contracts are unchanged.
 
+The 0.1.6.9000 development pass improves unsupported-specification messages and
+documents predictor scaling and numerical marginal-effect SE checks in
+`tools/STABILITY-USABILITY-20260925.md`. It preserves the native glmmTMB
+covariance and the distinction between independent R validation and unresolved
+raw Stata GSEM discrepancies. The 0.1.6 release instructions are complete.
+
 See the [release notes](https://github.com/tdmize/suest/blob/main/tools/RELEASE-0.1.6.md)
 and [current handoff](https://github.com/tdmize/suest/blob/main/tools/SESSION-HANDOFF-0.1.6-20260925.md)
 for scope, validation, and publication status. Cross-language benchmarks live

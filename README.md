@@ -109,9 +109,10 @@ essential when the models use the same or overlapping observations.
   audit aligns cluster corrections and retains the Hessian chain-rule term
   for glmmTMB's native correlation coordinate. See the
   [NB2 random-slope validation report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RS-VALIDATION-20260924.md).
-  Fit predictors in well-scaled units: glmmTMB's numerical curvature can be
-  inaccurate under extreme rescaling despite reported convergence. `suest`
-  uses the supplied native covariance
+  Fit continuous predictors in centered, well-scaled units: glmmTMB's numerical
+  curvature can be inaccurate with extreme predictor units despite reported
+  convergence. `suest` uses the supplied native covariance. The refit and
+  sensitivity workflow is in `tools/STABILITY-USABILITY-20260925.md`
 - Bernoulli binomial-logit `glmmTMB` models with
   one correlated random intercept and numeric slope, `(1 + x | id)`.
   Probabilities integrate over both Gaussian effects, and inference retains
@@ -123,9 +124,10 @@ essential when the models use the same or overlapping observations.
   curvature explains the main differences; one disjoint raw-covariance
   reconstruction diagnostic remains outside its absolute bound. See the
   [logit random-slope report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-LOGIT-RS-VALIDATION-20260924.md).
-  For accurate numerical slope SEs, use
-  `numderiv = list("fdcenter", eps = 1e-4)` in `avg_slopes()` and check
-  sensitivity to the step size. Other random-slope families and more
+  For numerical logit slope SEs, use
+  `numderiv = list("fdcenter", eps = 1e-4)` in `avg_slopes()` and compare nearby
+  steps. This does not repair an inaccurate native model covariance. Other
+  random-slope families and more
   complex random-effects structures remain unsupported
 - unweighted GEE using `geepack::geeglm()`: Gaussian identity,
   binary logit/probit/cloglog, and Poisson log, with independence or exchangeable

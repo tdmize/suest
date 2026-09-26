@@ -177,7 +177,13 @@
 #'   it is absent from the fixed-effects formula. Native model covariance is
 #'   used as supplied. Poorly scaled predictors can produce inaccurate native
 #'   numerical curvature even with convergence and a positive-definite Hessian;
-#'   fit predictors in well-scaled units and check sensitivity to rescaling
+#'   center and rescale continuous predictors before fitting, then compare
+#'   predictions and effects after converting them to the same original units.
+#'   For logit random-slope `avg_slopes()`, use
+#'   `numderiv = list("fdcenter", eps = 1e-4)` and compare results at nearby
+#'   steps (for example, `5e-5` and `2e-4`). An unstable standard error
+#'   requires further investigation; changing the finite-difference step
+#'   does not repair an inaccurate native model covariance
 #' * unweighted GEE from `geepack::geeglm()`: Gaussian identity,
 #'   binary logit/probit/cloglog, and Poisson log, with independence or
 #'   exchangeable correlation and numeric outcomes
@@ -256,7 +262,8 @@ suest <- function(
   model_types <- vapply(adapters, `[[`, character(1), "type")
   model_engines <- vapply(adapters, `[[`, character(1), "engine")
 
-  if (any(model_types == "unsupported"))
+  unsupported <- which(model_types == "unsupported")
+  if (length(unsupported))
     stop(
       paste0(
         "Each model must be a supported stats::lm, stats::glm, glm2::glm2, ",
@@ -268,7 +275,9 @@ suest <- function(
         "random-effects binary or Poisson model, a supported ",
         "glmmTMB::glmmTMB random-effects model, a supported ",
         "geepack::geeglm model, ",
-        "or a fixest::feols IV model."
+        "or a fixest::feols IV model. Unsupported model '",
+        model_names[unsupported[1L]], "' has class '",
+        class(models[[unsupported[1L]]])[1L], "'."
       ),
       call. = FALSE
     )
