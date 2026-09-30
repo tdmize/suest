@@ -136,6 +136,13 @@ ordered logit/probit, and multinomial logit models.
 
 Bias-reduced, adjusted-score, Firth, and penalized GLM fits are rejected
 because they do not use ordinary maximum-likelihood score equations.
+Ordinary `glm` and `glm2` fits must have converged. Penalized
+[`nnet::multinom`](https://rdrr.io/pkg/nnet/man/multinom.html) fits with
+nonzero `decay` are also rejected. Beta regression requires
+`type = "ML"`; bias-reduced and bias-corrected beta fits and penalized
+`survreg` fits are not supported. Conventional `survreg` fits with
+`robust = TRUE` use their model-based information for the joint sandwich
+covariance.
 
 ## Survey models
 
@@ -234,7 +241,12 @@ survey t or F adjustment is applied.
   random-effects linear panel models from
   [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html); balanced random-
   effects panels have the closest Stata parity, while unbalanced panels
-  can retain small engine-specific differences
+  can retain small engine-specific differences. Within-model prediction
+  uncertainty conditions on estimation-sample means and propagates slope
+  uncertainty. At matching evaluation means, the covariance is
+  structurally degenerate: average-level confidence intervals and
+  hypothesis tests are unsupported, and numerical SEs can be missing or
+  nearly zero. Slope and finite-change comparisons remain supported.
 
 - unweighted single-level random-intercept Gaussian panel models from
   [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) fitted with

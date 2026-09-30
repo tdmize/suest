@@ -35,7 +35,12 @@
 
     <div class="section level2">
 <h2 class="pkg-version" data-toc-text="0.1.6.9000" id="suest-0169000-development">suest 0.1.6.9000 (development)<a class="anchor" aria-label="anchor" href="#suest-0169000-development"></a></h2>
-<ul><li>Improved unsupported-model errors to name the offending model and its class; unsupported <code>glmmTMB</code> family errors now name the family and link.</li>
+<ul><li>Reject failed <code>multinom</code> and <code>polr</code> fits, unreliable <code>clm</code> convergence diagnostics, and <code>glm.nb</code> fits with failed mean or dispersion convergence before constructing joint inference.</li>
+<li>Documented the conditional-mean interpretation of within-model prediction uncertainty and the unsupported average-level inference at matching estimation-sample means; slopes and finite changes remain supported.</li>
+<li>Corrected interval-censored <code>survreg</code> log-scale scores by evaluating the interval likelihood derivative directly. This fixes joint covariance terms affected by the interval-scale residual sign in the upstream implementation.</li>
+<li>Restricted beta regression to ordinary ML fits (<code>type = "ML"</code>) and added an explicit diagnostic for unsupported penalized <code>survreg</code> fits.</li>
+<li>Reject nonconverged ordinary <code>glm</code>/<code>glm2</code> fits and <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom</a></code> fits with nonzero weight decay before constructing joint inference. Penalized multinomial fits do not use the ordinary maximum-likelihood score equations.</li>
+<li>Improved unsupported-model errors to name the offending model and its class; unsupported <code>glmmTMB</code> family errors now name the family and link.</li>
 <li>Added a practical predictor-rescaling and centered finite-difference sensitivity workflow for random-slope marginal effects. These checks are diagnostic: they do not change <code>glmmTMB</code>’s native covariance or resolve the documented raw Stata GSEM discrepancy.</li>
 </ul></div>
     <div class="section level2">

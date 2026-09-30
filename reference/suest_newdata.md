@@ -30,19 +30,16 @@ supplied to the `wts` argument of `marginaleffects` averaging functions.
 
 ``` r
 dat <- mtcars
-dat$am <- factor(dat$am)
 
-model1 <- glm(am ~ wt + hp, family = binomial(), data = dat, subset = cyl == 4)
-model2 <- glm(am ~ wt + hp, family = binomial(), data = dat, subset = cyl != 4)
-#> Warning: glm.fit: algorithm did not converge
-#> Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+model1 <- lm(mpg ~ wt + hp, data = dat, subset = cyl == 4)
+model2 <- lm(mpg ~ wt + hp, data = dat, subset = cyl != 4)
 fit <- suest(model1, model2, model_names = c("Four cylinders", "Other"))
 nd <- suest_newdata(fit)
 marginaleffects::avg_comparisons(fit, variables = "wt", newdata = nd)
 #> 
-#>           Group Estimate Std. Error         z Pr(>|z|)    S  2.5 % 97.5 %
-#>  Four cylinders   -0.596   9.08e-02 -6.57e+00   <0.001 34.2 -0.774 -0.418
-#>  Other            -0.238   2.90e-11 -8.20e+09   <0.001  Inf -0.238 -0.238
+#>           Group Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
+#>  Four cylinders    -5.12       1.12 -4.58   <0.001 17.7 -7.31  -2.92
+#>  Other             -2.56       0.58 -4.41   <0.001 16.6 -3.70  -1.42
 #> 
 #> Term: wt
 #> Type: response

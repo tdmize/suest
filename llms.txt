@@ -92,7 +92,12 @@ the models use the same or overlapping observations.
   random-effects linear panel models using
   [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html); unbalanced
   random- effects panels can retain small engine-specific differences
-  from Stata
+  from Stata. Within-model prediction uncertainty conditions on
+  estimation-sample means and propagates slope uncertainty. At matching
+  evaluation means, the covariance is structurally degenerate:
+  average-level confidence intervals and hypothesis tests are
+  unsupported, and numerical SEs can be missing or nearly zero. Slope
+  and finite-change comparisons remain supported.
 - unweighted random-intercept Gaussian panel models using
   [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) with
   `method = "ML"`; both variance components are included in the joint
@@ -296,7 +301,15 @@ It also documents cross-engine comparisons using
 Bias-reduced, adjusted-score, Firth, and penalized GLM fits, including
 [`brglm2::brglmFit()`](https://rdrr.io/pkg/brglm2/man/brglmFit.html),
 are rejected rather than being treated incorrectly as ordinary
-maximum-likelihood GLMs.
+maximum-likelihood GLMs. Ordinary `glm` and `glm2` fits must have
+converged. Penalized
+[`nnet::multinom`](https://rdrr.io/pkg/nnet/man/multinom.html) fits with
+nonzero `decay` are also rejected. Beta regression requires ordinary
+maximum likelihood (`type = "ML"`); bias-reduced (`"BR"`) and
+bias-corrected (`"BC"`) fits are not supported. Penalized `survreg` fits
+are also unsupported. A conventional `survreg` fit with `robust = TRUE`
+remains supported: `suest` uses its model-based information when
+constructing the joint sandwich covariance.
 
 ### Restricted survey-weighted models
 
