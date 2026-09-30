@@ -1,5 +1,9 @@
 # suest 0.1.6.9000 (development)
 
+* Fixed `marginaleffects` comparisons for multi-category factor predictors
+  when component models use different estimation samples. Model-specific
+  predictions now preserve counterfactual row order, and `suest_newdata()`
+  preserves factor classes and levels.
 * Rewrote the README, the Getting started vignette, and the short
   description at the top of each function's help page in plainer language.
   No code changes.

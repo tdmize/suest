@@ -98,6 +98,13 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
     )
 
   model_specific <- ".suest_model" %in% names(newdata)
+  # With model-specific rows, marginaleffects can replicate the stacked data
+  # many times when it constructs multi-level factor contrasts. For scalar
+  # outcomes each input row still produces exactly one prediction, so the
+  # returned predictions must remain in the same physical row order as the
+  # counterfactual data. Concatenating model 1, then model 2, otherwise
+  # misaligns predictions with contrast labels when samples are disjoint.
+  preserve_input_order <- model_specific && !any(categorical)
 
   get_model_data <- function(i) {
     if (model_specific) {
@@ -165,6 +172,11 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
   model_predictions <- function(i) {
     nd <- get_model_data(i)
     rowid <- get_rowid(nd)
+    input_order <- if (preserve_input_order) {
+      which(as.character(newdata$.suest_model) == model$model_names[i])
+    } else {
+      NULL
+    }
     engine <- if (!is.null(model$model_engines)) {
       .suest_engine_name(model$model_engines[[i]])
     } else {
@@ -177,7 +189,7 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
         paste0(model$model_names[i], "::", colnames(p)),
         each = nrow(p)
       )
-      data.frame(
+      out <- data.frame(
         rowid = rep(rowid, times = ncol(p)),
         group = factor(group, levels = group_levels),
         estimate = as.vector(p),
@@ -192,17 +204,29 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
         engine,
         model$model_types[i]
       )
-      data.frame(
+      out <- data.frame(
         rowid = rowid,
         group = factor(model$model_names[i], levels = group_levels),
         estimate = as.numeric(p),
         check.names = FALSE
       )
     }
+
+    if (preserve_input_order)
+      out$.suest_input_order <- input_order
+    out
   }
 
-  do.call(
+  out <- do.call(
     rbind,
     lapply(seq_along(model$models), model_predictions)
   )
+
+  if (preserve_input_order) {
+    out <- out[order(out$.suest_input_order), , drop = FALSE]
+    out$.suest_input_order <- NULL
+    rownames(out) <- NULL
+  }
+
+  out
 }

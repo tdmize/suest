@@ -39,6 +39,40 @@ suest_newdata <- function(object) {
       call. = FALSE
     )
 
+  # Stack through character representations so factors with different level
+  # sets cannot be corrupted by row binding, then restore factor classes from
+  # the component model frames below.
+  factor_names <- unique(unlist(lapply(
+    object$model_frames,
+    function(x) names(x)[vapply(x, is.factor, logical(1))]
+  ), use.names = FALSE))
+
+  factor_specs <- lapply(factor_names, function(nm) {
+    present <- lapply(object$model_frames, function(x) {
+      if (nm %in% names(x)) x[[nm]] else NULL
+    })
+    present <- Filter(Negate(is.null), present)
+    factors <- Filter(is.factor, present)
+
+    levs <- unique(unlist(lapply(factors, levels), use.names = FALSE))
+    observed <- unique(unlist(lapply(present, as.character), use.names = FALSE))
+    levs <- unique(c(levs, observed[!is.na(observed)]))
+
+    same_ordered_levels <- length(factors) > 0L &&
+      all(vapply(factors, is.ordered, logical(1))) &&
+      all(vapply(
+        factors,
+        function(x) identical(levels(x), levels(factors[[1L]])),
+        logical(1)
+      ))
+
+    list(
+      levels = levs,
+      ordered = length(factors) == length(present) && same_ordered_levels
+    )
+  })
+  names(factor_specs) <- factor_names
+
   row_offset <- c(0L, cumsum(vapply(
     object$model_frames,
     nrow,
@@ -71,6 +105,17 @@ suest_newdata <- function(object) {
 
   out <- do.call(rbind, frames)
   rownames(out) <- NULL
+
+  for (nm in names(factor_specs)) {
+    spec <- factor_specs[[nm]]
+    values <- as.character(out[[nm]])
+    out[[nm]] <- if (isTRUE(spec$ordered)) {
+      ordered(values, levels = spec$levels)
+    } else {
+      factor(values, levels = spec$levels)
+    }
+  }
+
   class(out) <- c("suest_newdata", class(out))
   out
 }
