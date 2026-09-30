@@ -322,7 +322,14 @@ test_case("Invariants: ordered logit and ordered probit", {
 ############################################################
 
 test_case("Invariants: multinomial logit", {
-  data <- datasets::iris
+  # Overlapping categories avoid the near-separation in the iris fixture.
+  set.seed(29265)
+  data <- data.frame(Sepal.Length = rnorm(450), Sepal.Width = runif(450))
+  eta <- cbind(0, .2 + .4 * data$Sepal.Length,
+               -.2 - .3 * data$Sepal.Length + .4 * data$Sepal.Width)
+  probability <- exp(eta) / rowSums(exp(eta))
+  data$Species <- factor(vapply(seq_len(nrow(data)), function(i)
+    sample(c("A", "B", "C"), 1, prob = probability[i, ]), character(1)))
   data$wide <- factor(
     ifelse(
       data$Sepal.Width > stats::median(data$Sepal.Width),
@@ -344,6 +351,7 @@ test_case("Invariants: multinomial logit", {
     Hess = TRUE,
     trace = FALSE
   )
+  stopifnot(m1$convergence == 0, m2$convergence == 0)
   s <- suest(m1, m2, c("MN1", "MN2"))
   check_basic_invariants(s)
 

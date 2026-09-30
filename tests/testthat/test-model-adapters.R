@@ -15,8 +15,10 @@ adapter_housing_data <- function() {
 test_that("glm2 logit, probit, and Poisson models are supported", {
   skip_if_not_installed("glm2")
 
-  dat <- mtcars
-  dat$am <- factor(dat$am)
+  set.seed(20260928)
+  dat <- data.frame(wt = rnorm(240), hp = rnorm(240))
+  dat$am <- factor(rbinom(nrow(dat), 1, plogis(-.2 + .4 * dat$wt - .3 * dat$hp)))
+  dat$cyl <- rpois(nrow(dat), exp(.4 + .2 * dat$wt + .1 * dat$hp))
 
   fits <- list(
     logit = list(
@@ -58,6 +60,7 @@ test_that("glm2 logit, probit, and Poisson models are supported", {
   )
 
   for (family_name in names(fits)) {
+    expect_true(all(vapply(fits[[family_name]], function(m) m$converged, logical(1))))
     combined <- suest(
       fits[[family_name]][[1L]],
       fits[[family_name]][[2L]],

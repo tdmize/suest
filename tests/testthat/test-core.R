@@ -230,21 +230,25 @@ test_that("invalid observation IDs are rejected", {
 })
 
 test_that("model-specific covariance blocks are preserved", {
-  dat <- mtcars
-  dat$am <- factor(dat$am)
+  set.seed(20260928)
+  dat <- data.frame(x = rnorm(240), z = rnorm(240),
+    group = rep(c(1, 2), each = 120))
+  dat$y <- rbinom(nrow(dat), 1, plogis(-.2 + .4 * dat$x - .3 * dat$z))
 
   model1 <- glm(
-    am ~ wt + hp,
+    y ~ x + z,
     family = binomial(),
     data = dat,
-    subset = cyl == 4
+    subset = group == 1
   )
   model2 <- glm(
-    am ~ wt + hp,
+    y ~ x + z,
     family = binomial(),
     data = dat,
-    subset = cyl != 4
+    subset = group == 2
   )
+  expect_true(model1$converged)
+  expect_true(model2$converged)
 
   fit <- suest(model1, model2)
   V <- vcov(fit)

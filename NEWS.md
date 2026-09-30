@@ -1,5 +1,19 @@
 # suest 0.1.6.9000 (development)
 
+* Reject failed `multinom` and `polr` fits, unreliable `clm` convergence
+  diagnostics, and `glm.nb` fits with failed mean or dispersion convergence
+  before constructing joint inference.
+* Documented the conditional-mean interpretation of within-model prediction
+  uncertainty and the unsupported average-level inference at matching
+  estimation-sample means; slopes and finite changes remain supported.
+* Corrected interval-censored `survreg` log-scale scores by evaluating the
+  interval likelihood derivative directly. This fixes joint covariance terms
+  affected by the interval-scale residual sign in the upstream implementation.
+* Restricted beta regression to ordinary ML fits (`type = "ML"`) and added
+  an explicit diagnostic for unsupported penalized `survreg` fits.
+* Reject nonconverged ordinary `glm`/`glm2` fits and `nnet::multinom` fits
+  with nonzero weight decay before constructing joint inference. Penalized
+  multinomial fits do not use the ordinary maximum-likelihood score equations.
 * Improved unsupported-model errors to name the offending model and its class;
   unsupported `glmmTMB` family errors now name the family and link.
 * Added a practical predictor-rescaling and centered finite-difference
