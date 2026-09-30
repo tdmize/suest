@@ -2,8 +2,8 @@
 
 [![R-CMD-check](https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml)
 
-Full documentation, with worked examples and output:
-[tdmize.github.io/suest](https://tdmize.github.io/suest/articles/suest.html)
+[Getting started, with worked examples and
+output](https://tdmize.github.io/suest/articles/suest.html)
 
 `suest` lets you compare predictions and marginal effects across
 regression models in R. It combines two or more separately fitted models
