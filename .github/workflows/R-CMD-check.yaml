@@ -2,6 +2,7 @@
 # Runs R CMD check on Linux, macOS, and Windows on every push and PR
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, master]
   pull_request:
@@ -45,6 +46,19 @@ jobs:
       with:
         extra-packages: any::rcmdcheck
         needs: check
+
+    - name: Verify validation dependencies
+      shell: Rscript {0}
+      run: |
+        description <- read.dcf("DESCRIPTION")
+        fields <- intersect(c("Imports", "Suggests"), colnames(description))
+        dependencies <- trimws(unlist(strsplit(paste(description[1, fields], collapse = ","), ",")))
+        packages <- sub("[[:space:]]*\\(.*\\)$", "", dependencies)
+        available <- vapply(packages, requireNamespace, logical(1), quietly = TRUE)
+        if (any(!available))
+          stop("Missing validation dependencies: ", paste(packages[!available], collapse = ", "))
+        print(vapply(packages, function(p) as.character(packageVersion(p)), character(1)))
+        sessionInfo()
 
     - uses: r-lib/actions/check-r-package@v2
       with:

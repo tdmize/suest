@@ -1832,6 +1832,52 @@
   list(score = U, bread = B, parameters = parameters)
 }
 
+.suest_survreg_components <- function(model) {
+  parameters <- .suest_extract_parameters(model, "survreg", "survival::survreg")
+  U <- sandwich::estfun(model)
+  B <- sandwich::bread(model)
+  response <- model$y
+  if (is.null(response))
+    response <- stats::model.response(stats::model.frame(model))
+
+  if ("Log(scale)" %in% names(parameters) &&
+      identical(attr(response, "type"), "interval")) {
+    rows <- which(response[, ncol(response)] == 3L)
+    if (length(rows)) {
+      distribution <- if (is.character(model$dist)) {
+        survival::survreg.distributions[[model$dist]]
+      } else model$dist
+      lower <- response[rows, 1L]
+      upper <- response[rows, 2L]
+      if (!is.null(distribution$trans)) {
+        lower <- distribution$trans(lower)
+        upper <- distribution$trans(upper)
+      }
+      if (!is.null(distribution$dist))
+        distribution <- survival::survreg.distributions[[distribution$dist]]
+      z_lower <- (lower - model$linear.predictors[rows])/model$scale
+      z_upper <- (upper - model$linear.predictors[rows])/model$scale
+      density_lower <- distribution$density(z_lower, model$parms)
+      density_upper <- distribution$density(z_upper, model$parms)
+      probability <- ifelse(density_lower[, 1L] > .5,
+        density_lower[, 2L] - density_upper[, 2L],
+        density_upper[, 1L] - density_lower[, 1L])
+
+      # d log{F(z_upper) - F(z_lower)} / d log(scale).
+      # Recompute this derivative rather than relying on the sign of the
+      # interval-scale residual supplied by a particular survival version.
+      scale_score <- (z_lower*density_lower[, 3L] -
+        z_upper*density_upper[, 3L])/probability
+      weights <- stats::model.weights(stats::model.frame(model))
+      if (!is.null(weights)) scale_score <- scale_score*weights[rows]
+      if (any(!is.finite(scale_score)))
+        stop("Unable to construct finite interval-censored scale scores.", call. = FALSE)
+      U[rows, "Log(scale)"] <- scale_score
+    }
+  }
+  list(score = U, bread = B, parameters = parameters)
+}
+
 .suest_truncreg_components <- function(model) {
   parameters <- .suest_extract_parameters(
     model,
@@ -1891,6 +1937,8 @@
     .suest_negbin_components(model)
   } else if (type == "zinb") {
     .suest_zinb_components(model)
+  } else if (type == "survreg") {
+    .suest_survreg_components(model)
   } else if (type == "truncreg") {
     .suest_truncreg_components(model)
   } else if (identical(engine, "ordinal::clm")) {

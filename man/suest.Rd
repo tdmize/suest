@@ -109,7 +109,12 @@ logit/probit, and multinomial logit models.
 
 Bias-reduced, adjusted-score, Firth, and penalized
 GLM fits are rejected because they do not use ordinary maximum-likelihood
-score equations.
+score equations. Ordinary \code{glm} and \code{glm2} fits must have converged.
+Penalized \code{nnet::multinom} fits with nonzero \code{decay} are also rejected.
+Beta regression requires \code{type = "ML"}; bias-reduced and bias-corrected
+beta fits and penalized \code{survreg} fits are not supported. Conventional
+\code{survreg} fits with \code{robust = TRUE} use their model-based information for
+the joint sandwich covariance.
 }
 \section{Survey models}{
 
@@ -172,7 +177,12 @@ same regressors; fit with \code{intGrad = TRUE} and \code{finalHessian = TRUE}
 \item unweighted individual fixed-effects, between-effects, and Swamy-Arora
 random-effects linear panel models from \code{plm::plm()}; balanced random-
 effects panels have the closest Stata parity, while unbalanced panels can
-retain small engine-specific differences
+retain small engine-specific differences. Within-model prediction
+uncertainty conditions on estimation-sample means and propagates slope
+uncertainty. At matching evaluation means, the covariance is structurally
+degenerate: average-level confidence intervals and hypothesis tests are
+unsupported, and numerical SEs can be missing or nearly zero. Slope and
+finite-change comparisons remain supported.
 \item unweighted single-level random-intercept Gaussian panel models from
 \code{nlme::lme()} fitted with \code{method = "ML"}
 \item unweighted individual random-intercept binary logit and probit models from

@@ -5,3 +5,7 @@
 ^cran-comments\.md$
 ^\.github$
 ^data-raw$
+^DEVELOPMENT\.md$
+^UPDATE-INSTRUCTIONS\.txt$
+^_pkgdown\.yml$
+^\.superpowers$

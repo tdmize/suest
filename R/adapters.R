@@ -515,6 +515,9 @@
   }
 
   if (inherits(model, "clm")) {
+    if (!isTRUE(model$convergence$code == 0))
+      stop("The ordinal::clm fit did not converge reliably. Refit it before using suest.",
+           call. = FALSE)
     if (!model$link %in% c("logit", "probit"))
       return(list(engine = "ordinal::clm", type = "unsupported"))
 
@@ -549,10 +552,25 @@
   }
 
   if (inherits(model, "multinom")) {
+    if (!isTRUE(model$convergence == 0))
+      stop("The nnet::multinom fit did not converge. Refit it before using suest.",
+           call. = FALSE)
+    if (!is.null(model$decay) && any(model$decay != 0))
+      stop(
+        paste0(
+          "Penalized nnet::multinom fits are not supported. ",
+          "Refit with decay = 0 to use ordinary maximum-likelihood scores."
+        ),
+        call. = FALSE
+      )
+
     return(list(engine = "nnet::multinom", type = "multinom"))
   }
 
   if (inherits(model, "polr")) {
+    if (!isTRUE(model$convergence == 0))
+      stop("The MASS::polr fit did not converge. Refit it before using suest.",
+           call. = FALSE)
     type <- if (identical(model$method, "logistic")) {
       "ologit"
     } else if (identical(model$method, "probit")) {
@@ -564,6 +582,9 @@
   }
 
   if (inherits(model, "negbin")) {
+    if (!isTRUE(model$converged) || length(model$th.warn) > 0L)
+      stop("The MASS::glm.nb fit did not converge, including dispersion estimation. Refit it before using suest.",
+           call. = FALSE)
     type <- if (identical(unname(model$family$link), "log")) {
       "negbin"
     } else {
@@ -573,6 +594,9 @@
   }
 
   if (inherits(model, "survreg")) {
+    if (inherits(model, "survreg.penal"))
+      stop("Penalized survival::survreg fits are not supported.", call. = FALSE)
+
     if (length(model$scale) != 1L)
       stop(
         "survival::survreg models with stratum-specific scales are not supported yet.",
@@ -583,6 +607,13 @@
   }
 
   if (inherits(model, "betareg")) {
+    if (!is.null(model$type) && !identical(model$type, "ML"))
+      stop(
+        paste0("Bias-reduced and bias-corrected beta regressions are not supported. ",
+          "Refit with type = 'ML'."),
+        call. = FALSE
+      )
+
     distribution <- if (is.null(model$dist)) "beta" else model$dist
     mean_link <- model$link[[1L]]$name
 
@@ -698,6 +729,10 @@
   }
 
   if (inherits(model, "glm")) {
+    if (!isTRUE(model$converged))
+      stop("The GLM fit did not converge. Refit it before using suest.",
+        call. = FALSE)
+
     family <- tolower(model$family$family)
     link <- tolower(model$family$link)
     key <- paste(family, link, sep = ":")

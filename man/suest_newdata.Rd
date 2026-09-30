@@ -24,10 +24,9 @@ observed covariate distribution.
 }
 \examples{
 dat <- mtcars
-dat$am <- factor(dat$am)
 
-model1 <- glm(am ~ wt + hp, family = binomial(), data = dat, subset = cyl == 4)
-model2 <- glm(am ~ wt + hp, family = binomial(), data = dat, subset = cyl != 4)
+model1 <- lm(mpg ~ wt + hp, data = dat, subset = cyl == 4)
+model2 <- lm(mpg ~ wt + hp, data = dat, subset = cyl != 4)
 fit <- suest(model1, model2, model_names = c("Four cylinders", "Other"))
 nd <- suest_newdata(fit)
 marginaleffects::avg_comparisons(fit, variables = "wt", newdata = nd)

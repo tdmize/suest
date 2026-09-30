@@ -70,7 +70,12 @@ essential when the models use the same or overlapping observations.
   use the same regressors and an observed final Hessian is retained
 - unweighted individual fixed-effects, between-effects, and Swamy-Arora
   random-effects linear panel models using `plm::plm()`; unbalanced random-
-  effects panels can retain small engine-specific differences from Stata
+  effects panels can retain small engine-specific differences from Stata.
+  Within-model prediction uncertainty conditions on estimation-sample means
+  and propagates slope uncertainty. At matching evaluation means, the
+  covariance is structurally degenerate: average-level confidence intervals
+  and hypothesis tests are unsupported, and numerical SEs can be missing or
+  nearly zero. Slope and finite-change comparisons remain supported.
 - unweighted random-intercept Gaussian panel models using `nlme::lme()` with
   `method = "ML"`; both variance components are included in the joint system
 - unweighted individual random-intercept binary logit or probit using `pglm::pglm()`
@@ -239,6 +244,13 @@ It also documents cross-engine comparisons using `glm2::glm2()` and
 Bias-reduced, adjusted-score, Firth, and penalized GLM fits, including
 `brglm2::brglmFit()`, are rejected rather than being treated incorrectly as
 ordinary maximum-likelihood GLMs.
+Ordinary `glm` and `glm2` fits must have converged. Penalized `nnet::multinom`
+fits with nonzero `decay` are also rejected.
+Beta regression requires ordinary maximum likelihood (`type = "ML"`);
+bias-reduced (`"BR"`) and bias-corrected (`"BC"`) fits are not supported.
+Penalized `survreg` fits are also unsupported. A conventional `survreg` fit
+with `robust = TRUE` remains supported: `suest` uses its model-based information
+when constructing the joint sandwich covariance.
 
 
 ### Restricted survey-weighted models

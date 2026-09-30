@@ -1,0 +1,112 @@
+SUEST RELEASE VALIDATION — REMAINING CONTRAST GATE COMPLETE
+Updated 2026-09-29 from baseline 29ae851, suest 0.1.6.9000.
+
+This packet contains the combined gate-1 through gate-4 candidate patch.
+All R runs were completed by the assistant. You do not need to run R or
+return a log. No additional Stata run is requested at this checkpoint.
+All files are at the ZIP root. Extraction does not overwrite package source.
+Nothing has been pushed to GitHub.
+
+STAGE 4 RESULTS (completed 2026-09-30)
+- 28/28 cases; 132 prediction, finite-change, and slope contrasts pass.
+- Matched glm/glm2 and polr/clm full covariance and category contrast SEs.
+- Independent bivariate-probit likelihood covariance and joint-success contrasts.
+- Independent projected-X HC0 2SLS covariance and analytic contrasts.
+- One bivariate trial-CDF rounding warning case explicitly reviewed; final fits
+  pass native and independent diagnostics. Original warnings remain in logs.
+- Failed multinom/polr/clm and glm.nb mean/dispersion fits now rejected.
+- Source and installed suite: 1,680 pass, zero fail/warn/skip.
+- Acceptance suite: 144 pass, zero fail.
+- R CMD check --no-manual: Status: OK, no errors/warnings/notes.
+
+STAGE 3 RESULTS
+- 100/100 numerical cases; 300 prediction, finite-change, and slope contrasts.
+- 76 independent covariance reconstructions; 24 integrated-model checks use
+  previously audited covariance and independently verify propagation.
+- Four gamma-Poisson fitting warnings traced to invalid negative-variance
+  trial points; final fits pass independent likelihood/derivative diagnostics.
+- FE average-level inference at training means is explicitly unsupported.
+- No new executable production R or test changes in this stage.
+- Documentation/build check: --no-tests --no-manual; see gate3-package-check.log.
+- Internal .superpowers folder excluded from package builds.
+
+PRIOR GATE 1 / 2 RESULTS (preserved, not rerun in stage 3)
+- 108/108 extended-family cases pass independent full-covariance and
+  prediction/finite-change contrast checks, with no warnings in the final run.
+- A real interval-censored survival scale-score sign error was found and
+  corrected. Independent mixed-censoring tests fail before and pass after.
+- Beta BR/BC fits are now explicitly excluded from the ordinary-ML contract;
+  penalized survival fits receive a clear unsupported-estimator diagnostic.
+- Truncated-regression default BFGS warnings and one stationarity failure are
+  preserved. Native NR optimization passes all eight cases at unchanged bounds.
+- Full source suite: 1,667 passing assertions across 214 test blocks;
+  no failures, errors, warnings, or skips.
+- Numerical acceptance suite: 144 pass, 0 fail.
+- R CMD check --no-manual: Status: OK, no errors/warnings/notes.
+  Installed-package tests: 1,667 pass, 0 fail/warn/skip.
+- Historical gate-1 evidence is retained: 40/40 stacked cases and 999/999
+  successful paired cluster-bootstrap draws, bootstrap/analytic SE ratio .9990.
+
+The interval correction changes score/covariance computation. Gate 1's report
+is a historical record of that earlier stage, when formulas had not changed.
+This stage is stronger evidence for its tested routes, not full certification
+of every supported specification or platform. The specified alternative-engine and bivariate-probit checks are now complete;
+current cross-platform CI remains open.
+
+PACKET GUIDE
+RELEASE-VALIDATION-GATE4-20260929.md        Current findings and remaining scope.
+GATE4-PLAN-20260929.md                     Completed plan and ledger.
+suest_release_gate4.R                     Current independent diagnostics.
+gate4-*.log / .rds / .txt / .R / .csv      Results, traces, metrics, and review.
+RELEASE-VALIDATION-GATE3-20260929.md        Current findings and remaining scope.
+GATE3-PLAN-20260929.md                     Decisions and completion ledger.
+suest_release_gate3.R                     Current independent diagnostics.
+gate3-*.log / .rds / .txt                  Raw runs, warnings, metrics, review.
+READ-ME-FIRST.txt                         This checkpoint and guide.
+RELEASE-VALIDATION-GATE2-20260929.md        Findings, thresholds, scope, next stage.
+RELEASE-EVIDENCE-MATRIX-20260928.md         Updated model evidence and open gaps.
+GATE2-PLAN-20260929.md                     Completed bounded implementation plan.
+RELEASE-VALIDATION-20260928.md              Historical gate-1 report.
+suest_release_gate1.R / gate2.R            Reproducible independent diagnostics.
+suest_release_candidate.patch             Combined local changes from 29ae851.
+source-manifest.sha256                     Fingerprints of changed source files.
+gate2-final.log / .rds                     Final 108 clean cases.
+gate2-before.log / .rds                    Initial 96-case results before correction.
+gate2-after-BFGS.log / .rds                Corrected survival plus default optimizer.
+gate2-truncreg-NR.log / .rds               Focused eight-case optimizer resolution.
+gate2-metrics.txt                          Exact maxima and their case names.
+gate2-interval-diagnostic.R / .log / .rds  Reproduction and source-level diagnosis.
+gate2-boundary-probes.log                  Actual estimator-boundary probes.
+gate2-regressions-before.log / after.log   Failing-before / passing-after regressions.
+gate2-focused.log                         Affected families and safeguards.
+gate2-full-suite.rds / totals.log          Complete saved results and derived totals.
+gate2-full-suite-console.log              Partial console stream; use totals/RDS.
+gate2-acceptance.log / results.csv         Full numerical acceptance run.
+gate2-source-review.txt                   Independent source review summary.
+package-build.log                         Final source build output.
+package-check.log                         Final complete R CMD check report.
+package-tests.Rout                        Installed-package test totals.
+gate1-*.log / .rds / metrics.txt           Preserved prior-stage numerical evidence.
+
+OPTIONAL REPRODUCTION / RESTORATION
+No local action is needed to continue the audit. The patch is a checkpoint,
+not a request to publish. In a clean checkout of baseline 29ae851, inspect:
+
+  git apply --check suest_release_candidate.patch
+
+Then apply with git apply only after checking for unrelated local changes.
+Do not apply it again to a tree that already contains the candidate changes.
+To reproduce gate 2, from the candidate package source root in R:
+
+  source("tools/release-validation/suest_release_gate2.R")
+
+It loads local source with pkgload and writes suest_release_gate2.log and
+suest_release_gate2_results.rds. Required model packages and versions are
+listed in the gate-2 report. GATE2_COMPLETED=1 means execution finished;
+inspect statuses and warnings. The report gives focused/BFGS replay syntax.
+
+NEXT WORK
+Freeze and check the exact candidate on supported platforms, especially
+Windows/macOS, before public promotion. Retain documented random-slope GSEM
+qualifications and the FE level-inference limitation. No Stata run is currently
+needed. Nothing has been pushed; GitHub push requires separate authorization.
