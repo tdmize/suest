@@ -1,22 +1,22 @@
 # Getting started with suest
 
 [`suest()`](https://tdmize.github.io/suest/reference/suest.md) combines
-two or more separately fitted models and supplies the joint robust
-covariance matrix needed to test whether predictions, marginal effects,
-or other quantities differ across models. The package leaves calculation
-and presentation of those quantities to
+two or more separately fitted models so you can test whether
+predictions, marginal effects, or other quantities differ across the
+models. It supplies the joint robust covariance matrix those tests need,
+and leaves calculating and presenting the quantities themselves to
 [`marginaleffects`](https://marginaleffects.com/).
 
 The package implements the framework in Mize, Doan, and Long (2019). The
-six replications below correspond to Examples 6.1–6.6 for the
-[`mecompare` Stata
+six examples below replicate Examples 6.1–6.6 for the [`mecompare` Stata
 command](https://www.trentonmize.com/software/mecompare).
 
-For numeric predictors, a single numeric value in `variables` requests a
-forward change of that amount. Thus, `list(income = sd(dat61$income))`
-calculates the change from each observed income value to that value plus
-one standard deviation. This differs from `"sd"`, which requests a
-centered one-standard-deviation contrast around the regressor mean.
+One note on continuous predictors: a single number in `variables` asks
+for a change of that amount from each observed value. So
+`list(income = sd(dat61$income))` compares each person’s observed income
+with that income plus one standard deviation. This is different from
+`"sd"`, which asks for a one-standard-deviation change centered on the
+mean.
 
 ## Functions at a glance
 
@@ -24,14 +24,14 @@ centered one-standard-deviation contrast around the regressor mean.
   combines two or more fitted models and calculates their joint
   covariance matrix.
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-  stacks the estimation samples so each model’s effects can be averaged
-  over its own sample.
-- Standard `marginaleffects` functions—including
+  stacks the models’ estimation samples so each model’s effects can be
+  averaged over its own sample.
+- The usual `marginaleffects` functions, including
   [`predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
   [`avg_comparisons()`](https://rdrr.io/pkg/marginaleffects/man/comparisons.html),
   [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),
   [`hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html),
-  and the plotting functions—work with the combined object.
+  and the plotting functions, work with the combined object.
 
 ## Installation and setup
 
@@ -83,9 +83,9 @@ hypotheses(effects, hypothesis = difference ~ revpairwise)
 #>  (Base) - (Adjusted)   0.0779     0.0141 5.54   <0.001 25.0 0.0503  0.105
 ```
 
-The final command tests the difference between the two effects directly.
-It does not compare whether one effect is statistically significant
-while the other is not.
+The last command tests the difference between the two effects directly.
+That is different from checking whether one effect is statistically
+significant and the other is not.
 
 ## Supported models
 
@@ -106,49 +106,47 @@ while the other is not.
 | Heteroskedastic binary probit and logit | [`Rchoice::hetprob()`](https://rdrr.io/pkg/Rchoice/man/hetprob.html) |
 | Instrumental-variable probit ML | [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html); response predictions are average structural probabilities |
 | Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with common regressors across equations and `finalHessian = TRUE` |
-| Linear panel fixed, between, and random effects | unweighted [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects; balanced Swamy-Arora RE has closest Stata parity, while unbalanced RE can differ slightly |
+| Linear panel fixed, between, and random effects | unweighted [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects; unbalanced random-effects panels can differ slightly from Stata |
 | Random-intercept Gaussian panel ML | unweighted `nlme::lme(method = "ML")`; variance components included |
 | Gaussian random-intercept GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log with constant dispersion |
-| Gaussian random-intercept and numeric-slope GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log, `(1 + x | id)`, unstructured covariance; balanced, partial-overlap, and disjoint samples independently audited; raw GSEM covariance discrepancies documented |
+| Gaussian random-intercept and numeric-slope GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log, `(1 + x | id)`, unstructured covariance; checked against Stata (see the README) |
 | Population-averaged GEE | unweighted [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html); Gaussian, binary, or Poisson with independence/exchangeable correlation |
 | Ordered logit and probit | [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html), restricted [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) |
 | Multinomial logit | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) |
 
-Models may use identical, partially overlapping, or disjoint samples.
-All combinations of supported scalar-response models are allowed. All
-combinations of supported categorical-response models are allowed, and
-scalar and categorical models may be combined. Outputs on different
-response scales are labeled separately rather than treated as directly
-commensurate.
+Models can use the same, partially overlapping, or completely different
+samples. Any supported models with a single outcome can be combined, and
+so can models for categorical outcomes; the two kinds can also be mixed.
+Results on different scales are labeled separately rather than treated
+as directly comparable.
 
-Panel and GLMM systems currently require models of the same supported
-type. For supported random-slope GLMMs, population means integrate over
-both Gaussian effects. The joint covariance includes their log SDs,
-Fisher correlation, and, for NB2, log size. Use well-scaled predictors
-when fitting these models: native glmmTMB numerical covariance can be
-inaccurate under extreme rescaling despite a convergence flag and
-positive-definite Hessian. `suest` uses that native covariance as
-supplied. For logit random-slope models, predictions integrate the
-logistic probability over the random effects, and continuous slopes
-include changes in the random-effect variance. To reduce cancellation in
-nested numerical derivatives, use
+Panel and mixed (GLMM) models can currently be combined only with models
+of the same type. For the random-slope mixed models, predictions average
+over both random effects, and the joint covariance includes the
+random-effect standard deviations and correlation (and, for NB2, the
+dispersion). Fit these models with well-scaled predictors: glmmTMB’s
+covariance matrix can be inaccurate with extreme predictor units even
+when the model reports convergence, and `suest` uses that covariance as
+supplied. For logit random-slope models, slopes for continuous
+predictors also include changes in the random-effect variance. For more
+stable numerical standard errors, use
 `numderiv = list("fdcenter", eps = 1e-4)` in
 [`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
-and check step-size sensitivity.
+and check that nearby step sizes give similar answers.
 
-Offsets are supported. Bias-reduced, adjusted-score, Firth, and
-penalized GLM fits are rejected because their estimating equations
-differ from ordinary maximum-likelihood GLM scores.
+Offsets are supported. Bias-reduced, adjusted-score, Firth, and other
+penalized GLM fits are rejected, because they are estimated differently
+from ordinary maximum-likelihood GLMs.
 
-Linear-model blocks also contain Stata-compatible `lnvar` ancillary
-parameters. Unweighted fits use `log(RSS / df.residual)`; pweighted fits
-reproduce `suest2`’s iweight-reference normalization. Their derivatives
-are zero for predictions and comparisons.
+As in Stata, linear models add an `lnvar` parameter (the log of the
+error variance). Unweighted fits use `log(RSS / df.residual)`; weighted
+fits follow `suest2`’s normalization. It has no effect on predictions or
+comparisons.
 
 ## Cluster-robust covariance
 
-Supply a cluster column to aggregate the complete joint score system at
-the cluster level:
+Supply a cluster variable to get cluster-robust standard errors for the
+combined models:
 
 ``` r
 
@@ -156,21 +154,23 @@ fit_clustered <- suest(base, adjusted, cluster = "person_id")
 avg_comparisons(fit_clustered, variables = "x", newdata = dat)
 ```
 
-`cluster` can instead be a list with one vector, matrix, or data frame
-aligned to each model’s estimation sample. Shared observations must have
-matching cluster IDs. Disjoint rows may belong to the same cluster, in
-which case the cross-model covariance can be nonzero.
+`cluster` can also be a list with one vector, matrix, or data frame
+matched to each model’s estimation sample. An observation that appears
+in more than one model must have the same cluster ID in each.
+Observations in completely different samples can belong to the same
+cluster, in which case the covariance between models can be nonzero.
 
-Supported panel systems cluster on the panel identifier by default. A
-supplied higher-level cluster must contain whole panels.
+Panel models cluster on the panel identifier by default. A cluster you
+supply must contain whole panels.
 
 ## Probability weights
 
-Version 0.1.4 supports probability weights for linear, binary
-logit/probit, Poisson, negative-binomial, ordered logit/probit, and
-multinomial logit models. R’s `weights=` argument does not identify a
-weight type, so the interpretation must be declared explicitly in
-[`suest()`](https://tdmize.github.io/suest/reference/suest.md).
+`suest` supports probability weights for linear, binary logit and
+probit, Poisson, negative binomial, ordered logit and probit, and
+multinomial logit models. R’s `weights=` argument doesn’t say what kind
+of weights they are, so you tell
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md)
+explicitly.
 
 ``` r
 
@@ -213,12 +213,12 @@ hypotheses(effects_w, hypothesis = difference ~ revpairwise)
 #>  (Base) - (Adjusted)    0.281     0.0322 8.74   <0.001 58.6 0.218  0.345
 ```
 
-Pweights must be finite and strictly positive. Their evaluated values
-must agree for observations included in any pair of models. They may
-differ on observations unique to one model, including completely
-disjoint samples. For separate estimation samples,
+Weights must be positive and finite. An observation that appears in more
+than one model must have the same weight in each; weights can differ for
+observations in only one model, including completely different samples.
+When the models have different estimation samples,
 [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-includes `.suest_weight`:
+includes the weights as `.suest_weight`:
 
 ``` r
 
@@ -226,14 +226,14 @@ nd_w <- suest_newdata(fit_w)
 avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
 ```
 
-The binary implementation uses the observed information matrix, matching
-Stata’s `suest` covariance for both links.
+For binary logit and probit, `suest` uses the observed information
+matrix, which matches Stata’s `suest` covariance.
 
 ## Replicating Mize, Doan, and Long (2019)
 
 The examples use the public replication data for the [`mecompare` Stata
 command](https://www.trentonmize.com/software/mecompare). The data are
-downloaded once and reused below.
+downloaded once and used throughout.
 
 ``` r
 
@@ -250,13 +250,12 @@ factorize <- function(data, variables) {
 
 ### Ex 6.1 - Marginal effects to summarize curvilinear relationships and test mediation
 
-This example uses a linear regression model with a nonlinear effect
-represented by a polynomial: both income and income squared are included
-in the model. We test whether adding the mediator, job satisfaction,
-reduces the average effect of income, which would suggest mediation. The
-example also shows how to request a custom amount of change for a
-continuous predictor—in this case, a one-standard-deviation increase in
-income.
+This example uses a linear regression with a nonlinear effect of income,
+included as income and income squared. We test whether adding a
+mediator, job satisfaction, reduces the average effect of income, which
+would suggest mediation. It also shows how to ask for a custom amount of
+change in a continuous predictor: here, a one-standard-deviation
+increase in income.
 
 ``` r
 
@@ -299,8 +298,8 @@ significant reduction ($`p < .001`$) that is consistent with mediation.
 
 ### Ex 6.2 - Comparing marginal effects across nested logit models
 
-This example uses binary logit models and examines how the effect of
-college changes as additional variables are added to the model.
+This example uses binary logit models to see how the effect of college
+changes when more variables are added to the model.
 
 ``` r
 
@@ -345,9 +344,9 @@ adding the controls decreases the effect of college by 0.012
 
 ### Ex 6.3 - Comparing marginal effects using alternative predictors
 
-This example uses two binary logit models with alternative predictors.
-The models use two different ways to measure sexuality: sexual behavior
-(`sexbehav`) in one model and sexual identity (`sexident`) in the other.
+This example uses two binary logit models with alternative predictors:
+two different ways to measure sexuality, sexual behavior (`sexbehav`) in
+one model and sexual identity (`sexident`) in the other.
 
 ``` r
 
@@ -382,9 +381,9 @@ effects63
 #> Type: response
 ```
 
-Because each predictor appears in only one component model,
-`marginaleffects` reports zero and `NA` for structurally absent effects.
-The nonzero rows give the effects for each operationalization.
+Because each predictor is in only one of the models, `marginaleffects`
+reports zero and `NA` for the effects that don’t exist in a model. The
+nonzero rows are the effects for each measure.
 
 ``` r
 
@@ -427,13 +426,13 @@ it is measured using behavior.
 
 ### Ex 6.4 - Comparing marginal effects across different outcomes
 
-This example compares effects across different dependent variables. Two
-count outcomes—poor mental-health days and poor physical-health days—are
-estimated using negative-binomial models, with effects calculated on the
-predicted-rate scale. Effects and cross-model comparisons are calculated
-for all predictors. To reproduce the `mecompare` Stata example exactly,
-the common sample also excludes observations missing `reltrad`, even
-though `reltrad` is not included in either displayed model.
+This example compares effects across different outcomes. Two counts,
+poor mental-health days and poor physical-health days, are modeled with
+negative binomial regression, and effects are on the predicted-rate
+scale. Effects and cross-model comparisons are calculated for all
+predictors. To match the `mecompare` Stata example exactly, the sample
+also drops observations missing `reltrad`, even though `reltrad` isn’t
+in either model.
 
 ``` r
 
@@ -509,11 +508,10 @@ physical-health days.
 
 ### Ex 6.5 - Comparing marginal effects across different model types (ordinal vs nominal)
 
-This example compares effects across two model types: an ordinal model
-and a nominal model. The models are otherwise identical, using the same
-outcome and predictors. It also illustrates a custom effect for a
-continuous predictor: a change in age from 20 to 30, with the other
-covariates held at their means.
+This example compares effects across two model types, an ordinal model
+and a nominal model, with the same outcome and predictors. It also shows
+a custom effect for a continuous predictor: a change in age from 20 to
+30, with the other covariates held at their means.
 
 ``` r
 
@@ -542,16 +540,17 @@ nominal65 <- nnet::multinom(party_nom ~ age + I(age^2) + woman + edyrs + parent 
 fit65 <- suest(ordered65, nominal65, model_names = c("Ordered", "Multinomial"))
 ```
 
-The estimand here is important. The `mecompare` Stata command compares
-age 20 with age 30 and holds the other **model-matrix columns** at their
-means. This is not the same as averaging a ten-year forward change over
-observed ages and covariates. The distinction is especially
-consequential because age enters quadratically.
+It’s important to be clear about what is being estimated here. The
+`mecompare` Stata command compares age 20 with age 30 and holds the
+other **model-matrix columns** at their means. That is not the same as
+averaging a ten-year increase over everyone’s observed age and
+covariates, and the difference matters a lot here because age is
+included as a quadratic.
 
-It is also not reproduced exactly by `newdata = "mean"` in
-`marginaleffects`, which uses means for numeric variables but modes for
-categorical variables. The helper supplied with `suest` reproduces
-Stata’s model-matrix `atmeans` calculation exactly. [View the helper
+`newdata = "mean"` in `marginaleffects` doesn’t reproduce it exactly
+either, because it uses means for numeric variables but modes for
+categorical ones. The helper included with `suest` reproduces Stata’s
+`atmeans` calculation exactly. [View the helper
 code](https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R).
 
 ``` r
@@ -589,15 +588,12 @@ strong Republican run in opposite directions across the two models.
 
 ### Ex 6.6 - Comparing marginal effects across different samples or groups
 
-This example compares effects from separate models estimated on
-different samples: one sample from 1986 and another from 2016. The
-models are otherwise identical, using binary logit with the same outcome
-and predictors. The same approach can be used to compare models for
-different groups, such as men and women. In R, the samples are selected
-with `subset`, and
+This example compares effects from the same binary logit model fitted to
+two different samples, one from 1986 and one from 2016. The same
+approach works for comparing groups, such as men and women. In R, the
+samples are selected with `subset`, and
 [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-ensures that each marginal effect is averaged over the appropriate
-estimation sample.
+makes sure each marginal effect is averaged over its own model’s sample.
 
 ``` r
 
@@ -656,10 +652,10 @@ significantly more negative in 2016 than in 1986 (cross-model difference
 
 ## Alternative fitting engines
 
-The statistical model family and fitting engine are handled separately.
-This allows comparisons across packages when likelihood scores,
-parameter ordering, observation alignment, and prediction scales are
-compatible.
+`suest` handles the type of model and the package that fits it
+separately. This lets you combine models fitted with different packages,
+as long as their scores, parameter order, observations, and prediction
+scales are compatible.
 
 ### `glm2::glm2()`
 
@@ -694,8 +690,8 @@ avg_comparisons(engine_fit, variables = "wt", newdata = dat)
 ### `ordinal::clm()`
 
 [`clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) is supported for
-proportional-effects ordered logit and probit models with flexible
-thresholds and no scale or nominal-effects formula.
+standard ordered logit and probit models: flexible thresholds and no
+scale or nominal-effects formula.
 
 ``` r
 
@@ -727,8 +723,8 @@ avg_comparisons(ordinal_fit, variables = "Cont", newdata = housing)
 
 ## For Stata users
 
-The same framework is available in Stata through the [`mecompare` Stata
-command](https://www.trentonmize.com/software/mecompare). The R package
-uses `marginaleffects` for predictions and effects, while the
-`mecompare` Stata command provides a Stata-native workflow for the same
-class of cross-model comparisons.
+The same framework is available in Stata through the [`mecompare`
+command](https://www.trentonmize.com/software/mecompare). This R package
+uses `marginaleffects` to calculate predictions and effects, while
+`mecompare` does the same kinds of cross-model comparisons entirely in
+Stata.

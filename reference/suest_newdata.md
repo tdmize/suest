@@ -1,9 +1,8 @@
 # Stack the estimation samples from a SUEST object
 
-Creates a data frame containing each component model's own estimation
-sample. This is useful when component models were fitted on different
-samples and marginal effects should be averaged separately within each
-model's observed covariate distribution.
+Creates a data frame that stacks each model's own estimation sample. Use
+it when the models were fitted on different samples, so that each
+model's marginal effects are averaged over its own sample.
 
 ## Usage
 

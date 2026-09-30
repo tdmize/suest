@@ -2,6 +2,9 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Rewrote the README, the Getting started vignette, and the short
+  description at the top of each function’s help page in plainer
+  language. No code changes.
 - Reject failed `multinom` and `polr` fits, unreliable `clm` convergence
   diagnostics, and `glm.nb` fits with failed mean or dispersion
   convergence before constructing joint inference.

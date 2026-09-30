@@ -1,8 +1,9 @@
 # Seemingly Unrelated Estimation for Model Comparisons
 
-The `suest` package combines two or more separately fitted regression
-models into a single object with a joint model-robust covariance matrix.
-The combined object works with the [marginaleffects
+The `suest` package lets you compare predictions and marginal effects
+across regression models. It combines two or more separately fitted
+models into one object with a joint robust covariance matrix. The
+combined object works with the [marginaleffects
 package](https://marginaleffects.com/) to compare predictions, slopes,
 and average comparisons across models.
 

@@ -62,20 +62,20 @@
 
     
     
-<p><code><a href="../reference/suest.html">suest()</a></code> combines two or more separately fitted models
-and supplies the joint robust covariance matrix needed to test whether
-predictions, marginal effects, or other quantities differ across models.
-The package leaves calculation and presentation of those quantities to
-<a href="https://marginaleffects.com/" class="external-link"><code>marginaleffects</code></a>.</p>
+<p><code><a href="../reference/suest.html">suest()</a></code> combines two or more separately fitted models so
+you can test whether predictions, marginal effects, or other quantities
+differ across the models. It supplies the joint robust covariance matrix
+those tests need, and leaves calculating and presenting the quantities
+themselves to <a href="https://marginaleffects.com/" class="external-link"><code>marginaleffects</code></a>.</p>
 <p>The package implements the framework in Mize, Doan, and Long (2019).
-The six replications below correspond to Examples 6.1–6.6 for the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code>
+The six examples below replicate Examples 6.1–6.6 for the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code>
 Stata command</a>.</p>
-<p>For numeric predictors, a single numeric value in
-<code>variables</code> requests a forward change of that amount. Thus,
-<code>list(income = sd(dat61$income))</code> calculates the change from
-each observed income value to that value plus one standard deviation.
-This differs from <code>"sd"</code>, which requests a centered
-one-standard-deviation contrast around the regressor mean.</p>
+<p>One note on continuous predictors: a single number in
+<code>variables</code> asks for a change of that amount from each
+observed value. So <code>list(income = sd(dat61$income))</code> compares
+each person’s observed income with that income plus one standard
+deviation. This is different from <code>"sd"</code>, which asks for a
+one-standard-deviation change centered on the mean.</p>
 <div class="section level2">
 <h2 id="functions-at-a-glance">Functions at a glance<a class="anchor" aria-label="anchor" href="#functions-at-a-glance"></a>
 </h2>
@@ -84,12 +84,12 @@ one-standard-deviation contrast around the regressor mean.</p>
 <code><a href="../reference/suest.html">suest()</a></code> combines two or more fitted models and
 calculates their joint covariance matrix.</li>
 <li>
-<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> stacks the estimation samples so each
-model’s effects can be averaged over its own sample.</li>
-<li>Standard <code>marginaleffects</code> functions—including
+<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> stacks the models’ estimation samples
+so each model’s effects can be averaged over its own sample.</li>
+<li>The usual <code>marginaleffects</code> functions, including
 <code><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">predictions()</a></code>, <code><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons()</a></code>,
 <code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes()</a></code>, <code><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses()</a></code>, and the plotting
-functions—work with the combined object.</li>
+functions, work with the combined object.</li>
 </ul>
 </div>
 <div class="section level2">
@@ -136,9 +136,9 @@ functions—work with the combined object.</li>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;           Hypothesis Estimate Std. Error    z Pr(&gt;|z|)    S  2.5 % 97.5 %</span></span>
 <span><span class="co">#&gt;  (Base) - (Adjusted)   0.0779     0.0141 5.54   &lt;0.001 25.0 0.0503  0.105</span></span></code></pre></div>
-<p>The final command tests the difference between the two effects
-directly. It does not compare whether one effect is statistically
-significant while the other is not.</p>
+<p>The last command tests the difference between the two effects
+directly. That is different from checking whether one effect is
+statistically significant and the other is not.</p>
 </div>
 <div class="section level2">
 <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a>
@@ -234,9 +234,8 @@ equations and <code>finalHessian = TRUE</code>
 </tr>
 <tr class="even">
 <td>Linear panel fixed, between, and random effects</td>
-<td>unweighted <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code> with individual effects; balanced
-Swamy-Arora RE has closest Stata parity, while unbalanced RE can differ
-slightly</td>
+<td>unweighted <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code> with individual effects;
+unbalanced random-effects panels can differ slightly from Stata</td>
 </tr>
 <tr class="odd">
 <td>Random-intercept Gaussian panel ML</td>
@@ -251,9 +250,8 @@ NB2-log with constant dispersion</td>
 <tr class="odd">
 <td>Gaussian random-intercept and numeric-slope GLMM</td>
 <td>unweighted <code>glmmTMB</code>; binomial-logit, Poisson-log, or
-NB2-log, <code>(1 + x | id)</code>, unstructured covariance; balanced,
-partial-overlap, and disjoint samples independently audited; raw GSEM
-covariance discrepancies documented</td>
+NB2-log, <code>(1 + x | id)</code>, unstructured covariance; checked
+against Stata (see the README)</td>
 </tr>
 <tr class="even">
 <td>Population-averaged GEE</td>
@@ -273,59 +271,58 @@ Poisson with independence/exchangeable correlation</td>
 </tr>
 </tbody>
 </table>
-<p>Models may use identical, partially overlapping, or disjoint samples.
-All combinations of supported scalar-response models are allowed. All
-combinations of supported categorical-response models are allowed, and
-scalar and categorical models may be combined. Outputs on different
-response scales are labeled separately rather than treated as directly
-commensurate.</p>
-<p>Panel and GLMM systems currently require models of the same supported
-type. For supported random-slope GLMMs, population means integrate over
-both Gaussian effects. The joint covariance includes their log SDs,
-Fisher correlation, and, for NB2, log size. Use well-scaled predictors
-when fitting these models: native glmmTMB numerical covariance can be
-inaccurate under extreme rescaling despite a convergence flag and
-positive-definite Hessian. <code>suest</code> uses that native
-covariance as supplied. For logit random-slope models, predictions
-integrate the logistic probability over the random effects, and
-continuous slopes include changes in the random-effect variance. To
-reduce cancellation in nested numerical derivatives, use
+<p>Models can use the same, partially overlapping, or completely
+different samples. Any supported models with a single outcome can be
+combined, and so can models for categorical outcomes; the two kinds can
+also be mixed. Results on different scales are labeled separately rather
+than treated as directly comparable.</p>
+<p>Panel and mixed (GLMM) models can currently be combined only with
+models of the same type. For the random-slope mixed models, predictions
+average over both random effects, and the joint covariance includes the
+random-effect standard deviations and correlation (and, for NB2, the
+dispersion). Fit these models with well-scaled predictors: glmmTMB’s
+covariance matrix can be inaccurate with extreme predictor units even
+when the model reports convergence, and <code>suest</code> uses that
+covariance as supplied. For logit random-slope models, slopes for
+continuous predictors also include changes in the random-effect
+variance. For more stable numerical standard errors, use
 <code>numderiv = list("fdcenter", eps = 1e-4)</code> in
-<code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">marginaleffects::avg_slopes()</a></code> and check step-size
-sensitivity.</p>
-<p>Offsets are supported. Bias-reduced, adjusted-score, Firth, and
-penalized GLM fits are rejected because their estimating equations
-differ from ordinary maximum-likelihood GLM scores.</p>
-<p>Linear-model blocks also contain Stata-compatible <code>lnvar</code>
-ancillary parameters. Unweighted fits use
-<code>log(RSS / df.residual)</code>; pweighted fits reproduce
-<code>suest2</code>’s iweight-reference normalization. Their derivatives
-are zero for predictions and comparisons.</p>
+<code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">marginaleffects::avg_slopes()</a></code> and check that nearby step
+sizes give similar answers.</p>
+<p>Offsets are supported. Bias-reduced, adjusted-score, Firth, and other
+penalized GLM fits are rejected, because they are estimated differently
+from ordinary maximum-likelihood GLMs.</p>
+<p>As in Stata, linear models add an <code>lnvar</code> parameter (the
+log of the error variance). Unweighted fits use
+<code>log(RSS / df.residual)</code>; weighted fits follow
+<code>suest2</code>’s normalization. It has no effect on predictions or
+comparisons.</p>
 </div>
 <div class="section level2">
 <h2 id="cluster-robust-covariance">Cluster-robust covariance<a class="anchor" aria-label="anchor" href="#cluster-robust-covariance"></a>
 </h2>
-<p>Supply a cluster column to aggregate the complete joint score system
-at the cluster level:</p>
+<p>Supply a cluster variable to get cluster-robust standard errors for
+the combined models:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">fit_clustered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base</span>, <span class="va">adjusted</span>, cluster <span class="op">=</span> <span class="st">"person_id"</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_clustered</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
-<p><code>cluster</code> can instead be a list with one vector, matrix,
-or data frame aligned to each model’s estimation sample. Shared
-observations must have matching cluster IDs. Disjoint rows may belong to
-the same cluster, in which case the cross-model covariance can be
+<p><code>cluster</code> can also be a list with one vector, matrix, or
+data frame matched to each model’s estimation sample. An observation
+that appears in more than one model must have the same cluster ID in
+each. Observations in completely different samples can belong to the
+same cluster, in which case the covariance between models can be
 nonzero.</p>
-<p>Supported panel systems cluster on the panel identifier by default. A
-supplied higher-level cluster must contain whole panels.</p>
+<p>Panel models cluster on the panel identifier by default. A cluster
+you supply must contain whole panels.</p>
 </div>
 <div class="section level2">
 <h2 id="probability-weights">Probability weights<a class="anchor" aria-label="anchor" href="#probability-weights"></a>
 </h2>
-<p>Version 0.1.4 supports probability weights for linear, binary
-logit/probit, Poisson, negative-binomial, ordered logit/probit, and
-multinomial logit models. R’s <code>weights=</code> argument does not
-identify a weight type, so the interpretation must be declared
-explicitly in <code><a href="../reference/suest.html">suest()</a></code>.</p>
+<p><code>suest</code> supports probability weights for linear, binary
+logit and probit, Poisson, negative binomial, ordered logit and probit,
+and multinomial logit models. R’s <code>weights=</code> argument doesn’t
+say what kind of weights they are, so you tell <code><a href="../reference/suest.html">suest()</a></code>
+explicitly.</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">376</span><span class="op">)</span></span>
 <span><span class="va">weighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">500</span><span class="op">)</span>, z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">500</span><span class="op">)</span><span class="op">)</span></span>
@@ -364,22 +361,24 @@ explicitly in <code><a href="../reference/suest.html">suest()</a></code>.</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;           Hypothesis Estimate Std. Error    z Pr(&gt;|z|)    S 2.5 % 97.5 %</span></span>
 <span><span class="co">#&gt;  (Base) - (Adjusted)    0.281     0.0322 8.74   &lt;0.001 58.6 0.218  0.345</span></span></code></pre></div>
-<p>Pweights must be finite and strictly positive. Their evaluated values
-must agree for observations included in any pair of models. They may
-differ on observations unique to one model, including completely
-disjoint samples. For separate estimation samples,
-<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> includes <code>.suest_weight</code>:</p>
+<p>Weights must be positive and finite. An observation that appears in
+more than one model must have the same weight in each; weights can
+differ for observations in only one model, including completely
+different samples. When the models have different estimation samples,
+<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> includes the weights as
+<code>.suest_weight</code>:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">nd_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest_newdata.html">suest_newdata</a></span><span class="op">(</span><span class="va">fit_w</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_w</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="va">nd_w</span>, wts <span class="op">=</span> <span class="st">".suest_weight"</span><span class="op">)</span></span></code></pre></div>
-<p>The binary implementation uses the observed information matrix,
-matching Stata’s <code>suest</code> covariance for both links.</p>
+<p>For binary logit and probit, <code>suest</code> uses the observed
+information matrix, which matches Stata’s <code>suest</code>
+covariance.</p>
 </div>
 <div class="section level2">
 <h2 id="replicating-mize-doan-and-long-2019">Replicating Mize, Doan, and Long (2019)<a class="anchor" aria-label="anchor" href="#replicating-mize-doan-and-long-2019"></a>
 </h2>
 <p>The examples use the public replication data for the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code>
-Stata command</a>. The data are downloaded once and reused below.</p>
+Stata command</a>. The data are downloaded once and used throughout.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://haven.tidyverse.org" class="external-link">haven</a></span><span class="op">)</span></span>
 <span></span>
@@ -394,13 +393,12 @@ Stata command</a>. The data are downloaded once and reused below.</p>
 <h3 id="ex-6-1---marginal-effects-to-summarize-curvilinear-relationships-and-test-mediation">Ex 6.1 - Marginal effects to summarize curvilinear relationships and
 test mediation<a class="anchor" aria-label="anchor" href="#ex-6-1---marginal-effects-to-summarize-curvilinear-relationships-and-test-mediation"></a>
 </h3>
-<p>This example uses a linear regression model with a nonlinear effect
-represented by a polynomial: both income and income squared are included
-in the model. We test whether adding the mediator, job satisfaction,
-reduces the average effect of income, which would suggest mediation. The
-example also shows how to request a custom amount of change for a
-continuous predictor—in this case, a one-standard-deviation increase in
-income.</p>
+<p>This example uses a linear regression with a nonlinear effect of
+income, included as income and income squared. We test whether adding a
+mediator, job satisfaction, reduces the average effect of income, which
+would suggest mediation. It also shows how to ask for a custom amount of
+change in a continuous predictor: here, a one-standard-deviation
+increase in income.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars61</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"depsympB"</span>, <span class="st">"income"</span>, <span class="st">"inc10"</span>, <span class="st">"age"</span>, <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"college"</span>, <span class="st">"jobsat"</span><span class="op">)</span></span>
 <span><span class="va">dat61</span> <span class="op">&lt;-</span> <span class="va">ah</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">ah</span><span class="op">[</span><span class="va">vars61</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
@@ -442,8 +440,8 @@ that is consistent with mediation.</p>
 <div class="section level3">
 <h3 id="ex-6-2---comparing-marginal-effects-across-nested-logit-models">Ex 6.2 - Comparing marginal effects across nested logit models<a class="anchor" aria-label="anchor" href="#ex-6-2---comparing-marginal-effects-across-nested-logit-models"></a>
 </h3>
-<p>This example uses binary logit models and examines how the effect of
-college changes as additional variables are added to the model.</p>
+<p>This example uses binary logit models to see how the effect of
+college changes when more variables are added to the model.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"vhappy"</span>, <span class="st">"college"</span>, <span class="st">"wages"</span>, <span class="st">"occprest"</span>, <span class="st">"age"</span>, <span class="st">"married"</span>,</span>
 <span>            <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>, <span class="st">"reltrad"</span>, <span class="st">"year"</span>, <span class="st">"employed"</span><span class="op">)</span></span>
@@ -489,8 +487,8 @@ test shows that adding the controls decreases the effect of college by
 predictors<a class="anchor" aria-label="anchor" href="#ex-6-3---comparing-marginal-effects-using-alternative-predictors"></a>
 </h3>
 <p>This example uses two binary logit models with alternative
-predictors. The models use two different ways to measure sexuality:
-sexual behavior (<code>sexbehav</code>) in one model and sexual identity
+predictors: two different ways to measure sexuality, sexual behavior
+(<code>sexbehav</code>) in one model and sexual identity
 (<code>sexident</code>) in the other.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars63</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"samesexB"</span>, <span class="st">"sexident"</span>, <span class="st">"sexbehav"</span>, <span class="st">"college"</span>,</span>
@@ -522,10 +520,10 @@ sexual behavior (<code>sexbehav</code>) in one model and sexual identity
 <span><span class="co">#&gt;  sexident Identity    3 - 1  -0.4275     0.0337 -12.67   &lt;0.001 119.8 -0.494 -0.3614</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Type: response</span></span></code></pre></div>
-<p>Because each predictor appears in only one component model,
-<code>marginaleffects</code> reports zero and <code>NA</code> for
-structurally absent effects. The nonzero rows give the effects for each
-operationalization.</p>
+<p>Because each predictor is in only one of the models,
+<code>marginaleffects</code> reports zero and <code>NA</code> for the
+effects that don’t exist in a model. The nonzero rows are the effects
+for each measure.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">alternative_predictor_hypothesis</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
 <span>  <span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/character.html" class="external-link">as.character</a></span><span class="op">(</span><span class="va">x</span><span class="op">$</span><span class="va">group</span><span class="op">)</span></span>
@@ -565,14 +563,13 @@ identity than when it is measured using behavior.</p>
 <div class="section level3">
 <h3 id="ex-6-4---comparing-marginal-effects-across-different-outcomes">Ex 6.4 - Comparing marginal effects across different outcomes<a class="anchor" aria-label="anchor" href="#ex-6-4---comparing-marginal-effects-across-different-outcomes"></a>
 </h3>
-<p>This example compares effects across different dependent variables.
-Two count outcomes—poor mental-health days and poor physical-health
-days—are estimated using negative-binomial models, with effects
-calculated on the predicted-rate scale. Effects and cross-model
-comparisons are calculated for all predictors. To reproduce the
-<code>mecompare</code> Stata example exactly, the common sample also
-excludes observations missing <code>reltrad</code>, even though
-<code>reltrad</code> is not included in either displayed model.</p>
+<p>This example compares effects across different outcomes. Two counts,
+poor mental-health days and poor physical-health days, are modeled with
+negative binomial regression, and effects are on the predicted-rate
+scale. Effects and cross-model comparisons are calculated for all
+predictors. To match the <code>mecompare</code> Stata example exactly,
+the sample also drops observations missing <code>reltrad</code>, even
+though <code>reltrad</code> isn’t in either model.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mntlhlth"</span>, <span class="st">"physhlth"</span>, <span class="st">"woman"</span>, <span class="st">"married"</span>, <span class="st">"age"</span>,</span>
 <span>            <span class="st">"faminc"</span>, <span class="st">"race"</span>, <span class="st">"college"</span>, <span class="st">"parent"</span>, <span class="st">"reltrad"</span><span class="op">)</span></span>
@@ -646,11 +643,10 @@ more poor physical-health days.</p>
 <h3 id="ex-6-5---comparing-marginal-effects-across-different-model-types-ordinal-vs-nominal">Ex 6.5 - Comparing marginal effects across different model types
 (ordinal vs nominal)<a class="anchor" aria-label="anchor" href="#ex-6-5---comparing-marginal-effects-across-different-model-types-ordinal-vs-nominal"></a>
 </h3>
-<p>This example compares effects across two model types: an ordinal
-model and a nominal model. The models are otherwise identical, using the
-same outcome and predictors. It also illustrates a custom effect for a
-continuous predictor: a change in age from 20 to 30, with the other
-covariates held at their means.</p>
+<p>This example compares effects across two model types, an ordinal
+model and a nominal model, with the same outcome and predictors. It also
+shows a custom effect for a continuous predictor: a change in age from
+20 to 30, with the other covariates held at their means.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars65</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"partyid5"</span>, <span class="st">"woman"</span>, <span class="st">"edyrs"</span>, <span class="st">"age"</span>, <span class="st">"parent"</span>, <span class="st">"married"</span>,</span>
 <span>            <span class="st">"faminc"</span>, <span class="st">"employed"</span>, <span class="st">"region4"</span>, <span class="st">"year"</span>, <span class="st">"race"</span><span class="op">)</span></span>
@@ -675,17 +671,17 @@ covariates held at their means.</p>
 <span>                             <span class="va">married</span> <span class="op">+</span> <span class="va">race</span> <span class="op">+</span> <span class="va">faminc</span> <span class="op">+</span> <span class="va">employed</span> <span class="op">+</span> <span class="va">region4</span> <span class="op">+</span> <span class="va">year</span>,</span>
 <span>                           data <span class="op">=</span> <span class="va">dat65</span>, Hess <span class="op">=</span> <span class="cn">TRUE</span>, trace <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="va">fit65</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">ordered65</span>, <span class="va">nominal65</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Ordered"</span>, <span class="st">"Multinomial"</span><span class="op">)</span><span class="op">)</span></span></code></pre></div>
-<p>The estimand here is important. The <code>mecompare</code> Stata
-command compares age 20 with age 30 and holds the other
-<strong>model-matrix columns</strong> at their means. This is not the
-same as averaging a ten-year forward change over observed ages and
-covariates. The distinction is especially consequential because age
-enters quadratically.</p>
-<p>It is also not reproduced exactly by <code>newdata = "mean"</code> in
-<code>marginaleffects</code>, which uses means for numeric variables but
-modes for categorical variables. The helper supplied with
-<code>suest</code> reproduces Stata’s model-matrix <code>atmeans</code>
-calculation exactly. <a href="https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R" class="external-link">View
+<p>It’s important to be clear about what is being estimated here. The
+<code>mecompare</code> Stata command compares age 20 with age 30 and
+holds the other <strong>model-matrix columns</strong> at their means.
+That is not the same as averaging a ten-year increase over everyone’s
+observed age and covariates, and the difference matters a lot here
+because age is included as a quadratic.</p>
+<p><code>newdata = "mean"</code> in <code>marginaleffects</code> doesn’t
+reproduce it exactly either, because it uses means for numeric variables
+but modes for categorical ones. The helper included with
+<code>suest</code> reproduces Stata’s <code>atmeans</code> calculation
+exactly. <a href="https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R" class="external-link">View
 the helper code</a>.</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/source.html" class="external-link">source</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/system.file.html" class="external-link">system.file</a></span><span class="op">(</span><span class="st">"example-code"</span>, <span class="st">"example-6-5-atmeans.R"</span>, package <span class="op">=</span> <span class="st">"suest"</span><span class="op">)</span><span class="op">)</span></span>
@@ -722,14 +718,12 @@ two models.</p>
 <h3 id="ex-6-6---comparing-marginal-effects-across-different-samples-or-groups">Ex 6.6 - Comparing marginal effects across different samples or
 groups<a class="anchor" aria-label="anchor" href="#ex-6-6---comparing-marginal-effects-across-different-samples-or-groups"></a>
 </h3>
-<p>This example compares effects from separate models estimated on
-different samples: one sample from 1986 and another from 2016. The
-models are otherwise identical, using binary logit with the same outcome
-and predictors. The same approach can be used to compare models for
-different groups, such as men and women. In R, the samples are selected
-with <code>subset</code>, and <code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> ensures that
-each marginal effect is averaged over the appropriate estimation
-sample.</p>
+<p>This example compares effects from the same binary logit model fitted
+to two different samples, one from 1986 and one from 2016. The same
+approach works for comparing groups, such as men and women. In R, the
+samples are selected with <code>subset</code>, and
+<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> makes sure each marginal effect is averaged
+over its own model’s sample.</p>
 <div class="sourceCode" id="cb15"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">vars66</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"helpsickB"</span>, <span class="st">"polviews"</span>, <span class="st">"conserv"</span>, <span class="st">"faminc"</span>, <span class="st">"employed"</span>,</span>
 <span>            <span class="st">"woman"</span>, <span class="st">"age"</span>, <span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"race"</span>, <span class="st">"year"</span><span class="op">)</span></span>
@@ -787,10 +781,10 @@ difference = 0.166,
 <div class="section level2">
 <h2 id="alternative-fitting-engines">Alternative fitting engines<a class="anchor" aria-label="anchor" href="#alternative-fitting-engines"></a>
 </h2>
-<p>The statistical model family and fitting engine are handled
-separately. This allows comparisons across packages when likelihood
-scores, parameter ordering, observation alignment, and prediction scales
-are compatible.</p>
+<p><code>suest</code> handles the type of model and the package that
+fits it separately. This lets you combine models fitted with different
+packages, as long as their scores, parameter order, observations, and
+prediction scales are compatible.</p>
 <div class="section level3">
 <h3 id="glm2glm2">
 <code>glm2::glm2()</code><a class="anchor" aria-label="anchor" href="#glm2glm2"></a>
@@ -825,9 +819,8 @@ are compatible.</p>
 <h3 id="ordinalclm">
 <code>ordinal::clm()</code><a class="anchor" aria-label="anchor" href="#ordinalclm"></a>
 </h3>
-<p><code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">clm()</a></code> is supported for proportional-effects ordered
-logit and probit models with flexible thresholds and no scale or
-nominal-effects formula.</p>
+<p><code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">clm()</a></code> is supported for standard ordered logit and probit
+models: flexible thresholds and no scale or nominal-effects formula.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/runehaubo/ordinal" class="external-link">ordinal</a></span><span class="op">)</span></span>
 <span></span>
@@ -859,10 +852,9 @@ nominal-effects formula.</p>
 <h2 id="for-stata-users">For Stata users<a class="anchor" aria-label="anchor" href="#for-stata-users"></a>
 </h2>
 <p>The same framework is available in Stata through the <a href="https://www.trentonmize.com/software/mecompare" class="external-link"><code>mecompare</code>
-Stata command</a>. The R package uses <code>marginaleffects</code> for
-predictions and effects, while the <code>mecompare</code> Stata command
-provides a Stata-native workflow for the same class of cross-model
-comparisons.</p>
+command</a>. This R package uses <code>marginaleffects</code> to
+calculate predictions and effects, while <code>mecompare</code> does the
+same kinds of cross-model comparisons entirely in Stata.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

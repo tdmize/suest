@@ -1,15 +1,15 @@
 # Pool SUEST systems across multiple imputations
 
-`suest_mi()` pools complete joint SUEST coefficient vectors and
-covariance matrices using Rubin's rules. Supply either a list whose
-elements are compatible
+`suest_mi()` combines
 [`suest()`](https://tdmize.github.io/suest/reference/suest.md) results
-fitted in separate imputed datasets, or the
-[`mice::mira`](https://amices.org/mice/reference/mira.html) object
-returned by [`with()`](https://rdrr.io/r/base/with.html) when that
-expression fits a SUEST system. Result lists created by
-[`mitools::with.imputationList()`](https://rdrr.io/pkg/mitools/man/with.imputationList.html)
-are also accepted directly.
+fitted in each of several imputed datasets, applying Rubin's rules to
+the full set of coefficients and their joint covariance matrix. Supply a
+list of compatible
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) results,
+the [`mice::mira`](https://amices.org/mice/reference/mira.html) object
+returned by [`with()`](https://rdrr.io/r/base/with.html) when it fits a
+SUEST system, or the result list from
+[`mitools::with.imputationList()`](https://rdrr.io/pkg/mitools/man/with.imputationList.html).
 
 ## Usage
 
