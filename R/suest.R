@@ -1,8 +1,8 @@
 #' Combine fitted models with seemingly unrelated estimation
 #'
-#' `suest()` combines two or more separately fitted models and constructs a joint
-#' model-robust covariance matrix from their observation-level score
-#' contributions. The returned object can be passed directly to
+#' `suest()` combines two or more separately fitted models into one object with
+#' a joint robust covariance matrix, so you can test whether predictions and
+#' marginal effects differ across the models. Pass the result directly to
 #' [marginaleffects::predictions()], [marginaleffects::avg_comparisons()],
 #' [marginaleffects::avg_slopes()], and [marginaleffects::hypotheses()].
 #'

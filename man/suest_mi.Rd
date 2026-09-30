@@ -38,12 +38,11 @@ within-imputation, and between-imputation covariance matrices, Rubin
 large-sample degrees of freedom, and the original SUEST fits.
 }
 \description{
-\code{suest_mi()} pools complete joint SUEST coefficient vectors and covariance
-matrices using Rubin's rules. Supply either a list whose elements are
-compatible \code{\link[=suest]{suest()}} results fitted in separate imputed datasets, or the
-\code{mice::mira} object returned by \code{with()} when that expression fits a SUEST
-system. Result lists created by \code{mitools::with.imputationList()} are also
-accepted directly.
+\code{suest_mi()} combines \code{\link[=suest]{suest()}} results fitted in each of several imputed
+datasets, applying Rubin's rules to the full set of coefficients and their
+joint covariance matrix. Supply a list of compatible \code{\link[=suest]{suest()}} results, the
+\code{mice::mira} object returned by \code{with()} when it fits a SUEST system, or the
+result list from \code{mitools::with.imputationList()}.
 }
 \details{
 The pooled covariance is

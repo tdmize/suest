@@ -5,10 +5,10 @@
 \alias{suest-package}
 \title{Seemingly Unrelated Estimation for Model Comparisons}
 \description{
-The \code{suest} package combines two or more separately fitted regression
-models into a single object with a joint model-robust covariance
-matrix. The combined object works with the
-\href{https://marginaleffects.com/}{marginaleffects package} to compare
+The \code{suest} package lets you compare predictions and marginal effects across
+regression models. It combines two or more separately fitted models into one
+object with a joint robust covariance matrix. The combined object works with
+the \href{https://marginaleffects.com/}{marginaleffects package} to compare
 predictions, slopes, and average comparisons across models.
 }
 \section{Supported models}{

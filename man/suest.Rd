@@ -71,9 +71,9 @@ their joint coefficient vector, a joint model-robust covariance matrix,
 and sample-alignment information.
 }
 \description{
-\code{suest()} combines two or more separately fitted models and constructs a joint
-model-robust covariance matrix from their observation-level score
-contributions. The returned object can be passed directly to
+\code{suest()} combines two or more separately fitted models into one object with
+a joint robust covariance matrix, so you can test whether predictions and
+marginal effects differ across the models. Pass the result directly to
 \code{\link[marginaleffects:predictions]{marginaleffects::predictions()}}, \code{\link[marginaleffects:avg_comparisons]{marginaleffects::avg_comparisons()}},
 \code{\link[marginaleffects:avg_slopes]{marginaleffects::avg_slopes()}}, and \code{\link[marginaleffects:hypotheses]{marginaleffects::hypotheses()}}.
 }

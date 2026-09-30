@@ -2,17 +2,22 @@
 
 [![R-CMD-check](https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml)
 
-Full documentation, worked examples, and rendered output:
+Full documentation, with worked examples and output:
 [tdmize.github.io/suest](https://tdmize.github.io/suest/articles/suest.html)
 
-`suest` combines two or more separately fitted regression models into one object with a
-joint model-robust covariance matrix. The combined object works with
-[`marginaleffects`](https://marginaleffects.com/) to compare predictions and
-marginal effects across models.
+`suest` lets you compare predictions and marginal effects across regression
+models in R. It combines two or more separately fitted models into one object
+with a joint robust covariance matrix. That object works directly with
+[`marginaleffects`](https://marginaleffects.com/), so you can calculate
+predictions and effects for each model and test whether they differ across
+models.
 
-The package implements the framework developed in:
+The package implements the framework in:
 
 > Mize, Trenton D., Long Doan, and J. Scott Long. 2019. “A General Framework for Comparing Predictions and Marginal Effects Across Models.” *Sociological Methodology* 49(1):152–189. [doi:10.1177/0081175019852763](https://doi.org/10.1177/0081175019852763)
+
+The same framework is available in Stata through the
+[`mecompare` command](https://www.trentonmize.com/software/mecompare).
 
 ## Installation
 
@@ -39,132 +44,127 @@ effects
 hypotheses(effects, hypothesis = difference ~ revpairwise)
 ```
 
-`suest()` accounts for the cross-model covariance between estimates. This is
-essential when the models use the same or overlapping observations.
+`suest()` accounts for the covariance between estimates from different
+models. This is essential when the models use the same or overlapping
+observations.
 
 ## Supported models
 
-- linear regression using `lm()`
-- binary logit, probit, and complementary-log-log using `glm()` or `glm2::glm2()`
-- Poisson regression using `glm()` or `glm2::glm2()`
-- other GLMs using identity, log, logit, probit, complementary-log-log, or
+- Linear regression: `lm()`
+- Binary logit, probit, and complementary log-log: `glm()` or `glm2::glm2()`
+- Poisson regression: `glm()` or `glm2::glm2()`
+- Other GLMs with identity, log, logit, probit, complementary log-log, or
   log-log links
-- fractional-response quasi-binomial logit, probit, complementary-log-log,
-  and user-supplied log-log links
-- negative-binomial regression using `MASS::glm.nb()`
-- parametric survival and censored regression using `survival::survreg()` with
-  a common scale, including Gaussian interval regression
-- beta regression using `betareg::betareg()` with logit, probit,
-  complementary-log-log, or log-log mean links
-- Poisson and negative-binomial zero-inflated regression using
-  `pscl::zeroinfl()`
-- truncated Gaussian regression using `truncreg::truncreg()`
-- left-, right-, and two-limit censored Gaussian regression using
-  `censReg::censReg()`; response-scale predictions are the latent mean
-- unweighted two-stage least squares using `fixest::feols()` without absorbed
-  fixed effects; the original data object must remain available
-- heteroskedastic binary probit and logit using `Rchoice::hetprob()`
-- maximum-likelihood instrumental-variable probit using `Rchoice::ivpml()`;
-  response-scale predictions use the average structural probability
-- bivariate probit using `mvProbit::mvProbit()` when both outcome equations
-  use the same regressors and an observed final Hessian is retained
-- unweighted individual fixed-effects, between-effects, and Swamy-Arora
-  random-effects linear panel models using `plm::plm()`; unbalanced random-
-  effects panels can retain small engine-specific differences from Stata.
-  Within-model prediction uncertainty conditions on estimation-sample means
-  and propagates slope uncertainty. At matching evaluation means, the
-  covariance is structurally degenerate: average-level confidence intervals
-  and hypothesis tests are unsupported, and numerical SEs can be missing or
-  nearly zero. Slope and finite-change comparisons remain supported.
-- unweighted random-intercept Gaussian panel models using `nlme::lme()` with
-  `method = "ML"`; both variance components are included in the joint system
-- unweighted individual random-intercept binary logit or probit using `pglm::pglm()`
-  with `model = "random"`, `effect = "individual"`, and exactly 12-point
-  nonadaptive quadrature; response predictions integrate over the random effect
-- unweighted gamma random-effects panel Poisson using `pglm::pglm()` with a log
-  link, `model = "random"`, `effect = "individual"`, and `other = "sd"`; the
-  natural-scale gamma variance `alpha` is included in the joint system
-- unweighted binomial-logit and Poisson-log using `glmmTMB::glmmTMB()` with one
-  Gaussian random intercept; predictions integrate over the random effect
-- negative-binomial NB2 log using
-  `glmmTMB::glmmTMB()` with one Gaussian random intercept and default constant
-  dispersion (`dispformula = ~1`); both `log_phi` (NB2 size) and `log_sigma`
-  (random-intercept SD) enter the joint system. Returned Stata Laplace
-  benchmarks validate component fits, joint covariance, and marginal effects;
-  the [NB2 validation report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RI-VALIDATION-20260923.md)
-  records the cluster-correction and numerical comparison limits.
-  The glmmTMB routes exclude weights, offsets, and zero inflation
-- Poisson-log `glmmTMB` models with one Gaussian
-  random intercept and one correlated numeric random slope, `(1 + x | id)`.
-  Both log SDs and the Fisher correlation enter the joint system. Population
-  predictions and marginal effects include the covariate-dependent random
-  variance. Returned Stata component fits and joint covariance audits validate
-  balanced, partial-overlap, and disjoint systems; the
-  [Poisson random-slope validation report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-POISSON-RS-VALIDATION-20260923.md)
-  distinguishes this agreement from residual differences in raw GSEM
-  curvature.
-- NB2-log `glmmTMB` models with the same
-  correlated random intercept and numeric slope, plus estimated constant
-  dispersion. The joint system includes `log_phi`, both log SDs, and the
-  Fisher correlation. R likelihood, score, covariance, and marginal-effects
-  checks are covered. Returned Stata fits and independent covariance audits
-  cover balanced, partial-overlap, and disjoint samples. Raw GSEM SE
-  differences reach 1.16%, chiefly from numerical curvature; those raw
-  results remain separate from the independent reference. The disjoint
-  audit aligns cluster corrections and retains the Hessian chain-rule term
-  for glmmTMB's native correlation coordinate. See the
-  [NB2 random-slope validation report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RS-VALIDATION-20260924.md).
-  Fit continuous predictors in centered, well-scaled units: glmmTMB's numerical
-  curvature can be inaccurate with extreme predictor units despite reported
-  convergence. `suest` uses the supplied native covariance. The refit and
-  sensitivity workflow is in `tools/STABILITY-USABILITY-20260925.md`
-- Bernoulli binomial-logit `glmmTMB` models with
-  one correlated random intercept and numeric slope, `(1 + x | id)`.
-  Probabilities integrate over both Gaussian effects, and inference retains
-  both log SDs and the Fisher correlation. R checks cover likelihoods,
-  scores, marginal effects, and all three sample patterns. The returned
-  balanced, partial-overlap, and disjoint Stata components and independent
-  covariance audits agree with R. Raw joint GSEM SEs differ by up to 4.23%,
-  1.14%, and 1.57%, respectively, after aligning cluster corrections. Numerical
-  curvature explains the main differences; one disjoint raw-covariance
-  reconstruction diagnostic remains outside its absolute bound. See the
-  [logit random-slope report](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-LOGIT-RS-VALIDATION-20260924.md).
-  For numerical logit slope SEs, use
-  `numderiv = list("fdcenter", eps = 1e-4)` in `avg_slopes()` and compare nearby
-  steps. This does not repair an inaccurate native model covariance. Other
-  random-slope families and more
-  complex random-effects structures remain unsupported
-- unweighted GEE using `geepack::geeglm()`: Gaussian identity,
-  binary logit/probit/cloglog, and Poisson log, with independence or exchangeable
-  correlation; numeric outcomes only, with default panel or higher nested clusters
-- ordered logit and probit using `MASS::polr()`
-- ordered logit and probit using restricted `ordinal::clm()` specifications
-- multinomial logit using `nnet::multinom()`
+- Fractional response (quasi-binomial) with logit, probit, complementary
+  log-log, or user-supplied log-log links
+- Negative binomial regression: `MASS::glm.nb()`
+- Parametric survival and censored regression with a common scale, including
+  Gaussian interval regression: `survival::survreg()`
+- Beta regression with logit, probit, complementary log-log, or log-log mean
+  links: `betareg::betareg()`
+- Zero-inflated Poisson and negative binomial regression: `pscl::zeroinfl()`
+- Truncated Gaussian regression: `truncreg::truncreg()`
+- Censored Gaussian (Tobit) regression with left, right, or two limits:
+  `censReg::censReg()`. Response-scale predictions are the latent mean.
+- Two-stage least squares, unweighted and without absorbed fixed effects:
+  `fixest::feols()`. The original data object must remain available.
+- Heteroskedastic binary probit and logit: `Rchoice::hetprob()`
+- Maximum-likelihood instrumental-variable probit: `Rchoice::ivpml()`.
+  Response-scale predictions use the average structural probability.
+- Bivariate probit: `mvProbit::mvProbit()`, when both equations use the same
+  regressors and the final Hessian is kept (`finalHessian = TRUE`)
+- Linear panel models with individual fixed, between, or Swamy-Arora random
+  effects (unweighted): `plm::plm()`. Comparisons of slopes and changes are
+  supported. Confidence intervals and tests for average predicted levels at
+  the estimation-sample means are not (their standard errors can be missing
+  or near zero). Unbalanced random-effects panels can differ slightly from
+  Stata.
+- Random-intercept Gaussian panel models fitted by maximum likelihood
+  (unweighted): `nlme::lme(method = "ML")`. Both variance components are
+  included.
+- Random-intercept binary logit or probit (unweighted, individual effects,
+  exactly 12-point nonadaptive quadrature):
+  `pglm::pglm(model = "random", effect = "individual")`. Predictions
+  integrate over the random effect.
+- Gamma random-effects panel Poisson with a log link (unweighted):
+  `pglm::pglm(model = "random", effect = "individual", other = "sd")`. The
+  gamma variance `alpha` is included.
+- Mixed models with one Gaussian random intercept (unweighted):
+  `glmmTMB::glmmTMB()` with binomial-logit, Poisson-log, or negative binomial
+  (NB2) log with constant dispersion (`dispformula = ~1`). Predictions
+  integrate over the random effect.
+- Mixed models with a correlated random intercept and numeric slope,
+  `(1 + x | id)` (unweighted): `glmmTMB::glmmTMB()` with binomial-logit,
+  Poisson-log, or NB2-log. Predictions and marginal effects integrate over
+  both random effects.
+- Population-averaged GEE (unweighted): `geepack::geeglm()` with Gaussian
+  identity, binary logit, probit, or complementary log-log, or Poisson log;
+  independence or exchangeable correlation; numeric outcomes only; the
+  default panel clusters or higher nested clusters
+- Ordered logit and probit: `MASS::polr()`, or restricted `ordinal::clm()`
+  specifications
+- Multinomial logit: `nnet::multinom()`
 
-Models may use identical, partially overlapping, or disjoint samples. All
-combinations of supported scalar-response models are allowed. All combinations
-of supported categorical-response models are allowed, and scalar and
-categorical models may be combined. Outputs on different response scales are
-labeled separately rather than treated as directly commensurate. Supported
-panel systems can be combined only with panel models of the same type.
-Offsets are supported. Linear models include a Stata-compatible `lnvar`
-ancillary parameter in the combined coefficient and covariance matrices.
-Unweighted fits use `log(RSS / df.residual)`; pweighted fits follow `suest2`'s
-iweight-reference normalization. This nuisance parameter has no effect on
-`marginaleffects` predictions.
+Models can use the same, partially overlapping, or completely different
+samples. Any supported models with a single outcome can be combined, and so
+can models for categorical outcomes; the two kinds can also be mixed. Results
+on different scales are labeled separately rather than treated as directly
+comparable. Panel models can be combined only with panel models of the same
+type. Offsets are supported.
+
+As in Stata, linear models add an `lnvar` parameter (the log of the error
+variance) to the combined coefficients and covariance matrix. Unweighted fits
+use `log(RSS / df.residual)`; weighted fits follow `suest2`'s normalization.
+It has no effect on predictions or marginal effects.
+
+### Notes on the glmmTMB mixed models
+
+- Weights, offsets, and zero inflation are not supported for these models.
+  Other random-slope families and more complex random-effects structures are
+  not supported.
+- Center continuous predictors and keep them in well-scaled units. glmmTMB's
+  covariance matrix can be inaccurate with extreme predictor units even when
+  the model reports convergence, and `suest` uses that covariance as supplied.
+  The refit and sensitivity workflow is in
+  `tools/STABILITY-USABILITY-20260925.md`.
+- For numerical slope standard errors in logit random-slope models, use
+  `numderiv = list("fdcenter", eps = 1e-4)` in `avg_slopes()` and check
+  that nearby step sizes give similar answers. This does not fix an inaccurate
+  model covariance matrix.
+- These models were checked against Stata. The validation reports document
+  the comparisons (for the random-slope models, with identical, partially
+  overlapping, and completely different samples) and the remaining numerical
+  differences:
+  [NB2 random intercept](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RI-VALIDATION-20260923.md),
+  [Poisson random slope](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-POISSON-RS-VALIDATION-20260923.md),
+  [NB2 random slope](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-NBINOM2-RS-VALIDATION-20260924.md), and
+  [logit random slope](https://github.com/tdmize/suest/blob/main/tools/GLMMTMB-LOGIT-RS-VALIDATION-20260924.md).
+
+### Fits that are not supported
+
+- Bias-reduced, adjusted-score, Firth, and other penalized GLM fits, including
+  `brglm2::brglmFit()`, are rejected rather than treated as ordinary
+  maximum-likelihood GLMs.
+- Ordinary `glm` and `glm2` fits must have converged.
+- Penalized `nnet::multinom` fits (nonzero `decay`) are rejected.
+- Beta regression must use ordinary maximum likelihood (`type = "ML"`);
+  bias-reduced (`"BR"`) and bias-corrected (`"BC"`) fits are not supported.
+- Penalized `survreg` fits are not supported. A regular `survreg` fit with
+  `robust = TRUE` is supported: `suest` uses its model-based information when
+  building the joint covariance matrix.
 
 ## Multiple imputation
 
-Pool compatible SUEST systems fitted in separate imputed datasets with
-`suest_mi()`:
+To combine results across imputed datasets, fit the same `suest` system in
+each one and pool them with `suest_mi()`:
 
 ```r
 pooled <- suest_mi(list(fit_imp1, fit_imp2, fit_imp3, fit_imp4, fit_imp5))
 summary(pooled)
 ```
 
-`mice::with()` results can be pooled directly when each imputation fits the
-same SUEST system:
+Results from `mice::with()` can be pooled directly when each imputation fits
+the same system:
 
 ```r
 analyses <- with(imp, suest(
@@ -175,37 +175,36 @@ analyses <- with(imp, suest(
 pooled <- suest_mi(analyses)
 ```
 
-The result of `with(mitools::imputationList(...), suest(...))` can likewise be
+The result of `with(mitools::imputationList(...), suest(...))` can also be
 passed directly to `suest_mi()`.
 
-The function applies Rubin's rules to the complete joint coefficient vector,
-preserving cross-model covariance within and between imputations. Coefficient
-hypotheses and their pooled standard errors work through
+`suest_mi()` applies Rubin's rules to the full set of coefficients, keeping
+the covariance between models both within and between imputations. Tests of
+coefficients and their pooled standard errors work through
 `marginaleffects::hypotheses()`. Predictions, slopes, and comparisons are not
-yet exposed for pooled objects because nonlinear estimands must be estimated
-within each imputation and then pooled.
+yet available for pooled results, because those need to be calculated within
+each imputation and then pooled.
 
 ## Cluster-robust covariance
 
-Use `cluster` to aggregate the joint score contributions before constructing
-the covariance matrix:
+Use `cluster` to get cluster-robust standard errors for the combined models:
 
 ```r
 combined <- suest(base, adjusted, cluster = "person_id")
 ```
 
-The argument accepts one or more cluster-column names, or a list of cluster IDs
-aligned to the estimation sample of each model. Shared observations must have
-the same cluster ID in every model. Completely disjoint observations can share
-a cluster, so their cross-model covariance need not be zero. The resulting
-object remains directly compatible with `marginaleffects`. Supported panel
-systems default to clustering on the panel identifier; a supplied higher-level
-cluster must contain whole panels.
+`cluster` takes one or more column names, or a list of cluster IDs matched to
+each model's estimation sample. An observation that appears in more than one
+model must have the same cluster ID in each. Observations in completely
+different samples can share a cluster, so the covariance between models need
+not be zero. The result works with `marginaleffects` as usual. Panel models
+cluster on the panel identifier by default; a cluster you supply must contain
+whole panels.
 
 ## Probability weights
 
-Version 0.1.4 adds explicit probability-weight support. Fit each component model with
-`weights=` and declare their interpretation when combining the models:
+`suest` supports probability weights. Fit each model with `weights=`, and tell
+`suest()` how to interpret the weights:
 
 ```r
 base <- lm(y ~ x + z, weights = pw, data = dat)
@@ -213,22 +212,23 @@ adjusted <- lm(y ~ x + z + mediator, weights = pw, data = dat)
 combined <- suest(base, adjusted, weight_type = "pweight")
 ```
 
-Pweights must be finite and strictly positive. Their evaluated values must agree
-for observations included in any pair of models. They may differ for observations
-unique to one model, including completely disjoint samples. To calculate a
-sampling-weighted average with `marginaleffects`, supply the weight column using
-`wts`, such as `wts = "pw"`. With model-specific estimation samples, use
-`suest_newdata(combined)` and `wts = ".suest_weight"`.
+Weights must be positive and finite. An observation that appears in more than
+one model must have the same weight in each; weights can differ for
+observations that appear in only one model, including completely different
+samples. To average over the sample with the weights in `marginaleffects`,
+give the weight column to `wts`, such as `wts = "pw"`. When the models have
+different estimation samples, use `suest_newdata(combined)` and
+`wts = ".suest_weight"`.
 
-Pweights are supported for linear, binary logit/probit, Poisson,
-negative-binomial, ordered logit/probit, and multinomial logit models. They are
-not yet supported for complementary-log-log, other general GLMs, or fractional
-response models.
+Probability weights work with linear, binary logit and probit, Poisson,
+negative binomial, ordered logit and probit, and multinomial logit models.
+They are not yet supported for complementary log-log, other GLMs, or
+fractional response models.
 
 ## Worked examples
 
-The single Get Started page contains code and rendered results for six R
-replications corresponding to Examples 6.1–6.6 for the
+The Getting started page has code and output for six R replications of
+Examples 6.1–6.6 from the
 [`mecompare` Stata command](https://www.trentonmize.com/software/mecompare):
 
 1. Marginal effects to summarize curvilinear relationships and test mediation
@@ -238,25 +238,14 @@ replications corresponding to Examples 6.1–6.6 for the
 5. Comparing marginal effects across different model types (ordinal vs nominal)
 6. Comparing marginal effects across different samples or groups
 
-It also documents cross-engine comparisons using `glm2::glm2()` and
+It also shows comparisons across fitting engines using `glm2::glm2()` and
 `ordinal::clm()`.
 
-Bias-reduced, adjusted-score, Firth, and penalized GLM fits, including
-`brglm2::brglmFit()`, are rejected rather than being treated incorrectly as
-ordinary maximum-likelihood GLMs.
-Ordinary `glm` and `glm2` fits must have converged. Penalized `nnet::multinom`
-fits with nonzero `decay` are also rejected.
-Beta regression requires ordinary maximum likelihood (`type = "ML"`);
-bias-reduced (`"BR"`) and bias-corrected (`"BC"`) fits are not supported.
-Penalized `survreg` fits are also unsupported. A conventional `survreg` fit
-with `robust = TRUE` remains supported: `suest` uses its model-based information
-when constructing the joint sandwich covariance.
+## Survey-weighted models
 
-
-### Restricted survey-weighted models
-
-Fit Gaussian identity or binary `quasibinomial()` logit/probit models from one
-common one-stage survey design:
+`suest` supports Gaussian (identity) and binary `quasibinomial()` logit or
+probit models fitted with `survey::svyglm()` from one common one-stage survey
+design:
 
 ```r
 library(survey)
@@ -267,21 +256,23 @@ fit <- suest(m1, m2, survey_design = design, observation_id = "id")
 avg_slopes(fit, variables = "x", newdata = suest_newdata(fit), wts = ".suest_weight")
 ```
 
-Keep `design` as the full sampled design if either model uses a domain/subset.
-The joint covariance incorporates strata, PSU totals, and optional one-stage
-FPCs. Survey systems contain coefficients only; Gaussian and binary fits are
-not mixed in the same survey system. Replicate weights, multistage designs,
-calibration, PPS designs, and other survey families remain deferred.
-Lonely-PSU settings are restricted to `fail`, `remove`, or `certainty`, with
-domain-lonely adjustments disabled. Predictions/effects use the joint
-coefficient covariance and treat averaging covariates as fixed. Default
-inference remains asymptotic normal; the design DF is recorded in
-`fit$survey$design_df`.
+If either model uses a subset (domain) of the data, keep `design` as the full
+sampled design. The joint covariance accounts for strata, PSUs, and optional
+one-stage finite population corrections.
 
-The certified Gaussian route matches six deterministic stacked Stata systems
-to machine precision. The binary gate shows the same numerical parity for
-survey logit. Survey probit coefficient estimates agree across R and Stata,
-but their finite-sample sandwich covariances use different breads:
-`survey::svyglm()` uses expected/Fisher information, while the returned Stata
-covariance is reproduced by an observed-information bread. The R implementation
-preserves the native `svyglm()` covariance.
+Some limits:
+
+- Survey systems include coefficients only, and Gaussian and binary models
+  can't be mixed in the same system.
+- Replicate weights, multistage designs, calibration, PPS designs, and other
+  survey families are not yet supported.
+- Lonely-PSU settings are limited to `fail`, `remove`, or `certainty`, with
+  domain-lonely adjustments turned off.
+- Predictions and effects use the joint coefficient covariance and treat the
+  covariates being averaged over as fixed. Inference is asymptotic normal; the
+  design degrees of freedom are stored in `fit$survey$design_df`.
+
+The Gaussian and logit survey results match Stata to machine precision. For
+survey probit, the coefficients match Stata, but the standard errors can
+differ slightly: `survey::svyglm()` uses expected (Fisher) information, while
+Stata uses observed information. `suest` keeps `svyglm()`'s covariance.
