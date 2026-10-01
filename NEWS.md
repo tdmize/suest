@@ -1,5 +1,10 @@
 # suest 0.1.6.9000 (development)
 
+* Fixed categorical-outcome comparisons on model-specific stacked samples.
+  Outcome prediction blocks now align with the complete counterfactual grid,
+  retaining every outcome-by-contrast estimate for disjoint and overlapping
+  samples, subgroups, and models with different outcome-category sets.
+
 * Fixed `marginaleffects` comparisons for multi-category factor predictors
   when component models use different estimation samples. Model-specific
   predictions now preserve counterfactual row order, and `suest_newdata()`

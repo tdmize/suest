@@ -105,6 +105,10 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
   # counterfactual data. Concatenating model 1, then model 2, otherwise
   # misaligns predictions with contrast labels when samples are disjoint.
   preserve_input_order <- model_specific && !any(categorical)
+  # Categorical comparisons recycle counterfactual metadata once per outcome.
+  # Every outcome block must span the entire input grid; rows belonging to
+  # another model are missing predictions, removed before averaging.
+  pad_outcome_blocks <- model_specific && any(categorical)
 
   get_model_data <- function(i) {
     if (model_specific) {
@@ -185,6 +189,14 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
 
     if (categorical[i]) {
       p <- .suest_predict_probabilities(model$models[[i]], nd, engine)
+      if (pad_outcome_blocks) {
+        keep <- which(as.character(newdata$.suest_model) == model$model_names[i])
+        full <- matrix(NA_real_, nrow(newdata), ncol(p),
+          dimnames = list(NULL, colnames(p)))
+        full[keep, ] <- p
+        p <- full
+        rowid <- get_rowid(newdata)
+      }
       group <- rep(
         paste0(model$model_names[i], "::", colnames(p)),
         each = nrow(p)
@@ -204,6 +216,13 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
         engine,
         model$model_types[i]
       )
+      if (pad_outcome_blocks) {
+        keep <- which(as.character(newdata$.suest_model) == model$model_names[i])
+        full <- rep(NA_real_, nrow(newdata))
+        full[keep] <- as.numeric(p)
+        p <- full
+        rowid <- get_rowid(newdata)
+      }
       out <- data.frame(
         rowid = rowid,
         group = factor(model$model_names[i], levels = group_levels),
