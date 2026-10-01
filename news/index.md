@@ -2,35 +2,49 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Fixed categorical-outcome comparisons on model-specific stacked
+  samples. Outcome prediction blocks now align with the complete
+  counterfactual grid, retaining every outcome-by-contrast estimate for
+  disjoint and overlapping samples, subgroups, and models with different
+  outcome-category sets.
+
 - Fixed `marginaleffects` comparisons for multi-category factor
   predictors when component models use different estimation samples.
   Model-specific predictions now preserve counterfactual row order, and
   [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
   preserves factor classes and levels.
+
 - Rewrote the README, the Getting started vignette, and the short
   description at the top of each function’s help page in plainer
   language. No code changes.
+
 - Reject failed `multinom` and `polr` fits, unreliable `clm` convergence
   diagnostics, and `glm.nb` fits with failed mean or dispersion
   convergence before constructing joint inference.
+
 - Documented the conditional-mean interpretation of within-model
   prediction uncertainty and the unsupported average-level inference at
   matching estimation-sample means; slopes and finite changes remain
   supported.
+
 - Corrected interval-censored `survreg` log-scale scores by evaluating
   the interval likelihood derivative directly. This fixes joint
   covariance terms affected by the interval-scale residual sign in the
   upstream implementation.
+
 - Restricted beta regression to ordinary ML fits (`type = "ML"`) and
   added an explicit diagnostic for unsupported penalized `survreg` fits.
+
 - Reject nonconverged ordinary `glm`/`glm2` fits and
   [`nnet::multinom`](https://rdrr.io/pkg/nnet/man/multinom.html) fits
   with nonzero weight decay before constructing joint inference.
   Penalized multinomial fits do not use the ordinary maximum-likelihood
   score equations.
+
 - Improved unsupported-model errors to name the offending model and its
   class; unsupported `glmmTMB` family errors now name the family and
   link.
+
 - Added a practical predictor-rescaling and centered finite-difference
   sensitivity workflow for random-slope marginal effects. These checks
   are diagnostic: they do not change `glmmTMB`’s native covariance or
