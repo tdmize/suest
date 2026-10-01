@@ -24,8 +24,19 @@ marginaleffects::avg_slopes(), and marginaleffects::hypotheses()."></head><body>
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../articles/suest.html">Get started</a></li>
+<li class="nav-item dropdown">
+  <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
+  <ul class="dropdown-menu" aria-labelledby="dropdown-articles"><li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
+    <li><a class="dropdown-item" href="../articles/mediation.html">Curvilinear effects and mediation/attenuation</a></li>
+    <li><a class="dropdown-item" href="../articles/nested-models.html">Nested logit models and mediation/attenuation</a></li>
+    <li><a class="dropdown-item" href="../articles/alternative-predictors.html">Alternative predictors</a></li>
+    <li><a class="dropdown-item" href="../articles/different-outcomes.html">Different outcomes</a></li>
+    <li><a class="dropdown-item" href="../articles/model-types.html">Different model types</a></li>
+    <li><a class="dropdown-item" href="../articles/groups.html">Separate samples or groups</a></li>
+    <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
+  </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
-<li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
       </ul><ul class="navbar-nav"><li class="nav-item"><form class="form-inline" role="search">
  <input class="form-control" type="search" name="search-input" id="search-input" autocomplete="off" aria-label="Search site" placeholder="Search for" data-search-index="../search.json"></form></li>
 <li class="nav-item"><a class="external-link nav-link" href="https://github.com/tdmize/suest/" aria-label="GitHub"><span class="fa fab fa-github fa-lg"></span></a></li>
@@ -150,10 +161,9 @@ including models whose response variables or response scales differ. All
 combinations of the supported categorical-response models can be combined,
 and scalar and categorical models may appear in the same system. Results on
 different response scales are labeled separately for <code>marginaleffects</code>.</p>
-<p>Ordinary linear models include an ancillary <code>lnvar</code> parameter, matching Stata's
-<code>regress</code>/<code>suest</code> parameterization. Unweighted fits use
-<code>log(RSS / df.residual)</code>; pweighted fits follow <code>suest2</code>'s reconstructed
-iweight-reference normalization.
+<p>Linear models include an ancillary <code>lnvar</code> parameter, the log of the error
+variance (<code>log(RSS / df.residual)</code> for unweighted fits). It has no effect on
+predictions or marginal effects.
 Negative-binomial models include <code>log(theta)</code> in the joint parameter vector.
 Ordered and multinomial models use analytic score and observed-information
 calculations for stable robust covariance estimation.</p>
@@ -178,7 +188,7 @@ the joint sandwich covariance.</p>
 
 
 <p>Survey support combines coefficients from Gaussian identity-link and binary
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm()</a></code> fits under one common one-stage
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit <code>svyglm()</code> fits under one common one-stage
 design. Gaussian and binary fits are not mixed in the same survey system.
 Strata and first-stage finite-population corrections are supported.
 Model-specific subsets and missing outcomes are aligned using observation
@@ -203,51 +213,67 @@ survey t or F adjustment is applied.</p>
     <h2 id="supported-models">Supported models<a class="anchor" aria-label="anchor" href="#supported-models"></a></h2>
 
 
+<div class="section">
+<h3 id="single-level-models">Single-level models<a class="anchor" aria-label="anchor" href="#single-level-models"></a></h3>
+
 <ul><li><p><code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">stats::lm()</a></code></p></li>
-<li><p>restricted survey-weighted Gaussian identity and binary
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit models from <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code></p></li>
 <li><p>binary logit, probit, and complementary-log-log models from <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code>
 or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code></p></li>
+<li><p>ordered logit and probit models from <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code></p></li>
+<li><p>ordered logit and probit models from <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> with flexible
+thresholds, proportional effects, and no scale model</p></li>
+<li><p>multinomial logit models from <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code></p></li>
 <li><p>Poisson log-link models from <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code></p></li>
+<li><p>negative-binomial log-link models from <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code></p></li>
+<li><p>Poisson and negative-binomial zero-inflated models from
+<code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code></p></li>
 <li><p>other GLMs using identity, log, logit, probit, complementary-log-log, or
 log-log links</p></li>
-<li><p>fractional-response GLMs using <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> with logit, probit,
-complementary-log-log, or a user-supplied log-log link</p></li>
-<li><p>negative-binomial log-link models from <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code></p></li>
+<li><p>left-, right-, and two-limit censored Gaussian regressions from
+<code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code>; response-scale predictions are the latent mean</p></li>
 <li><p>parametric survival and censored-regression models from
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code> with a common scale, including Gaussian interval
 regression</p></li>
+<li><p>truncated Gaussian regressions from <code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code></p></li>
+<li><p>fractional-response GLMs using <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> with logit, probit,
+complementary-log-log, or a user-supplied log-log link</p></li>
 <li><p>beta regressions from <code><a href="https://rdrr.io/pkg/betareg/man/betareg.html" class="external-link">betareg::betareg()</a></code> using logit, probit,
 complementary-log-log, or log-log mean links</p></li>
-<li><p>Poisson and negative-binomial zero-inflated models from
-<code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code></p></li>
-<li><p>truncated Gaussian regressions from <code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code></p></li>
-<li><p>left-, right-, and two-limit censored Gaussian regressions from
-<code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code>; response-scale predictions are the latent mean</p></li>
-<li><p>unweighted two-stage least squares from <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code> without
-absorbed fixed effects; the original data object must remain available</p></li>
 <li><p>heteroskedastic binary probit and logit from <code><a href="https://rdrr.io/pkg/Rchoice/man/hetprob.html" class="external-link">Rchoice::hetprob()</a></code></p></li>
-<li><p>maximum-likelihood instrumental-variable probit from <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>;
-response predictions use the average structural probability</p></li>
 <li><p>bivariate probit from <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> when both equations use the
 same regressors; fit with <code>intGrad = TRUE</code> and <code>finalHessian = TRUE</code></p></li>
-<li><p>unweighted individual fixed-effects, between-effects, and Swamy-Arora
-random-effects linear panel models from <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code>; balanced random-
-effects panels have the closest Stata parity, while unbalanced panels can
-retain small engine-specific differences. Within-model prediction
+<li><p>unweighted two-stage least squares from <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code> without
+absorbed fixed effects; the original data object must remain available</p></li>
+<li><p>maximum-likelihood instrumental-variable probit from <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>;
+response predictions use the average structural probability</p></li>
+</ul></div>
+
+<div class="section">
+<h3 id="panel-models">Panel models<a class="anchor" aria-label="anchor" href="#panel-models"></a></h3>
+
+<ul><li><p>unweighted individual fixed-effects, between-effects, and Swamy-Arora
+random-effects linear panel models from <code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm::plm()</a></code>. Within-model prediction
 uncertainty conditions on estimation-sample means and propagates slope
 uncertainty. At matching evaluation means, the covariance is structurally
 degenerate: average-level confidence intervals and hypothesis tests are
 unsupported, and numerical SEs can be missing or nearly zero. Slope and
 finite-change comparisons remain supported.</p></li>
-<li><p>unweighted single-level random-intercept Gaussian panel models from
-<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> fitted with <code>method = "ML"</code></p></li>
 <li><p>unweighted individual random-intercept binary logit and probit models from
 <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code> fitted with <code>model = "random"</code>, <code>effect = "individual"</code>,
 and <code>R = 12</code>; response predictions integrate over the random effect</p></li>
 <li><p>unweighted gamma random-effects Poisson log models from <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code>
 fitted with <code>model = "random"</code>, <code>effect = "individual"</code>, and
 <code>other = "sd"</code>; the final parameter is exposed as gamma variance <code>alpha</code></p></li>
+<li><p>unweighted GEE from <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity,
+binary logit/probit/cloglog, and Poisson log, with independence or
+exchangeable correlation and numeric outcomes</p></li>
+</ul></div>
+
+<div class="section">
+<h3 id="multilevel-models">Multilevel models<a class="anchor" aria-label="anchor" href="#multilevel-models"></a></h3>
+
+<ul><li><p>unweighted single-level random-intercept Gaussian models from
+<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> fitted with <code>method = "ML"</code></p></li>
 <li><p>unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models from
 <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with one grouping variable and one conditional random
 intercept; the final parameter is the log random-intercept standard
@@ -288,14 +314,16 @@ For logit random-slope <code><a href="https://rdrr.io/pkg/marginaleffects/man/sl
 steps (for example, <code>5e-5</code> and <code>2e-4</code>). An unstable standard error
 requires further investigation; changing the finite-difference step
 does not repair an inaccurate native model covariance</p></li>
-<li><p>unweighted GEE from <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity,
-binary logit/probit/cloglog, and Poisson log, with independence or
-exchangeable correlation and numeric outcomes</p></li>
-<li><p>ordered logit and probit models from <code><a href="https://rdrr.io/pkg/MASS/man/polr.html" class="external-link">MASS::polr()</a></code></p></li>
-<li><p>ordered logit and probit models from <code><a href="https://rdrr.io/pkg/ordinal/man/clm.html" class="external-link">ordinal::clm()</a></code> with flexible
-thresholds, proportional effects, and no scale model</p></li>
-<li><p>multinomial logit models from <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code></p></li>
 </ul></div>
+
+<div class="section">
+<h3 id="survey-models-1">Survey models<a class="anchor" aria-label="anchor" href="#survey-models-1"></a></h3>
+
+<ul><li><p>restricted survey-weighted Gaussian identity and binary
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit models from <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code></p></li>
+</ul></div>
+
+    </div>
 
     <div class="section level2">
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>

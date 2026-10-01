@@ -2,8 +2,15 @@ pandoc: 3.8.3
 pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
+  alternative-predictors: alternative-predictors.html
+  different-outcomes: different-outcomes.html
+  groups: groups.html
+  mediation: mediation.html
+  model-notes: model-notes.html
+  model-types: model-types.html
+  nested-models: nested-models.html
   suest: suest.html
-last_built: 2026-10-01T21:35Z
+last_built: 2026-10-01T22:22Z
 urls:
   reference: https://tdmize.github.io/suest/reference
   article: https://tdmize.github.io/suest/articles

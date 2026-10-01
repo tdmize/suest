@@ -119,13 +119,12 @@ can be combined, and scalar and categorical models may appear in the
 same system. Results on different response scales are labeled separately
 for `marginaleffects`.
 
-Ordinary linear models include an ancillary `lnvar` parameter, matching
-Stata's `regress`/`suest` parameterization. Unweighted fits use
-`log(RSS / df.residual)`; pweighted fits follow `suest2`'s reconstructed
-iweight-reference normalization. Negative-binomial models include
-`log(theta)` in the joint parameter vector. Ordered and multinomial
-models use analytic score and observed-information calculations for
-stable robust covariance estimation.
+Linear models include an ancillary `lnvar` parameter, the log of the
+error variance (`log(RSS / df.residual)` for unweighted fits). It has no
+effect on predictions or marginal effects. Negative-binomial models
+include `log(theta)` in the joint parameter vector. Ordered and
+multinomial models use analytic score and observed-information
+calculations for stable robust covariance estimation.
 
 Aliased parameters are not supported. Nonunit weights are rejected
 unless `weight_type = "pweight"`. Pweights must be finite and strictly
@@ -149,15 +148,15 @@ covariance.
 
 Survey support combines coefficients from Gaussian identity-link and
 binary [`quasibinomial()`](https://rdrr.io/r/stats/family.html)
-logit/probit [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
-fits under one common one-stage design. Gaussian and binary fits are not
-mixed in the same survey system. Strata and first-stage
-finite-population corrections are supported. Model-specific subsets and
-missing outcomes are aligned using observation IDs, with zero influence
-outside each model's estimation sample. The full design retains PSUs
-outside all model samples. Each native coefficient covariance must be
-reproduced before the joint matrix is returned. Survey fits contain
-coefficients only and do not add ancillary parameters.
+logit/probit `svyglm()` fits under one common one-stage design. Gaussian
+and binary fits are not mixed in the same survey system. Strata and
+first-stage finite-population corrections are supported. Model-specific
+subsets and missing outcomes are aligned using observation IDs, with
+zero influence outside each model's estimation sample. The full design
+retains PSUs outside all model samples. Each native coefficient
+covariance must be reproduced before the joint matrix is returned.
+Survey fits contain coefficients only and do not add ancillary
+parameters.
 
 Replicate-weight, multistage, two-phase, calibrated, raked,
 post-stratified, and PPS designs are unsupported. Lonely-PSU options are
@@ -178,80 +177,84 @@ survey t or F adjustment is applied.
 
 ## Supported models
 
-- [`stats::lm()`](https://rdrr.io/r/stats/lm.html)
+### Single-level models
 
-- restricted survey-weighted Gaussian identity and binary
-  [`quasibinomial()`](https://rdrr.io/r/stats/family.html) logit/probit
-  models from
-  [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
+- [`stats::lm()`](https://rdrr.io/r/stats/lm.html)
 
 - binary logit, probit, and complementary-log-log models from
   [`stats::glm()`](https://rdrr.io/r/stats/glm.html) or
   [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html)
 
+- ordered logit and probit models from
+  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html)
+
+- ordered logit and probit models from
+  [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) with
+  flexible thresholds, proportional effects, and no scale model
+
+- multinomial logit models from
+  [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html)
+
 - Poisson log-link models from
   [`stats::glm()`](https://rdrr.io/r/stats/glm.html) or
   [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html)
 
-- other GLMs using identity, log, logit, probit, complementary-log-log,
-  or log-log links
-
-- fractional-response GLMs using
-  [`quasibinomial()`](https://rdrr.io/r/stats/family.html) with logit,
-  probit, complementary-log-log, or a user-supplied log-log link
-
 - negative-binomial log-link models from
   [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html)
-
-- parametric survival and censored-regression models from
-  [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)
-  with a common scale, including Gaussian interval regression
-
-- beta regressions from
-  [`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html)
-  using logit, probit, complementary-log-log, or log-log mean links
 
 - Poisson and negative-binomial zero-inflated models from
   [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html)
 
-- truncated Gaussian regressions from
-  [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html)
+- other GLMs using identity, log, logit, probit, complementary-log-log,
+  or log-log links
 
 - left-, right-, and two-limit censored Gaussian regressions from
   [`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html);
   response-scale predictions are the latent mean
 
-- unweighted two-stage least squares from
-  [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html)
-  without absorbed fixed effects; the original data object must remain
-  available
+- parametric survival and censored-regression models from
+  [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)
+  with a common scale, including Gaussian interval regression
+
+- truncated Gaussian regressions from
+  [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html)
+
+- fractional-response GLMs using
+  [`quasibinomial()`](https://rdrr.io/r/stats/family.html) with logit,
+  probit, complementary-log-log, or a user-supplied log-log link
+
+- beta regressions from
+  [`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html)
+  using logit, probit, complementary-log-log, or log-log mean links
 
 - heteroskedastic binary probit and logit from
   [`Rchoice::hetprob()`](https://rdrr.io/pkg/Rchoice/man/hetprob.html)
-
-- maximum-likelihood instrumental-variable probit from
-  [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html);
-  response predictions use the average structural probability
 
 - bivariate probit from
   [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html)
   when both equations use the same regressors; fit with `intGrad = TRUE`
   and `finalHessian = TRUE`
 
+- unweighted two-stage least squares from
+  [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html)
+  without absorbed fixed effects; the original data object must remain
+  available
+
+- maximum-likelihood instrumental-variable probit from
+  [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html);
+  response predictions use the average structural probability
+
+### Panel models
+
 - unweighted individual fixed-effects, between-effects, and Swamy-Arora
   random-effects linear panel models from
-  [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html); balanced random-
-  effects panels have the closest Stata parity, while unbalanced panels
-  can retain small engine-specific differences. Within-model prediction
-  uncertainty conditions on estimation-sample means and propagates slope
-  uncertainty. At matching evaluation means, the covariance is
-  structurally degenerate: average-level confidence intervals and
-  hypothesis tests are unsupported, and numerical SEs can be missing or
-  nearly zero. Slope and finite-change comparisons remain supported.
-
-- unweighted single-level random-intercept Gaussian panel models from
-  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) fitted with
-  `method = "ML"`
+  [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html). Within-model
+  prediction uncertainty conditions on estimation-sample means and
+  propagates slope uncertainty. At matching evaluation means, the
+  covariance is structurally degenerate: average-level confidence
+  intervals and hypothesis tests are unsupported, and numerical SEs can
+  be missing or nearly zero. Slope and finite-change comparisons remain
+  supported.
 
 - unweighted individual random-intercept binary logit and probit models
   from [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) fitted
@@ -262,6 +265,17 @@ survey t or F adjustment is applied.
   [`pglm::pglm()`](https://rdrr.io/pkg/pglm/man/pglm.html) fitted with
   `model = "random"`, `effect = "individual"`, and `other = "sd"`; the
   final parameter is exposed as gamma variance `alpha`
+
+- unweighted GEE from
+  [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):
+  Gaussian identity, binary logit/probit/cloglog, and Poisson log, with
+  independence or exchangeable correlation and numeric outcomes
+
+### Multilevel models
+
+- unweighted single-level random-intercept Gaussian models from
+  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) fitted with
+  `method = "ML"`
 
 - unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log
   models from
@@ -311,20 +325,12 @@ survey t or F adjustment is applied.
   error requires further investigation; changing the finite-difference
   step does not repair an inaccurate native model covariance
 
-- unweighted GEE from
-  [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):
-  Gaussian identity, binary logit/probit/cloglog, and Poisson log, with
-  independence or exchangeable correlation and numeric outcomes
+### Survey models
 
-- ordered logit and probit models from
-  [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html)
-
-- ordered logit and probit models from
-  [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) with
-  flexible thresholds, proportional effects, and no scale model
-
-- multinomial logit models from
-  [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html)
+- restricted survey-weighted Gaussian identity and binary
+  [`quasibinomial()`](https://rdrr.io/r/stats/family.html) logit/probit
+  models from
+  [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
 
 ## Examples
 

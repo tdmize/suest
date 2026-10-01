@@ -7,17 +7,6 @@ models. It supplies the joint robust covariance matrix those tests need,
 and leaves calculating and presenting the quantities themselves to
 [`marginaleffects`](https://marginaleffects.com/).
 
-The package implements the framework in Mize, Doan, and Long (2019). The
-six examples below replicate Examples 6.1–6.6 for the [`mecompare` Stata
-command](https://www.trentonmize.com/software/mecompare).
-
-One note on continuous predictors: a single number in `variables` asks
-for a change of that amount from each observed value. So
-`list(income = sd(dat61$income))` compares each person’s observed income
-with that income plus one standard deviation. This is different from
-`"sd"`, which asks for a one-standard-deviation change centered on the
-mean.
-
 ## Functions at a glance
 
 - [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
@@ -26,6 +15,9 @@ mean.
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
   stacks the models’ estimation samples so each model’s effects can be
   averaged over its own sample.
+- [`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
+  pools [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
+  results across multiply imputed datasets.
 - The usual `marginaleffects` functions, including
   [`predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
   [`avg_comparisons()`](https://rdrr.io/pkg/marginaleffects/man/comparisons.html),
@@ -89,61 +81,99 @@ significant and the other is not.
 
 ## Supported models
 
-| Model | Supported functions |
+### Single-level models
+
+| Model | Fitted with |
 |----|----|
-| Linear regression | [`stats::lm()`](https://rdrr.io/r/stats/lm.html) |
-| Binary logit, probit, and complementary-log-log | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
-| Poisson regression | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
-| Other GLMs with supported links | [`stats::glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
-| Fractional response | quasi-binomial logit, probit, complementary-log-log, or user-supplied log-log |
-| Negative binomial regression | [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html) |
-| Parametric survival and censored regression | [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html) with a common scale, including Gaussian interval regression |
-| Beta regression | [`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html) with logit, probit, complementary-log-log, or log-log mean links |
-| Zero-inflated Poisson and negative binomial | [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html) |
-| Truncated Gaussian regression | [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html) |
-| Direct Tobit regression | [`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html); predictions are the latent mean |
-| Instrumental-variable 2SLS | unweighted [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html) without absorbed fixed effects |
-| Heteroskedastic binary probit and logit | [`Rchoice::hetprob()`](https://rdrr.io/pkg/Rchoice/man/hetprob.html) |
-| Instrumental-variable probit ML | [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html); response predictions are average structural probabilities |
-| Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with common regressors across equations and `finalHessian = TRUE` |
-| Linear panel fixed, between, and random effects | unweighted [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects; unbalanced random-effects panels can differ slightly from Stata |
-| Random-intercept Gaussian panel ML | unweighted `nlme::lme(method = "ML")`; variance components included |
-| Gaussian random-intercept GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log with constant dispersion |
-| Gaussian random-intercept and numeric-slope GLMM | unweighted `glmmTMB`; binomial-logit, Poisson-log, or NB2-log, `(1 + x | id)`, unstructured covariance; checked against Stata (see the README) |
-| Population-averaged GEE | unweighted [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html); Gaussian, binary, or Poisson with independence/exchangeable correlation |
-| Ordered logit and probit | [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html), restricted [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) |
+| Linear regression | [`lm()`](https://rdrr.io/r/stats/lm.html) |
+| Binary logit, probit, and complementary log-log | [`glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
+| Ordered logit and probit | [`MASS::polr()`](https://rdrr.io/pkg/MASS/man/polr.html), [`ordinal::clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) |
 | Multinomial logit | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) |
+| Poisson regression | [`glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
+| Negative binomial regression | [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html) |
+| Zero-inflated Poisson and negative binomial | [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html) |
+| Other GLMs with identity, log, logit, probit, complementary log-log, or log-log links | [`glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
+| Tobit regression | [`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html); predictions are the latent mean |
+| Interval, censored, and parametric survival regression | [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html) with a common scale |
+| Truncated regression | [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html) |
+| Fractional response | [`glm()`](https://rdrr.io/r/stats/glm.html) with [`quasibinomial()`](https://rdrr.io/r/stats/family.html): logit, probit, complementary log-log, or log-log link |
+| Beta regression | [`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html) with a logit, probit, complementary log-log, or log-log link |
+| Heteroskedastic probit and logit | [`Rchoice::hetprob()`](https://rdrr.io/pkg/Rchoice/man/hetprob.html) |
+| Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with the same predictors in both equations |
+| Instrumental-variable regression (two-stage least squares) | [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html), unweighted and without absorbed fixed effects |
+| Instrumental-variable probit | [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html); predictions are average structural probabilities |
+
+### Panel models
+
+| Model | Fitted with |
+|----|----|
+| Linear fixed-, between-, and random-effects | [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects |
+| Random-effects logit and probit | `pglm::pglm(model = "random", effect = "individual")` |
+| Random-effects Poisson | `pglm::pglm(model = "random", effect = "individual", other = "sd")` |
+| Population-averaged (GEE) linear, logit, probit, complementary log-log, and Poisson | [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html) with independence or exchangeable correlation |
+
+### Multilevel models
+
+| Model | Fitted with |
+|----|----|
+| Linear random-intercept | `nlme::lme(method = "ML")` |
+| Random-intercept logit, Poisson, and negative binomial | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
+| Random intercept and slope, `(1 + x | id)`: logit, Poisson, and negative binomial | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
+
+### Survey models
+
+| Model | Fitted with |
+|----|----|
+| Linear regression | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) |
+| Binary logit and probit | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) with [`quasibinomial()`](https://rdrr.io/r/stats/family.html) |
+
+See [Survey data](#survey-data) below.
+
+### Combining models
 
 Models can use the same, partially overlapping, or completely different
-samples. Any supported models with a single outcome can be combined, and
-so can models for categorical outcomes; the two kinds can also be mixed.
-Results on different scales are labeled separately rather than treated
-as directly comparable.
+samples. Any single-level models can be combined, including models for
+different outcomes and models for categorical outcomes. Results on
+different scales are labeled separately rather than treated as directly
+comparable. Panel and multilevel models can be combined only with models
+of the same kind, such as two random-intercept logit models, and must be
+unweighted. Offsets are supported, except in `pglm()` and `glmmTMB()`
+models.
 
-Panel and mixed (GLMM) models can currently be combined only with models
-of the same type. For the random-slope mixed models, predictions average
-over both random effects, and the joint covariance includes the
-random-effect standard deviations and correlation (and, for NB2, the
-dispersion). Fit these models with well-scaled predictors: glmmTMB’s
-covariance matrix can be inaccurate with extreme predictor units even
-when the model reports convergence, and `suest` uses that covariance as
-supplied. For logit random-slope models, slopes for continuous
-predictors also include changes in the random-effect variance. For more
-stable numerical standard errors, use
-`numderiv = list("fdcenter", eps = 1e-4)` in
-[`marginaleffects::avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
-and check that nearby step sizes give similar answers.
+A few models have settings worth knowing about; see [Notes on specific
+models](https://tdmize.github.io/suest/articles/model-notes.md).
 
-Offsets are supported. Bias-reduced, adjusted-score, Firth, and other
-penalized GLM fits are rejected, because they are estimated differently
-from ordinary maximum-likelihood GLMs.
+## Different samples or groups
 
-As in Stata, linear models add an `lnvar` parameter (the log of the
-error variance). Unweighted fits use `log(RSS / df.residual)`; weighted
-fits follow `suest2`’s normalization. It has no effect on predictions or
-comparisons.
+When the models are fitted to different samples, such as separate
+groups, use
+[`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
+so each model’s effects are averaged over its own sample:
 
-## Cluster-robust covariance
+``` r
+
+four <- lm(mpg ~ wt + hp, data = mtcars, subset = cyl == 4)
+other <- lm(mpg ~ wt + hp, data = mtcars, subset = cyl != 4)
+fit_groups <- suest(four, other, model_names = c("Four cylinders", "Other"))
+
+effects_groups <- avg_comparisons(fit_groups, variables = "wt",
+                                  newdata = suest_newdata(fit_groups))
+effects_groups
+#> 
+#>           Group Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
+#>  Four cylinders    -5.12       1.12 -4.58   <0.001 17.7 -7.31  -2.92
+#>  Other             -2.56       0.58 -4.41   <0.001 16.6 -3.70  -1.42
+#> 
+#> Term: wt
+#> Type: response
+#> Comparison: +1
+hypotheses(effects_groups, hypothesis = difference ~ revpairwise)
+#> 
+#>                  Hypothesis Estimate Std. Error     z Pr(>|z|)   S 2.5 %  97.5 %
+#>  (Four cylinders) - (Other)    -2.55       1.26 -2.03   0.0426 4.6 -5.02 -0.0852
+```
+
+## Cluster-robust standard errors
 
 Supply a cluster variable to get cluster-robust standard errors for the
 combined models:
@@ -154,11 +184,12 @@ fit_clustered <- suest(base, adjusted, cluster = "person_id")
 avg_comparisons(fit_clustered, variables = "x", newdata = dat)
 ```
 
-`cluster` can also be a list with one vector, matrix, or data frame
-matched to each model’s estimation sample. An observation that appears
-in more than one model must have the same cluster ID in each.
-Observations in completely different samples can belong to the same
-cluster, in which case the covariance between models can be nonzero.
+`cluster` takes one or more column names, or a list with one vector,
+matrix, or data frame matched to each model’s estimation sample. An
+observation that appears in more than one model must have the same
+cluster ID in each. Observations in completely different samples can
+belong to the same cluster, in which case the covariance between models
+can be nonzero.
 
 Panel models cluster on the panel identifier by default. A cluster you
 supply must contain whole panels.
@@ -167,10 +198,9 @@ supply must contain whole panels.
 
 `suest` supports probability weights for linear, binary logit and
 probit, Poisson, negative binomial, ordered logit and probit, and
-multinomial logit models. R’s `weights=` argument doesn’t say what kind
-of weights they are, so you tell
-[`suest()`](https://tdmize.github.io/suest/reference/suest.md)
-explicitly.
+multinomial logit models. Fit each model with `weights=`, and tell
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) that they
+are probability weights with `weight_type = "pweight"`:
 
 ``` r
 
@@ -226,505 +256,75 @@ nd_w <- suest_newdata(fit_w)
 avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
 ```
 
-For binary logit and probit, `suest` uses the observed information
-matrix, which matches Stata’s `suest` covariance.
+## Survey data
 
-## Replicating Mize, Doan, and Long (2019)
-
-The examples use the public replication data for the [`mecompare` Stata
-command](https://www.trentonmize.com/software/mecompare). The data are
-downloaded once and used throughout.
+`suest` supports linear and binary logit or probit models fitted with
+[`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) from
+one common one-stage survey design:
 
 ``` r
 
-library(haven)
-
-ah <- zap_labels(read_dta("https://tdmize.github.io/data/data/ah4_cme.dta"))
-gss <- zap_labels(read_dta("https://tdmize.github.io/data/data/gss_cme.dta"))
-
-factorize <- function(data, variables) {
-  data[variables] <- lapply(data[variables], factor)
-  data
-}
+library(survey)
+design <- svydesign(~psu, strata = ~strata, weights = ~w, data = dat)
+m1 <- svyglm(yb ~ x, design, family = quasibinomial("logit"))
+m2 <- svyglm(yb ~ x + z, design, family = quasibinomial("logit"))
+fit <- suest(m1, m2, survey_design = design, observation_id = "id")
+avg_slopes(fit, variables = "x", newdata = suest_newdata(fit), wts = ".suest_weight")
 ```
 
-### Ex 6.1 - Marginal effects to summarize curvilinear relationships and test mediation
+If either model uses a subset (domain) of the data, keep `design` as the
+full sampled design. The joint covariance accounts for strata, PSUs, and
+optional one-stage finite population corrections. Linear and binary
+models can’t be mixed in the same system. Replicate weights, multistage
+designs, calibration, and PPS designs are not supported.
 
-This example uses a linear regression with a nonlinear effect of income,
-included as income and income squared. We test whether adding a
-mediator, job satisfaction, reduces the average effect of income, which
-would suggest mediation. It also shows how to ask for a custom amount of
-change in a continuous predictor: here, a one-standard-deviation
-increase in income.
+## Multiple imputation
+
+To combine results across imputed datasets, fit the same `suest` system
+in each one and pool them with
+[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md).
+Results from
+[`mice::with()`](https://amices.org/mice/reference/with.mids.html) can
+be pooled directly:
 
 ``` r
 
-vars61 <- c("depsympB", "income", "inc10", "age", "woman", "race", "college", "jobsat")
-dat61 <- ah[complete.cases(ah[vars61]), ]
-stopifnot(nrow(dat61) == 4307)
-nrow(dat61)
-#> [1] 4307
-dat61 <- factorize(dat61, c("woman", "race", "jobsat"))
-
-base61 <- lm(depsympB ~ income + I(income^2) + age + woman + race, data = dat61)
-mediator61 <- lm(depsympB ~ income + I(income^2) + age + woman + race + jobsat,
-                 data = dat61)
-fit61 <- suest(base61, mediator61, model_names = c("Base", "Mediator"))
-
-effects61 <- avg_comparisons(fit61,
-  variables = list(income = sd(dat61$income)), newdata = dat61)
-effects61
-#> 
-#>     Group Estimate Std. Error      z Pr(>|z|)    S  2.5 % 97.5 %
-#>  Base       -0.816     0.0756 -10.80   <0.001 87.8 -0.964 -0.668
-#>  Mediator   -0.648     0.0739  -8.77   <0.001 59.0 -0.793 -0.503
-#> 
-#> Term: income
-#> Type: response
-#> Comparison: +27.2108562966562
-hypotheses(effects61, hypothesis = difference ~ revpairwise)
-#> 
-#>           Hypothesis Estimate Std. Error     z Pr(>|z|)    S  2.5 % 97.5 %
-#>  (Base) - (Mediator)   -0.168     0.0222 -7.59   <0.001 44.8 -0.212 -0.125
+analyses <- with(imp, suest(
+  lm(y ~ x),
+  lm(y ~ x + z),
+  model_names = c("Base", "Adjusted")
+))
+pooled <- suest_mi(analyses)
+summary(pooled)
 ```
 
-**Example interpretation for the effect of income:** In model 1, the
-marginal effect is -0.816, indicating that a standard-deviation increase
-in income is associated with about 0.8 fewer depressive symptoms. The
-effect is reduced to -0.648 after accounting for job satisfaction. The
-direct cross-model test shows that accounting for job satisfaction
-decreases the average effect of income by 0.168, a statistically
-significant reduction ($`p < .001`$) that is consistent with mediation.
+A list of [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
+results, one per imputation, or the result of
+`with(mitools::imputationList(...), suest(...))` can also be passed to
+[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md).
 
-### Ex 6.2 - Comparing marginal effects across nested logit models
+[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
+applies Rubin’s rules to the full set of coefficients, keeping the
+covariance between models both within and between imputations. Tests of
+coefficients work through
+[`marginaleffects::hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html).
+Predictions, slopes, and comparisons are not yet available for pooled
+results.
 
-This example uses binary logit models to see how the effect of college
-changes when more variables are added to the model.
+## Examples
 
-``` r
+Six examples from Mize, Doan, and Long (2019), with code and output:
 
-vars62 <- c("vhappy", "college", "wages", "occprest", "age", "married",
-            "parent", "woman", "conserv", "reltrad", "year", "employed")
-dat62 <- subset(gss, year >= 2000 & employed == 1)
-dat62 <- dat62[complete.cases(dat62[vars62]), ]
-stopifnot(nrow(dat62) == 9216)
-nrow(dat62)
-#> [1] 9216
-dat62 <- factorize(dat62, c("college", "married", "parent", "woman", "conserv",
-                            "reltrad", "year"))
-
-model62a <- glm(vhappy ~ college, family = binomial("logit"), data = dat62)
-model62b <- glm(vhappy ~ college + married + parent + woman + conserv + reltrad +
-                  year + age + I(age^2), family = binomial("logit"), data = dat62)
-fit62 <- suest(model62a, model62b, model_names = c("Model 1", "Model 2"))
-
-effects62 <- avg_comparisons(fit62, variables = "college", newdata = dat62)
-effects62
-#> 
-#>    Group Estimate Std. Error    z Pr(>|z|)    S  2.5 % 97.5 %
-#>  Model 1   0.0718     0.0103 6.95   <0.001 38.0 0.0516 0.0921
-#>  Model 2   0.0599     0.0105 5.69   <0.001 26.2 0.0393 0.0806
-#> 
-#> Term: college
-#> Type: response
-#> Comparison: 1 - 0
-hypotheses(effects62, hypothesis = difference ~ revpairwise)
-#> 
-#>             Hypothesis Estimate Std. Error    z Pr(>|z|)   S 2.5 % 97.5 %
-#>  (Model 1) - (Model 2)   0.0119    0.00402 2.95  0.00313 8.3 0.004 0.0198
-```
-
-**Example interpretation for the effect of college:** On average, the
-probability of being very happy is 0.072 higher for people with a
-college degree than for those without one ($`p < .001`$). Model 2 adds
-demographic controls, reducing the average marginal effect of college to
-0.060, which remains statistically significant. A direct test shows that
-adding the controls decreases the effect of college by 0.012
-($`p < .01`$).
-
-### Ex 6.3 - Comparing marginal effects using alternative predictors
-
-This example uses two binary logit models with alternative predictors:
-two different ways to measure sexuality, sexual behavior (`sexbehav`) in
-one model and sexual identity (`sexident`) in the other.
-
-``` r
-
-vars63 <- c("samesexB", "sexident", "sexbehav", "college",
-            "woman", "race", "age", "year")
-dat63 <- gss[complete.cases(gss[vars63]), ]
-stopifnot(nrow(dat63) == 4921)
-nrow(dat63)
-#> [1] 4921
-dat63 <- factorize(dat63, c("sexident", "sexbehav", "college", "woman", "race", "year"))
-
-behavior63 <- glm(samesexB ~ sexbehav + woman + college + age + race + year,
-                  family = binomial("logit"), data = dat63)
-identity63 <- glm(samesexB ~ sexident + woman + college + age + race + year,
-                  family = binomial("logit"), data = dat63)
-fit63 <- suest(behavior63, identity63, model_names = c("Behavior", "Identity"))
-
-effects63 <- avg_comparisons(fit63,
-  variables = list(sexbehav = "reference", sexident = "reference"), newdata = dat63)
-effects63
-#> 
-#>      Term    Group Contrast Estimate Std. Error      z Pr(>|z|)     S  2.5 %  97.5 %
-#>  sexbehav Behavior    2 - 1  -0.0972     0.0235  -4.14   <0.001  14.8 -0.143 -0.0511
-#>  sexbehav Behavior    3 - 1  -0.3620     0.0384  -9.43   <0.001  67.7 -0.437 -0.2867
-#>  sexbehav Identity    2 - 1   0.0000         NA     NA       NA    NA     NA      NA
-#>  sexbehav Identity    3 - 1   0.0000         NA     NA       NA    NA     NA      NA
-#>  sexident Behavior    2 - 1   0.0000         NA     NA       NA    NA     NA      NA
-#>  sexident Behavior    3 - 1   0.0000         NA     NA       NA    NA     NA      NA
-#>  sexident Identity    2 - 1  -0.2741     0.0415  -6.61   <0.001  34.6 -0.355 -0.1928
-#>  sexident Identity    3 - 1  -0.4275     0.0337 -12.67   <0.001 119.8 -0.494 -0.3614
-#> 
-#> Type: response
-```
-
-Because each predictor is in only one of the models, `marginaleffects`
-reports zero and `NA` for the effects that don’t exist in a model. The
-nonzero rows are the effects for each measure.
-
-``` r
-
-alternative_predictor_hypothesis <- function(x) {
-  group <- as.character(x$group)
-  term <- as.character(x$term)
-  behavior <- x$estimate[term == "sexbehav" & group == "Behavior"]
-  identity <- x$estimate[term == "sexident" & group == "Identity"]
-
-  data.frame(
-    term = c("Behavior bisexual - Identity bisexual",
-             "Behavior gay - Identity gay",
-             "(Behavior gay - bisexual) - (Identity gay - bisexual)"),
-    estimate = c(behavior[1] - identity[1], behavior[2] - identity[2],
-                 (behavior[2] - behavior[1]) - (identity[2] - identity[1])))
-}
-
-avg_comparisons(fit63,
-  variables = list(sexbehav = "reference", sexident = "reference"),
-  newdata = dat63, hypothesis = alternative_predictor_hypothesis)
-#> 
-#>                                                   Term Estimate Std. Error     z Pr(>|z|)    S
-#>  Behavior bisexual - Identity bisexual                   0.1769     0.0425  4.16   <0.001 15.0
-#>  Behavior gay - Identity gay                             0.0655     0.0406  1.61   0.1063  3.2
-#>  (Behavior gay - bisexual) - (Identity gay - bisexual)  -0.1114     0.0587 -1.90   0.0578  4.1
-#>    2.5 %  97.5 %
-#>   0.0936 0.26023
-#>  -0.0140 0.14507
-#>  -0.2264 0.00368
-#> 
-#> Type: response
-```
-
-**Example interpretations:** The contrasts between heterosexual and
-gay/lesbian respondents and between bisexual and gay/lesbian respondents
-do not differ significantly across the two models. However, the
-difference between heterosexual and bisexual respondents is
-significantly larger when sexuality is measured using identity than when
-it is measured using behavior.
-
-### Ex 6.4 - Comparing marginal effects across different outcomes
-
-This example compares effects across different outcomes. Two counts,
-poor mental-health days and poor physical-health days, are modeled with
-negative binomial regression, and effects are on the predicted-rate
-scale. Effects and cross-model comparisons are calculated for all
-predictors. To match the `mecompare` Stata example exactly, the sample
-also drops observations missing `reltrad`, even though `reltrad` isn’t
-in either model.
-
-``` r
-
-vars64 <- c("mntlhlth", "physhlth", "woman", "married", "age",
-            "faminc", "race", "college", "parent", "reltrad")
-dat64 <- gss[complete.cases(gss[vars64]), ]
-stopifnot(nrow(dat64) == 5062)
-nrow(dat64)
-#> [1] 5062
-
-dat64 <- factorize(dat64, c("woman", "married", "parent", "college", "race", "year"))
-
-mental64 <- MASS::glm.nb(mntlhlth ~ woman + married + parent + college + age +
-                           faminc + race + year, data = dat64)
-physical64 <- MASS::glm.nb(physhlth ~ woman + married + parent + college + age +
-                             faminc + race + year, data = dat64)
-fit64 <- suest(mental64, physical64, model_names = c("Mental", "Physical"))
-
-variables64 <- list(woman = "reference", married = "reference", parent = "reference",
-  college = "reference", age = sd(dat64$age), faminc = sd(dat64$faminc),
-  race = "reference", year = "reference")
-effects64 <- avg_comparisons(fit64, variables = variables64, newdata = dat64)
-effects64
-#> 
-#>     Term    Group          Contrast Estimate Std. Error      z Pr(>|z|)    S  2.5 %   97.5 %
-#>  age     Mental   +13.0755231484462  -0.4623      0.108 -4.294   <0.001 15.8 -0.673 -0.25129
-#>  age     Physical +13.0755231484462   0.4912      0.118  4.179   <0.001 15.1  0.261  0.72155
-#>  college Mental   1 - 0              -0.8794      0.229 -3.848   <0.001 13.0 -1.327 -0.43145
-#>  college Physical 1 - 0              -0.5422      0.189 -2.870   0.0041  7.9 -0.912 -0.17198
-#>  faminc  Mental   +35.054788229243   -0.4445      0.118 -3.769   <0.001 12.6 -0.676 -0.21334
-#>  faminc  Physical +35.054788229243   -0.3808      0.102 -3.741   <0.001 12.4 -0.580 -0.18125
-#>  married Mental   1 - 0              -1.0103      0.230 -4.397   <0.001 16.5 -1.461 -0.55992
-#>  married Physical 1 - 0              -0.1591      0.192 -0.827   0.4082  1.3 -0.536  0.21795
-#>  parent  Mental   1 - 0               0.2741      0.248  1.107   0.2682  1.9 -0.211  0.75944
-#>  parent  Physical 1 - 0              -0.2692      0.219 -1.231   0.2182  2.2 -0.698  0.15931
-#>  race    Mental   2 - 1              -1.0159      0.258 -3.941   <0.001 13.6 -1.521 -0.51070
-#>  race    Mental   3 - 1              -0.4381      0.356 -1.230   0.2188  2.2 -1.136  0.26022
-#>  race    Physical 2 - 1              -0.5308      0.217 -2.443   0.0146  6.1 -0.957 -0.10487
-#>  race    Physical 3 - 1               0.1451      0.343  0.423   0.6724  0.6 -0.527  0.81749
-#>  woman   Mental   1 - 0               0.9929      0.208  4.774   <0.001 19.1  0.585  1.40062
-#>  woman   Physical 1 - 0               0.7734      0.174  4.446   <0.001 16.8  0.432  1.11430
-#>  year    Mental   2006 - 2002        -0.9438      0.270 -3.492   <0.001 11.0 -1.474 -0.41408
-#>  year    Mental   2010 - 2002        -0.0675      0.318 -0.213   0.8316  0.3 -0.690  0.55484
-#>  year    Mental   2014 - 2002        -0.5819      0.302 -1.929   0.0537  4.2 -1.173  0.00922
-#>  year    Physical 2006 - 2002        -0.2917      0.225 -1.299   0.1939  2.4 -0.732  0.14839
-#>  year    Physical 2010 - 2002         0.3233      0.261  1.240   0.2148  2.2 -0.187  0.83400
-#>  year    Physical 2014 - 2002        -0.2286      0.245 -0.933   0.3507  1.5 -0.709  0.25148
-#> 
-#> Type: response
-
-age64 <- avg_comparisons(fit64, variables = list(age = sd(dat64$age)),
-                         newdata = dat64)
-hypotheses(age64, hypothesis = difference ~ revpairwise)
-#> 
-#>             Hypothesis Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
-#>  (Mental) - (Physical)   -0.953      0.132 -7.22   <0.001 40.8 -1.21 -0.694
-```
-
-**Example interpretations:** Women report about 0.99 more poor
-mental-health days and 0.77 more poor physical-health days per month
-than men. Although the effect of gender is about 0.22 larger for mental
-health, the cross-outcome difference is not statistically significant.
-
-Being married significantly reduces poor mental-health days by about
-1.01, whereas its effect on poor physical-health days is not
-statistically significant. The direct comparison shows that the effect
-of marriage is significantly larger for mental health than for physical
-health (cross-model difference = -0.851, $`p < .01`$).
-
-Similarly, the effect of age differs significantly across the outcomes:
-aging is associated with fewer poor mental-health days but more poor
-physical-health days.
-
-### Ex 6.5 - Comparing marginal effects across different model types (ordinal vs nominal)
-
-This example compares effects across two model types, an ordinal model
-and a nominal model, with the same outcome and predictors. It also shows
-a custom effect for a continuous predictor: a change in age from 20 to
-30, with the other covariates held at their means.
-
-``` r
-
-vars65 <- c("partyid5", "woman", "edyrs", "age", "parent", "married",
-            "faminc", "employed", "region4", "year", "race")
-dat65 <- subset(gss, year >= 2010)
-dat65 <- dat65[complete.cases(dat65[vars65]), ]
-stopifnot(nrow(dat65) == 8179)
-nrow(dat65)
-#> [1] 8179
-dat65 <- factorize(dat65, c("woman", "parent", "married", "race",
-                            "employed", "region4", "year"))
-
-party_levels <- sort(unique(dat65$partyid5))
-party_labels <- c("Strong Democrat", "Democrat", "Independent",
-                  "Republican", "Strong Republican")
-dat65$party_ord <- ordered(dat65$partyid5, levels = party_levels, labels = party_labels)
-dat65$party_nom <- factor(dat65$partyid5, levels = party_levels, labels = party_labels)
-
-ordered65 <- MASS::polr(party_ord ~ age + I(age^2) + woman + edyrs + parent +
-                          married + race + faminc + employed + region4 + year,
-                        data = dat65, method = "logistic", Hess = TRUE)
-nominal65 <- nnet::multinom(party_nom ~ age + I(age^2) + woman + edyrs + parent +
-                             married + race + faminc + employed + region4 + year,
-                           data = dat65, Hess = TRUE, trace = FALSE)
-fit65 <- suest(ordered65, nominal65, model_names = c("Ordered", "Multinomial"))
-```
-
-It’s important to be clear about what is being estimated here. The
-`mecompare` Stata command compares age 20 with age 30 and holds the
-other **model-matrix columns** at their means. That is not the same as
-averaging a ten-year increase over everyone’s observed age and
-covariates, and the difference matters a lot here because age is
-included as a quadratic.
-
-`newdata = "mean"` in `marginaleffects` doesn’t reproduce it exactly
-either, because it uses means for numeric variables but modes for
-categorical ones. The helper included with `suest` reproduces Stata’s
-`atmeans` calculation exactly. [View the helper
-code](https://github.com/tdmize/suest/blob/main/inst/example-code/example-6-5-atmeans.R).
-
-``` r
-
-source(system.file("example-code", "example-6-5-atmeans.R", package = "suest"))
-results65 <- example65_atmeans(fit65, age_lo = 20, age_hi = 30)
-results65$effects
-#>             category       model      estimate   std.error      p.value
-#> 1    Strong Democrat     Ordered  0.0200043395 0.003873903 2.418938e-07
-#> 2           Democrat     Ordered  0.0233309158 0.005309554 1.112128e-05
-#> 3        Independent     Ordered -0.0030269099 0.000485863 4.665355e-10
-#> 4         Republican     Ordered -0.0244327347 0.005230285 2.991588e-06
-#> 5  Strong Republican     Ordered -0.0158756107 0.003786173 2.752300e-05
-#> 6    Strong Democrat Multinomial  0.0324035507 0.003318210 1.585306e-22
-#> 7           Democrat Multinomial -0.0102369435 0.011006328 3.523213e-01
-#> 8        Independent Multinomial -0.0004415478 0.010034596 9.649024e-01
-#> 9         Republican Multinomial -0.0314658066 0.010558017 2.879885e-03
-#> 10 Strong Republican Multinomial  0.0097407472 0.003265056 2.851280e-03
-results65$differences
-#>            category     estimate   std.error      p.value
-#> 1   Strong Democrat -0.012399211 0.003072737 5.454810e-05
-#> 2          Democrat  0.033567859 0.009357678 3.342486e-04
-#> 3       Independent -0.002585362 0.010024139 7.964736e-01
-#> 4        Republican  0.007033072 0.009022795 4.356981e-01
-#> 5 Strong Republican -0.025616358 0.003720332 5.758342e-12
-```
-
-**Example interpretation:** For someone who is 20 years old, the effect
-of a ten-year increase in age differs significantly across the ordinal
-and nominal models for three of the five outcome categories. For
-example, aging increases the probability of identifying as a strong
-Democrat in both models, but the increase is significantly larger in the
-nominal model. More strikingly, the effects of age on identifying as a
-strong Republican run in opposite directions across the two models.
-
-### Ex 6.6 - Comparing marginal effects across different samples or groups
-
-This example compares effects from the same binary logit model fitted to
-two different samples, one from 1986 and one from 2016. The same
-approach works for comparing groups, such as men and women. In R, the
-samples are selected with `subset`, and
-[`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-makes sure each marginal effect is averaged over its own model’s sample.
-
-``` r
-
-vars66 <- c("helpsickB", "polviews", "conserv", "faminc", "employed",
-            "woman", "age", "college", "married", "parent", "race", "year")
-dat66 <- gss[complete.cases(gss[vars66]), ]
-dat66 <- factorize(dat66, c("conserv", "employed", "woman", "college",
-                            "married", "parent", "race"))
-
-model1986 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
-                   college + married + parent + race, family = binomial("logit"),
-                 data = dat66, subset = year == 1986)
-model2016 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
-                   college + married + parent + race, family = binomial("logit"),
-                 data = dat66, subset = year == 2016)
-stopifnot(nobs(model1986) == 1254, nobs(model2016) == 1670)
-c(`1986` = nobs(model1986), `2016` = nobs(model2016))
-#> 1986 2016 
-#> 1254 1670
-fit66 <- suest(model1986, model2016, model_names = c("1986", "2016"))
-fit66
-#> Seemingly Unrelated Estimation
-#> Models: 1986 + 2016 
-#> Model types: 1986=logit, 2016=logit 
-#> Model engines: 1986=stats::glm, 2016=stats::glm 
-#> Comparison scale: predicted probabilities 
-#> Observations: 1986=1,254, 2016=1,670 
-#> Overlapping observations: 0 
-#> Union observations: 2,924 
-#> Parameters: 22
-
-effects66 <- avg_comparisons(fit66, variables = "conserv",
-                             newdata = suest_newdata(fit66))
-effects66
-#> 
-#>  Group Estimate Std. Error     z Pr(>|z|)    S  2.5 %  97.5 %
-#>   1986  -0.0917     0.0296  -3.1  0.00193  9.0 -0.150 -0.0337
-#>   2016  -0.2582     0.0253 -10.2  < 0.001 78.7 -0.308 -0.2085
-#> 
-#> Term: conserv
-#> Type: response
-#> Comparison: 1 - 0
-hypotheses(effects66, hypothesis = difference ~ revpairwise)
-#> 
-#>       Hypothesis Estimate Std. Error    z Pr(>|z|)    S  2.5 % 97.5 %
-#>  (1986) - (2016)    0.166     0.0389 4.28   <0.001 15.7 0.0902  0.243
-```
-
-**Example interpretation:** Conservatives had significantly lower
-predicted probabilities of saying that government should be responsible
-for providing health care in both 1986 (marginal effect = -0.092) and
-2016 (marginal effect = -0.258). The gap between conservatives and
-nonconservatives increased over time: the conservative effect is
-significantly more negative in 2016 than in 1986 (cross-model difference
-= 0.166, $`p < .001`$).
-
-## Alternative fitting engines
-
-`suest` handles the type of model and the package that fits it
-separately. This lets you combine models fitted with different packages,
-as long as their scores, parameter order, observations, and prediction
-scales are compatible.
-
-### `glm2::glm2()`
-
-``` r
-
-library(glm2)
-
-standard <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
-alternative <- glm2(am ~ wt + hp, family = binomial("logit"), data = dat)
-engine_fit <- suest(standard, alternative, model_names = c("glm", "glm2"))
-engine_fit
-#> Seemingly Unrelated Estimation
-#> Models: glm + glm2 
-#> Model types: glm=logit, glm2=logit 
-#> Model engines: glm=stats::glm, glm2=glm2::glm2 
-#> Comparison scale: predicted probabilities 
-#> Observations: glm=32, glm2=32 
-#> Overlapping observations: 32 
-#> Union observations: 32 
-#> Parameters: 6
-avg_comparisons(engine_fit, variables = "wt", newdata = dat)
-#> 
-#>  Group Estimate Std. Error     z Pr(>|z|)     S  2.5 % 97.5 %
-#>   glm    -0.355     0.0184 -19.3   <0.001 273.3 -0.391 -0.319
-#>   glm2   -0.355     0.0184 -19.3   <0.001 273.3 -0.391 -0.319
-#> 
-#> Term: wt
-#> Type: response
-#> Comparison: +1
-```
-
-### `ordinal::clm()`
-
-[`clm()`](https://rdrr.io/pkg/ordinal/man/clm.html) is supported for
-standard ordered logit and probit models: flexible thresholds and no
-scale or nominal-effects formula.
-
-``` r
-
-library(ordinal)
-
-housing <- MASS::housing[rep(seq_len(nrow(MASS::housing)), MASS::housing$Freq),
-                         c("Sat", "Infl", "Type", "Cont")]
-rownames(housing) <- NULL
-housing$Sat <- ordered(housing$Sat, levels = c("Low", "Medium", "High"))
-
-clm_model <- clm(Sat ~ Cont + Infl + Type, data = housing, link = "logit")
-polr_model <- MASS::polr(Sat ~ Cont + Infl + Type, data = housing,
-                         method = "logistic", Hess = TRUE)
-ordinal_fit <- suest(clm_model, polr_model, model_names = c("clm", "polr"))
-avg_comparisons(ordinal_fit, variables = "Cont", newdata = housing)
-#> 
-#>         Group Estimate Std. Error     z Pr(>|z|)    S    2.5 %    97.5 %
-#>  clm::Low     -0.07504    0.02010 -3.73   <0.001 12.4 -0.11443 -0.035653
-#>  clm::Medium  -0.00374    0.00176 -2.13    0.033  4.9 -0.00718 -0.000303
-#>  clm::High     0.07878    0.02071  3.80   <0.001 12.8  0.03819  0.119372
-#>  polr::Low    -0.07504    0.02010 -3.73   <0.001 12.4 -0.11443 -0.035653
-#>  polr::Medium -0.00374    0.00176 -2.13    0.033  4.9 -0.00718 -0.000303
-#>  polr::High    0.07878    0.02071  3.80   <0.001 12.8  0.03819  0.119372
-#> 
-#> Term: Cont
-#> Type: response
-#> Comparison: High - Low
-```
-
-## For Stata users
-
-The same framework is available in Stata through the [`mecompare`
-command](https://www.trentonmize.com/software/mecompare). This R package
-uses `marginaleffects` to calculate predictions and effects, while
-`mecompare` does the same kinds of cross-model comparisons entirely in
-Stata.
+1.  [Curvilinear effects and
+    mediation/attenuation](https://tdmize.github.io/suest/articles/mediation.md)
+2.  [Nested logit models and
+    mediation/attenuation](https://tdmize.github.io/suest/articles/nested-models.md)
+3.  [Alternative
+    predictors](https://tdmize.github.io/suest/articles/alternative-predictors.md)
+4.  [Different
+    outcomes](https://tdmize.github.io/suest/articles/different-outcomes.md)
+5.  [Different model
+    types](https://tdmize.github.io/suest/articles/model-types.md):
+    ordinal versus nominal
+6.  [Separate samples or
+    groups](https://tdmize.github.io/suest/articles/groups.md)
