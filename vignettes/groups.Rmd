@@ -1,0 +1,70 @@
+---
+title: "Separate samples or groups"
+description: "Example 6.6 of Mize, Doan, and Long (2019)."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Separate samples or groups}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Example 6.6 of Mize, Doan, and Long (2019). The
+[same example in Stata](https://www.trentonmize.com/software/mecompare/examples/groups.html)
+uses `mecompare`.
+
+This example compares effects from the same binary logit model fitted to two
+different samples, one from 1986 and one from 2016. The same approach works for
+comparing groups, such as men and women. The samples are selected with
+`subset`, and `suest_newdata()` makes sure each marginal effect is averaged
+over its own model's sample.
+
+```{r data}
+library(suest)
+library(marginaleffects)
+library(haven)
+
+gss <- zap_labels(read_dta("https://tdmize.github.io/data/data/gss_cme.dta"))
+
+factorize <- function(data, variables) {
+  data[variables] <- lapply(data[variables], factor)
+  data
+}
+```
+
+```{r example-6-6}
+vars66 <- c("helpsickB", "polviews", "conserv", "faminc", "employed",
+            "woman", "age", "college", "married", "parent", "race", "year")
+dat66 <- gss[complete.cases(gss[vars66]), ]
+dat66 <- factorize(dat66, c("conserv", "employed", "woman", "college",
+                            "married", "parent", "race"))
+
+model1986 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
+                   college + married + parent + race, family = binomial("logit"),
+                 data = dat66, subset = year == 1986)
+model2016 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
+                   college + married + parent + race, family = binomial("logit"),
+                 data = dat66, subset = year == 2016)
+stopifnot(nobs(model1986) == 1254, nobs(model2016) == 1670)
+c(`1986` = nobs(model1986), `2016` = nobs(model2016))
+fit66 <- suest(model1986, model2016, model_names = c("1986", "2016"))
+fit66
+
+effects66 <- avg_comparisons(fit66, variables = "conserv",
+                             newdata = suest_newdata(fit66))
+effects66
+hypotheses(effects66, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation:** Conservatives had significantly lower predicted
+probabilities of saying that government should be responsible for providing
+health care in both 1986 (marginal effect = -0.092) and 2016 (marginal effect =
+-0.258). The gap between conservatives and nonconservatives increased over
+time: the conservative effect is significantly more negative in 2016 than in
+1986 (cross-model difference = 0.166, \(p < .001\)).

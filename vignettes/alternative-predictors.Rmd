@@ -1,0 +1,86 @@
+---
+title: "Alternative predictors"
+description: "Example 6.3 of Mize, Doan, and Long (2019)."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Alternative predictors}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Example 6.3 of Mize, Doan, and Long (2019). The
+[same example in Stata](https://www.trentonmize.com/software/mecompare/examples/alternative-predictors.html)
+uses `mecompare`.
+
+This example uses two binary logit models with alternative predictors: two
+different ways to measure sexuality, sexual behavior (`sexbehav`) in one model
+and sexual identity (`sexident`) in the other.
+
+```{r data}
+library(suest)
+library(marginaleffects)
+library(haven)
+
+gss <- zap_labels(read_dta("https://tdmize.github.io/data/data/gss_cme.dta"))
+
+factorize <- function(data, variables) {
+  data[variables] <- lapply(data[variables], factor)
+  data
+}
+```
+
+```{r example-6-3-models}
+vars63 <- c("samesexB", "sexident", "sexbehav", "college",
+            "woman", "race", "age", "year")
+dat63 <- gss[complete.cases(gss[vars63]), ]
+stopifnot(nrow(dat63) == 4921)
+nrow(dat63)
+dat63 <- factorize(dat63, c("sexident", "sexbehav", "college", "woman", "race", "year"))
+
+behavior63 <- glm(samesexB ~ sexbehav + woman + college + age + race + year,
+                  family = binomial("logit"), data = dat63)
+identity63 <- glm(samesexB ~ sexident + woman + college + age + race + year,
+                  family = binomial("logit"), data = dat63)
+fit63 <- suest(behavior63, identity63, model_names = c("Behavior", "Identity"))
+
+effects63 <- avg_comparisons(fit63,
+  variables = list(sexbehav = "reference", sexident = "reference"), newdata = dat63)
+effects63
+```
+
+Because each predictor is in only one of the models, `marginaleffects`
+reports zero and `NA` for the effects that don't exist in a model. The nonzero
+rows are the effects for each measure.
+
+```{r example-6-3-contrasts}
+alternative_predictor_hypothesis <- function(x) {
+  group <- as.character(x$group)
+  term <- as.character(x$term)
+  behavior <- x$estimate[term == "sexbehav" & group == "Behavior"]
+  identity <- x$estimate[term == "sexident" & group == "Identity"]
+
+  data.frame(
+    term = c("Behavior bisexual - Identity bisexual",
+             "Behavior gay - Identity gay",
+             "(Behavior gay - bisexual) - (Identity gay - bisexual)"),
+    estimate = c(behavior[1] - identity[1], behavior[2] - identity[2],
+                 (behavior[2] - behavior[1]) - (identity[2] - identity[1])))
+}
+
+avg_comparisons(fit63,
+  variables = list(sexbehav = "reference", sexident = "reference"),
+  newdata = dat63, hypothesis = alternative_predictor_hypothesis)
+```
+
+**Example interpretations:** The contrasts between heterosexual and
+gay/lesbian respondents and between bisexual and gay/lesbian respondents do
+not differ significantly across the two models. However, the difference
+between heterosexual and bisexual respondents is significantly larger when
+sexuality is measured using identity than when it is measured using behavior.

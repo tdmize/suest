@@ -11,6 +11,21 @@ home:
   - text: Mize, Doan, and Long (2019)
     href: https://doi.org/10.1177/0081175019852763
 
+articles:
+- title: "Examples: Mize, Doan & Long (2019)"
+  navbar: Examples
+  contents:
+  - mediation
+  - nested-models
+  - alternative-predictors
+  - different-outcomes
+  - model-types
+  - groups
+- title: More
+  navbar: ~
+  contents:
+  - model-notes
+
 reference:
 - title: Core workflow
   desc: Combine models, pool imputed systems, and construct model-specific evaluation data
@@ -21,5 +36,5 @@ reference:
 
 navbar:
   structure:
-    left: [intro, reference, news]
+    left: [intro, articles, reference]
     right: [search, github]

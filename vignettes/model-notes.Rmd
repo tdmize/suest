@@ -1,0 +1,87 @@
+---
+title: "Notes on specific models"
+description: "Settings and limits for a few of the supported models."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Notes on specific models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Most supported models need nothing special. The notes below cover the few
+that do. Fits that `suest` can't use, such as penalized fits or models that
+did not converge, stop with an error that explains why.
+
+## Linear models
+
+Linear models add an `lnvar` parameter (the log of the error variance) to the
+combined coefficients and covariance matrix. It has no effect on predictions
+or marginal effects.
+
+## Linear panel models
+
+For `plm::plm()` models, comparisons of slopes and changes are supported.
+Confidence intervals and tests for average predicted levels at the
+estimation-sample means are not: their standard errors can be missing or near
+zero.
+
+## Mixed models fitted with glmmTMB
+
+- Predictions and marginal effects average over the random intercept, and
+  over the random slope when there is one.
+- Center continuous predictors and keep them in well-scaled units. glmmTMB's
+  covariance matrix can be inaccurate with extreme predictor units even when
+  the model reports convergence, and `suest` uses that covariance as supplied.
+- For slopes of continuous predictors in logit random-slope models, use
+  `numderiv = list("fdcenter", eps = 1e-4)` in `avg_slopes()` for more stable
+  standard errors, and check that nearby step sizes (such as `5e-5` and
+  `2e-4`) give similar answers.
+
+## Models fitted with different packages
+
+Models fitted by different packages can be combined, as long as they are
+supported models.
+
+```{r libraries}
+library(suest)
+library(marginaleffects)
+```
+
+`glm()` and `glm2::glm2()`:
+
+```{r glm2-engine}
+library(glm2)
+
+dat <- mtcars
+dat$am <- factor(dat$am)
+
+standard <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
+alternative <- glm2(am ~ wt + hp, family = binomial("logit"), data = dat)
+engine_fit <- suest(standard, alternative, model_names = c("glm", "glm2"))
+avg_comparisons(engine_fit, variables = "wt", newdata = dat)
+```
+
+`ordinal::clm()` and `MASS::polr()`. `clm()` models need flexible thresholds
+and no scale or nominal-effects formula.
+
+```{r clm-engine}
+library(ordinal)
+
+housing <- MASS::housing[rep(seq_len(nrow(MASS::housing)), MASS::housing$Freq),
+                         c("Sat", "Infl", "Type", "Cont")]
+rownames(housing) <- NULL
+housing$Sat <- ordered(housing$Sat, levels = c("Low", "Medium", "High"))
+
+clm_model <- clm(Sat ~ Cont + Infl + Type, data = housing, link = "logit")
+polr_model <- MASS::polr(Sat ~ Cont + Infl + Type, data = housing,
+                         method = "logistic", Hess = TRUE)
+ordinal_fit <- suest(clm_model, polr_model, model_names = c("clm", "polr"))
+avg_comparisons(ordinal_fit, variables = "Cont", newdata = housing)
+```

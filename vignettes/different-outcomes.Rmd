@@ -1,0 +1,84 @@
+---
+title: "Different outcomes"
+description: "Example 6.4 of Mize, Doan, and Long (2019)."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Different outcomes}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Example 6.4 of Mize, Doan, and Long (2019). The
+[same example in Stata](https://www.trentonmize.com/software/mecompare/examples/different-outcomes.html)
+uses `mecompare`.
+
+This example compares effects across different outcomes. Two counts, poor
+mental-health days and poor physical-health days, are modeled with negative
+binomial regression, and effects are on the predicted-rate scale. Effects and
+cross-model comparisons are calculated for all predictors. The sample also
+drops cases missing `reltrad`, which keeps the analysis sample of the paper
+even though `reltrad` isn't in either model.
+
+```{r data}
+library(suest)
+library(marginaleffects)
+library(haven)
+
+gss <- zap_labels(read_dta("https://tdmize.github.io/data/data/gss_cme.dta"))
+
+factorize <- function(data, variables) {
+  data[variables] <- lapply(data[variables], factor)
+  data
+}
+```
+
+```{r example-6-4}
+vars64 <- c("mntlhlth", "physhlth", "woman", "married", "age",
+            "faminc", "race", "college", "parent", "reltrad")
+dat64 <- gss[complete.cases(gss[vars64]), ]
+stopifnot(nrow(dat64) == 5062)
+nrow(dat64)
+
+dat64 <- factorize(dat64, c("woman", "married", "parent", "college", "race", "year"))
+
+mental64 <- MASS::glm.nb(mntlhlth ~ woman + married + parent + college + age +
+                           faminc + race + year, data = dat64)
+physical64 <- MASS::glm.nb(physhlth ~ woman + married + parent + college + age +
+                             faminc + race + year, data = dat64)
+fit64 <- suest(mental64, physical64, model_names = c("Mental", "Physical"))
+
+variables64 <- list(woman = "reference", married = "reference", parent = "reference",
+  college = "reference", age = sd(dat64$age), faminc = sd(dat64$faminc),
+  race = "reference", year = "reference")
+effects64 <- avg_comparisons(fit64, variables = variables64, newdata = dat64)
+effects64
+
+age64 <- avg_comparisons(fit64, variables = list(age = sd(dat64$age)),
+                         newdata = dat64)
+hypotheses(age64, hypothesis = difference ~ revpairwise)
+```
+
+`age = sd(dat64$age)` asks for a one-standard-deviation increase from each
+person's observed age.
+
+**Example interpretations:** Women report about 0.99 more poor
+mental-health days and 0.77 more poor physical-health days per month than men.
+Although the effect of gender is about 0.22 larger for mental health, the
+cross-outcome difference is not statistically significant.
+
+Being married significantly reduces poor mental-health days by about 1.01,
+whereas its effect on poor physical-health days is not statistically
+significant. The direct comparison shows that the effect of marriage is
+significantly larger for mental health than for physical health
+(cross-model difference = -0.851, \(p < .01\)).
+
+Similarly, the effect of age differs significantly across the outcomes:
+aging is associated with fewer poor mental-health days but more poor
+physical-health days.

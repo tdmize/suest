@@ -1,0 +1,71 @@
+---
+title: "Curvilinear effects and mediation/attenuation"
+description: "Example 6.1 of Mize, Doan, and Long (2019)."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Curvilinear effects and mediation/attenuation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Example 6.1 of Mize, Doan, and Long (2019). The
+[same example in Stata](https://www.trentonmize.com/software/mecompare/examples/mediation.html)
+uses `mecompare`.
+
+This example uses a linear regression with a nonlinear effect of income,
+included as income and income squared. We test whether adding a mediator, job
+satisfaction, reduces the average effect of income, which would suggest
+mediation. It also shows how to ask for a custom amount of change in a
+continuous predictor: here, a one-standard-deviation increase in income.
+
+```{r data}
+library(suest)
+library(marginaleffects)
+library(haven)
+
+ah <- zap_labels(read_dta("https://tdmize.github.io/data/data/ah4_cme.dta"))
+
+factorize <- function(data, variables) {
+  data[variables] <- lapply(data[variables], factor)
+  data
+}
+```
+
+```{r example-6-1}
+vars61 <- c("depsympB", "income", "inc10", "age", "woman", "race", "college", "jobsat")
+dat61 <- ah[complete.cases(ah[vars61]), ]
+stopifnot(nrow(dat61) == 4307)
+nrow(dat61)
+dat61 <- factorize(dat61, c("woman", "race", "jobsat"))
+
+base61 <- lm(depsympB ~ income + I(income^2) + age + woman + race, data = dat61)
+mediator61 <- lm(depsympB ~ income + I(income^2) + age + woman + race + jobsat,
+                 data = dat61)
+fit61 <- suest(base61, mediator61, model_names = c("Base", "Mediator"))
+
+effects61 <- avg_comparisons(fit61,
+  variables = list(income = sd(dat61$income)), newdata = dat61)
+effects61
+hypotheses(effects61, hypothesis = difference ~ revpairwise)
+```
+
+A single number in `variables` asks for a change of that amount from each
+observed value. So `list(income = sd(dat61$income))` compares each person's
+observed income with that income plus one standard deviation. This is
+different from `"sd"`, which asks for a one-standard-deviation change
+centered on the mean.
+
+**Example interpretation for the effect of income:** In model 1, the
+marginal effect is -0.816, indicating that a standard-deviation increase in
+income is associated with about 0.8 fewer depressive symptoms. The effect is
+reduced to -0.648 after accounting for job satisfaction. The direct
+cross-model test shows that accounting for job satisfaction decreases the
+average effect of income by 0.168, a statistically significant reduction
+(\(p < .001\)) that is consistent with mediation.

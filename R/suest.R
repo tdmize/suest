@@ -57,10 +57,9 @@
 #' and scalar and categorical models may appear in the same system. Results on
 #' different response scales are labeled separately for `marginaleffects`.
 #'
-#' Ordinary linear models include an ancillary `lnvar` parameter, matching Stata's
-#' `regress`/`suest` parameterization. Unweighted fits use
-#' `log(RSS / df.residual)`; pweighted fits follow `suest2`'s reconstructed
-#' iweight-reference normalization.
+#' Linear models include an ancillary `lnvar` parameter, the log of the error
+#' variance (`log(RSS / df.residual)` for unweighted fits). It has no effect on
+#' predictions or marginal effects.
 #' Negative-binomial models include `log(theta)` in the joint parameter vector.
 #' Ordered and multinomial models use analytic score and observed-information
 #' calculations for stable robust covariance estimation.
@@ -108,51 +107,59 @@
 #' survey t or F adjustment is applied.
 #'
 #' @section Supported models:
+#' ## Single-level models
 #' * [stats::lm()]
-#' * restricted survey-weighted Gaussian identity and binary
-#'   `quasibinomial()` logit/probit models from `survey::svyglm()`
 #' * binary logit, probit, and complementary-log-log models from [stats::glm()]
 #'   or `glm2::glm2()`
+#' * ordered logit and probit models from [MASS::polr()]
+#' * ordered logit and probit models from `ordinal::clm()` with flexible
+#'   thresholds, proportional effects, and no scale model
+#' * multinomial logit models from [nnet::multinom()]
 #' * Poisson log-link models from [stats::glm()] or `glm2::glm2()`
+#' * negative-binomial log-link models from [MASS::glm.nb()]
+#' * Poisson and negative-binomial zero-inflated models from
+#'   `pscl::zeroinfl()`
 #' * other GLMs using identity, log, logit, probit, complementary-log-log, or
 #'   log-log links
-#' * fractional-response GLMs using `quasibinomial()` with logit, probit,
-#'   complementary-log-log, or a user-supplied log-log link
-#' * negative-binomial log-link models from [MASS::glm.nb()]
+#' * left-, right-, and two-limit censored Gaussian regressions from
+#'   `censReg::censReg()`; response-scale predictions are the latent mean
 #' * parametric survival and censored-regression models from
 #'   `survival::survreg()` with a common scale, including Gaussian interval
 #'   regression
+#' * truncated Gaussian regressions from `truncreg::truncreg()`
+#' * fractional-response GLMs using `quasibinomial()` with logit, probit,
+#'   complementary-log-log, or a user-supplied log-log link
 #' * beta regressions from `betareg::betareg()` using logit, probit,
 #'   complementary-log-log, or log-log mean links
-#' * Poisson and negative-binomial zero-inflated models from
-#'   `pscl::zeroinfl()`
-#' * truncated Gaussian regressions from `truncreg::truncreg()`
-#' * left-, right-, and two-limit censored Gaussian regressions from
-#'   `censReg::censReg()`; response-scale predictions are the latent mean
-#' * unweighted two-stage least squares from `fixest::feols()` without
-#'   absorbed fixed effects; the original data object must remain available
 #' * heteroskedastic binary probit and logit from `Rchoice::hetprob()`
-#' * maximum-likelihood instrumental-variable probit from `Rchoice::ivpml()`;
-#'   response predictions use the average structural probability
 #' * bivariate probit from `mvProbit::mvProbit()` when both equations use the
 #'   same regressors; fit with `intGrad = TRUE` and `finalHessian = TRUE`
+#' * unweighted two-stage least squares from `fixest::feols()` without
+#'   absorbed fixed effects; the original data object must remain available
+#' * maximum-likelihood instrumental-variable probit from `Rchoice::ivpml()`;
+#'   response predictions use the average structural probability
+#'
+#' ## Panel models
 #' * unweighted individual fixed-effects, between-effects, and Swamy-Arora
-#'   random-effects linear panel models from `plm::plm()`; balanced random-
-#'   effects panels have the closest Stata parity, while unbalanced panels can
-#'   retain small engine-specific differences. Within-model prediction
+#'   random-effects linear panel models from `plm::plm()`. Within-model prediction
 #'   uncertainty conditions on estimation-sample means and propagates slope
 #'   uncertainty. At matching evaluation means, the covariance is structurally
 #'   degenerate: average-level confidence intervals and hypothesis tests are
 #'   unsupported, and numerical SEs can be missing or nearly zero. Slope and
 #'   finite-change comparisons remain supported.
-#' * unweighted single-level random-intercept Gaussian panel models from
-#'   `nlme::lme()` fitted with `method = "ML"`
 #' * unweighted individual random-intercept binary logit and probit models from
 #'   `pglm::pglm()` fitted with `model = "random"`, `effect = "individual"`,
 #'   and `R = 12`; response predictions integrate over the random effect
 #' * unweighted gamma random-effects Poisson log models from `pglm::pglm()`
 #'   fitted with `model = "random"`, `effect = "individual"`, and
 #'   `other = "sd"`; the final parameter is exposed as gamma variance `alpha`
+#' * unweighted GEE from `geepack::geeglm()`: Gaussian identity,
+#'   binary logit/probit/cloglog, and Poisson log, with independence or
+#'   exchangeable correlation and numeric outcomes
+#'
+#' ## Multilevel models
+#' * unweighted single-level random-intercept Gaussian models from
+#'   `nlme::lme()` fitted with `method = "ML"`
 #' * unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models from
 #'   `glmmTMB::glmmTMB()` with one grouping variable and one conditional random
 #'   intercept; the final parameter is the log random-intercept standard
@@ -194,13 +201,10 @@
 #'   steps (for example, `5e-5` and `2e-4`). An unstable standard error
 #'   requires further investigation; changing the finite-difference step
 #'   does not repair an inaccurate native model covariance
-#' * unweighted GEE from `geepack::geeglm()`: Gaussian identity,
-#'   binary logit/probit/cloglog, and Poisson log, with independence or
-#'   exchangeable correlation and numeric outcomes
-#' * ordered logit and probit models from [MASS::polr()]
-#' * ordered logit and probit models from `ordinal::clm()` with flexible
-#'   thresholds, proportional effects, and no scale model
-#' * multinomial logit models from [nnet::multinom()]
+#'
+#' ## Survey models
+#' * restricted survey-weighted Gaussian identity and binary
+#'   `quasibinomial()` logit/probit models from `survey::svyglm()`
 #'
 #' @examples
 #' dat <- mtcars

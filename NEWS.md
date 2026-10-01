@@ -1,5 +1,14 @@
 # suest 0.1.6.9000 (development)
 
+* Documentation reorganized. The six Mize, Doan, and Long (2019) examples
+  moved from the Getting started vignette to their own articles. The
+  supported-models table is grouped into single-level, panel, multilevel,
+  and survey models (also in `?suest`). Notes on specific models moved to a
+  separate article; details that the package's error messages already cover
+  were removed. The README is shorter and links to the full list of
+  supported models. Comparisons with Stata were removed from the help pages.
+  The changelog is no longer shown on the website. No code changes.
+
 * Fixed categorical-outcome comparisons on model-specific stacked samples.
   Outcome prediction blocks now align with the complete counterfactual grid,
   retaining every outcome-by-contrast estimate for disjoint and overlapping

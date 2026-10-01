@@ -7,44 +7,16 @@
 #' predictions, slopes, and average comparisons across models.
 #'
 #' @section Supported models:
-#' `lm()`, binary logit, probit, and complementary-log-log models fitted by
-#' `glm()` or `glm2::glm2()`, Poisson and other supported GLMs,
-#' negative-binomial models fitted by [MASS::glm.nb()], ordered logit and
-#' probit models fitted by [MASS::polr()] or restricted `ordinal::clm()`
-#' specifications, multinomial logit models fitted by [nnet::multinom()], and
-#' parametric survival or censored-regression models fitted by
-#' `survival::survreg()`, and beta regressions fitted by `betareg::betareg()`.
-#' Poisson and negative-binomial zero-inflated models fitted by
-#' `pscl::zeroinfl()` are also supported.
-#' Truncated Gaussian regressions fitted by `truncreg::truncreg()` are
-#' supported as well, as are direct Tobit models fitted by
-#' `censReg::censReg()` and unweighted two-stage least squares fitted by
-#' `fixest::feols()` without absorbed fixed effects. Heteroskedastic binary
-#' probit and logit fitted by `Rchoice::hetprob()` are supported.
-#' Maximum-likelihood IV probit fitted by `Rchoice::ivpml()` and bivariate
-#' probit fitted by `mvProbit::mvProbit()` are supported with their documented
-#' adapter restrictions.
-#' Unweighted individual fixed-effects, between-effects, and Swamy-Arora
-#' random-effects linear panel models fitted by `plm::plm()` are supported;
-#' unbalanced random-effects fits can retain small engine-specific differences.
-#' Single-level random-intercept Gaussian models fitted by `nlme::lme()` with
-#' `method = "ML"` are supported, including both variance components.
-#' Unweighted individual random-intercept binary logit/probit and gamma
-#' random-effects Poisson models fitted by `pglm::pglm()` are supported under
-#' the restrictions documented in [suest()].
-#' Unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models fitted by
-#' `glmmTMB::glmmTMB()` with one conditional random intercept are supported
-#' under the restrictions documented in [suest()].
-#' Unweighted GEE fitted by `geepack::geeglm()` is supported for Gaussian
-#' identity, binary logit/probit/cloglog, and Poisson log models with
-#' independence or exchangeable correlation.
-#' Explicit `weight_type = "pweight"` support is available for the model
-#' families corresponding to Stata `suest2`'s ordinary pweight route.
-#' Joint cluster-robust covariance is available through the `cluster` argument
-#' to [suest()].
-#' Compatible systems fitted in multiple imputed datasets can be pooled with
-#' [suest_mi()] using Rubin's rules. The initial MI interface supports joint
-#' coefficients, covariance, summaries, and coefficient-level hypotheses.
+#' Linear, binary, ordinal, multinomial, count, censored, survival, and
+#' instrumental-variable models, as well as panel, multilevel, and survey
+#' models. See [suest()] for the full list.
+#'
+#' Probability weights (`weight_type = "pweight"`) are supported for linear,
+#' binary logit and probit, Poisson, negative-binomial, ordered logit and
+#' probit, and multinomial logit models. Joint cluster-robust covariance is
+#' available through the `cluster` argument to [suest()]. Systems fitted in
+#' multiply imputed datasets can be pooled with [suest_mi()] using Rubin's
+#' rules.
 #'
 #' @section Reference:
 #' Mize, Trenton D., Long Doan, and J. Scott Long. 2019.
