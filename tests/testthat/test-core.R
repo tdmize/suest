@@ -229,7 +229,7 @@ test_that("invalid observation IDs are rejected", {
   )
 })
 
-test_that("model-specific covariance blocks are preserved", {
+test_that("covariance blocks of different samples use the combined-sample N/(N-1)", {
   set.seed(20260928)
   dat <- data.frame(x = rnorm(240), z = rnorm(240),
     group = rep(c(1, 2), each = 120))
@@ -252,15 +252,16 @@ test_that("model-specific covariance blocks are preserved", {
 
   fit <- suest(model1, model2)
   V <- vcov(fit)
+  n <- nrow(dat)
 
   expect_equal(
     unname(V[fit$index[[1]], fit$index[[1]]]),
-    unname(robust_vcov_direct(model1)),
+    unname(robust_vcov_direct(model1, correction = FALSE) * n / (n - 1)),
     tolerance = 1e-10
   )
   expect_equal(
     unname(V[fit$index[[2]], fit$index[[2]]]),
-    unname(robust_vcov_direct(model2)),
+    unname(robust_vcov_direct(model2, correction = FALSE) * n / (n - 1)),
     tolerance = 1e-10
   )
 })

@@ -459,15 +459,18 @@ test_case("Invariants: identical, partial, and disjoint samples", {
     "disjoint covariance"
   )
 
+  # One N/(N-1) for the combined samples, as Stata's suest
+  nu <- s_disjoint$nobs_union
+  nm <- s_disjoint$nobs_models
   expect_near(
     vcov_block(s_disjoint, 1),
-    robust_vcov_direct(disjoint1),
+    robust_vcov_direct(disjoint1) * (nm[1] - 1) / nm[1] * nu / (nu - 1),
     1e-10,
     "disjoint block 1"
   )
   expect_near(
     vcov_block(s_disjoint, 2),
-    robust_vcov_direct(disjoint2),
+    robust_vcov_direct(disjoint2) * (nm[2] - 1) / nm[2] * nu / (nu - 1),
     1e-10,
     "disjoint block 2"
   )

@@ -779,15 +779,14 @@ suest <- function(
     )
   } else {
     Map(
-      function(U, n, type) {
+      function(U, type) {
         # Stata's native robust 2SLS covariance is HC0. Its specialized
         # suest2 IV route stacks coefficient influence functions without the
         # N/(N-1) correction used by ordinary suest models.
-        correction <- if (type == "ivreg") 1 else n / (n - 1)
+        correction <- if (type == "ivreg") 1 else n_union / (n_union - 1)
         U * sqrt(correction)
       },
       scores,
-      n_model,
       model_types
     )
   }
