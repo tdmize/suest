@@ -37,8 +37,8 @@ nd <- suest_newdata(fit)
 marginaleffects::avg_comparisons(fit, variables = "wt", newdata = nd)
 #> 
 #>           Group Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
-#>  Four cylinders    -5.12       1.12 -4.58   <0.001 17.7 -7.31  -2.92
-#>  Other             -2.56       0.58 -4.41   <0.001 16.6 -3.70  -1.42
+#>  Four cylinders    -5.12      1.083 -4.72   <0.001 18.7 -7.24  -2.99
+#>  Other             -2.56      0.575 -4.45   <0.001 16.8 -3.69  -1.43
 #> 
 #> Term: wt
 #> Type: response

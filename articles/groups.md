@@ -60,7 +60,7 @@ effects66 <- avg_comparisons(fit66, variables = "conserv",
 effects66
 #> 
 #>  Group Estimate Std. Error     z Pr(>|z|)    S  2.5 %  97.5 %
-#>   1986  -0.0917     0.0296  -3.1  0.00193  9.0 -0.150 -0.0337
+#>   1986  -0.0917     0.0296  -3.1  0.00192  9.0 -0.150 -0.0337
 #>   2016  -0.2582     0.0253 -10.2  < 0.001 78.7 -0.308 -0.2085
 #> 
 #> Term: conserv

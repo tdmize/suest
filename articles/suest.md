@@ -161,16 +161,16 @@ effects_groups <- avg_comparisons(fit_groups, variables = "wt",
 effects_groups
 #> 
 #>           Group Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
-#>  Four cylinders    -5.12       1.12 -4.58   <0.001 17.7 -7.31  -2.92
-#>  Other             -2.56       0.58 -4.41   <0.001 16.6 -3.70  -1.42
+#>  Four cylinders    -5.12      1.083 -4.72   <0.001 18.7 -7.24  -2.99
+#>  Other             -2.56      0.575 -4.45   <0.001 16.8 -3.69  -1.43
 #> 
 #> Term: wt
 #> Type: response
 #> Comparison: +1
 hypotheses(effects_groups, hypothesis = difference ~ revpairwise)
 #> 
-#>                  Hypothesis Estimate Std. Error     z Pr(>|z|)   S 2.5 %  97.5 %
-#>  (Four cylinders) - (Other)    -2.55       1.26 -2.03   0.0426 4.6 -5.02 -0.0852
+#>                  Hypothesis Estimate Std. Error     z Pr(>|z|)   S 2.5 % 97.5 %
+#>  (Four cylinders) - (Other)    -2.55       1.23 -2.08   0.0373 4.7 -4.96  -0.15
 ```
 
 ## Cluster-robust standard errors

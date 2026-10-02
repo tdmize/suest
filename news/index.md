@@ -2,6 +2,13 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Models fit on different samples: the joint covariance now applies one
+  N/(N-1) correction, with N the number of observations in the combined
+  samples, as Stata’s `suest` does and as the weighted and clustered
+  systems already did. Before, each model’s block used its own n/(n-1).
+  Standard errors change only when the samples differ (by 0.08% with two
+  samples of 300).
+
 - Documentation reorganized. The six Mize, Doan, and Long (2019)
   examples moved from the Getting started vignette to their own
   articles. The supported-models table is grouped into single-level,
