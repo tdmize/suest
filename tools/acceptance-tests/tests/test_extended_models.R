@@ -186,9 +186,12 @@ test_case("Truncated Gaussian regression: partial samples", {
   expect_true(
     combined$nobs_overlap == length(intersect(left_data$id, right_data$id))
   )
+  # One N/(N-1) for the combined samples, as Stata's suest
+  nu <- combined$nobs_union
+  nm <- combined$nobs_models[1L]
   expect_near(
     stats::vcov(combined)[combined$index[[1L]], combined$index[[1L]]],
-    extended_robust_vcov(left),
+    extended_robust_vcov(left) * (nm - 1) / nm * nu / (nu - 1),
     tolerance = 1e-8,
     label = "truncated robust covariance"
   )
