@@ -311,7 +311,10 @@ or adaptive Gauss-Hermite with the fit's \code{nAGQ} for \code{glmer}.
 \code{glmer(..., nAGQ = 7)} uses mode-curvature adaptive quadrature with 7
 points, Stata's \verb{intmethod(mcaghermite) intpoints(7)}. lme4's default
 Laplace fits stop the inner mode search early; for closer agreement with
-other software, fit with \code{control = lme4::glmerControl(tolPwrss = 1e-12)}
+other software, fit with \code{control = lme4::glmerControl(tolPwrss = 1e-12)}.
+Likewise, \code{lmer}'s default optimizer tolerance can leave random-slope
+variance parameters slightly short of the optimum; \code{control = lme4::lmerControl(optimizer = "bobyqa", optCtrl = list(rhoend = 1e-12))}
+gives closer agreement with Stata's \code{mixed}
 \item unweighted random-intercept ordered logit and probit models from
 \code{ordinal::clmm()} with one grouping variable and flexible thresholds
 (Stata's \code{meologit}, \code{meoprobit}, \code{xtologit}, \code{xtoprobit}), fit with

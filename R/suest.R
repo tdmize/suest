@@ -262,7 +262,11 @@
 #'   `glmer(..., nAGQ = 7)` uses mode-curvature adaptive quadrature with 7
 #'   points, Stata's `intmethod(mcaghermite) intpoints(7)`. lme4's default
 #'   Laplace fits stop the inner mode search early; for closer agreement with
-#'   other software, fit with `control = lme4::glmerControl(tolPwrss = 1e-12)`
+#'   other software, fit with `control = lme4::glmerControl(tolPwrss = 1e-12)`.
+#'   Likewise, `lmer`'s default optimizer tolerance can leave random-slope
+#'   variance parameters slightly short of the optimum; `control =
+#'   lme4::lmerControl(optimizer = "bobyqa", optCtrl = list(rhoend = 1e-12))`
+#'   gives closer agreement with Stata's `mixed`
 #'
 #' * unweighted random-intercept ordered logit and probit models from
 #'   `ordinal::clmm()` with one grouping variable and flexible thresholds
