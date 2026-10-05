@@ -15,9 +15,7 @@ knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
 options(width = 100)
 ```
 
-Example 6.3 of Mize, Doan, and Long (2019). The
-[same example in Stata](https://www.trentonmize.com/software/mecompare/examples/alternative-predictors.html)
-uses `mecompare`.
+Example 6.3 of Mize, Doan, and Long (2019).
 
 This example uses two binary logit models with alternative predictors: two
 different ways to measure sexuality, sexual behavior (`sexbehav`) in one model
@@ -40,7 +38,6 @@ factorize <- function(data, variables) {
 vars63 <- c("samesexB", "sexident", "sexbehav", "college",
             "woman", "race", "age", "year")
 dat63 <- gss[complete.cases(gss[vars63]), ]
-stopifnot(nrow(dat63) == 4921)
 nrow(dat63)
 dat63 <- factorize(dat63, c("sexident", "sexbehav", "college", "woman", "race", "year"))
 
