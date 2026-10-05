@@ -142,10 +142,10 @@ test_that("plm within validation rejects unsupported panel specifications", {
   )
   linear <- lm(y1 ~ x + z, data = dat)
 
-  expect_error(suest(within, random), "only with other panel models of the same type")
+  expect_error(suest(within, random), "only with models of the same type")
   expect_error(suest(within, time_fe), "Each model must be a supported")
   expect_error(suest(within, weighted), "Weighted plm")
-  expect_error(suest(within, linear), "only with other panel models of the same type")
+  expect_error(suest(within, linear), "only with models of the same type")
 
   dat$bad_cluster <- dat$higher
   dat$bad_cluster[dat$time == 5] <- dat$bad_cluster[dat$time == 5] + 100L

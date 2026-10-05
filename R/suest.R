@@ -25,15 +25,18 @@
 #'   complete. Shared observations must have the same cluster ID in every
 #'   model; disjoint observations may still share clusters across models.
 #'   Supported panel systems default to the panel identifier when `cluster` is
-#'   omitted. Supplied clusters for these models must contain whole panels.
+#'   omitted, and systems that combine random-effects models with ordinary
+#'   models default to the random-effects grouping variable. Supplied clusters
+#'   for these models must contain whole panels.
 #' @param weight_type Optional weight interpretation. The default `NULL`
 #'   preserves the unweighted behavior and rejects nonunit estimation weights.
 #'   Use `"pweight"` to treat model weights as sampling weights. In version
 #'   0.1.4, pweights are supported for linear, binary logit/probit, Poisson,
 #'   negative-binomial, ordered logit/probit, and multinomial logit models.
 #' @param survey_design Full common one-stage `survey::svydesign()` object for
-#'   supported `survey::svyglm()` models: Gaussian identity or binary
-#'   `quasibinomial()` logit/probit. Requires `observation_id` column names.
+#'   supported `survey::svyglm()` models: Gaussian identity, binary
+#'   `quasibinomial()` logit/probit/cloglog, or `quasipoisson()` log.
+#'   Requires `observation_id` column names.
 #'   Retain the design before model-specific domain subsetting. Specify weights
 #'   and clusters in this design, without `weight_type` or `cluster`. Ordinary
 #'   models leave this argument `NULL`.
@@ -50,6 +53,13 @@
 #' observations. Models fitted from different data objects are treated as
 #' disjoint by default because shared observations cannot be inferred safely.
 #' Use `observation_id` to identify their common observations explicitly.
+#' `suest()` warns when such models share row names with identical values, and
+#' stops when models fit to the same data object disagree on rows with the same
+#' row names (for example, after the data were filtered and renumbered).
+#'
+#' When `newdata` is omitted in `marginaleffects` functions, each model is
+#' averaged over its own estimation sample, as with
+#' `newdata = suest_newdata(fit)`.
 #'
 #' All combinations of the supported scalar-response models can be combined,
 #' including models whose response variables or response scales differ. All
@@ -63,6 +73,8 @@
 #' Negative-binomial models include `log(theta)` in the joint parameter vector.
 #' Ordered and multinomial models use analytic score and observed-information
 #' calculations for stable robust covariance estimation.
+#' Probit and other GLMs with non-canonical links, and beta regressions, use
+#' observed information in the sandwich bread, as Stata does.
 #'
 #' Aliased parameters are not supported. Nonunit weights are rejected unless
 #' `weight_type = "pweight"`. Pweights must be finite and
@@ -82,9 +94,9 @@
 #' the joint sandwich covariance.
 #'
 #' @section Survey models:
-#' Survey support combines coefficients from Gaussian identity-link and binary
-#' `quasibinomial()` logit/probit `svyglm()` fits under one common one-stage
-#' design. Gaussian and binary fits are not mixed in the same survey system.
+#' Survey support combines coefficients from Gaussian identity-link, binary
+#' `quasibinomial()` logit/probit/cloglog, and `quasipoisson()` log
+#' `svyglm()` fits under one common one-stage design, in any combination.
 #' Strata and first-stage finite-population corrections are supported.
 #' Model-specific subsets and missing outcomes are aligned using observation
 #' IDs, with zero influence outside each model's estimation sample. The full
@@ -139,6 +151,24 @@
 #' * maximum-likelihood instrumental-variable probit from `Rchoice::ivpml()`;
 #'   response predictions use the average structural probability
 #'
+#' ## Selection models
+#' * unweighted maximum-likelihood Heckman selection models from
+#'   `sampleSelection::selection(method = "ml")`, Stata's `heckman`. The
+#'   ancillary parameters use Stata's scale, `lnsigma` and `athrho`, and the
+#'   equations are labeled `selection:` and `outcome:`. Predictions are the
+#'   outcome equation's linear prediction, Stata's default
+#'
+#' ## Generalized ordered models
+#' * unweighted `VGAM::vglm()` models with the `cumulative()` family and a
+#'   logit, probit, or cloglog link: generalized ordered logit (Stata's
+#'   `gologit2`), including the proportional (`parallel = TRUE`) and partial
+#'   proportional odds forms (for example `parallel = FALSE ~ x`). Use
+#'   `reverse = TRUE` for gologit2's `P(Y > j) = F(eta_j)` parameterization;
+#'   both directions are supported. suest computes the scores analytically
+#'   and the observed information (as Stata does) by differentiating them;
+#'   VGAM's own covariance uses expected information. Predictions are
+#'   category probabilities
+#'
 #' ## Panel models
 #' * unweighted individual fixed-effects, between-effects, and Swamy-Arora
 #'   random-effects linear panel models from `plm::plm()`. Within-model prediction
@@ -153,18 +183,40 @@
 #' * unweighted gamma random-effects Poisson log models from `pglm::pglm()`
 #'   fitted with `model = "random"`, `effect = "individual"`, and
 #'   `other = "sd"`; the final parameter is exposed as gamma variance `alpha`
+#' * unweighted fixed-effects Poisson models from `fixest::fepois()` with one
+#'   absorbed fixed effect (Stata's `xtpoisson, fe`), clustered on that
+#'   effect with no `G/(G-1)` factor, as in Stata's native
+#'   `xtpoisson, fe vce(robust)`. Each unit's fixed effect is a function of the coefficients,
+#'   `log(sum(y_i)) - log(sum(exp(x_i b)))`, so response predictions
+#'   `exp(x b + alpha_i)` match `predict()` for fixest and carry the
+#'   coefficients' uncertainty; newdata must contain the fixed-effect
+#'   variable. Link-scale effects equal the coefficients, as in Stata. These
+#'   models combine only with other fixed-effects Poisson models
 #' * unweighted GEE from `geepack::geeglm()`: Gaussian identity,
 #'   binary logit/probit/cloglog, and Poisson log, with independence or
 #'   exchangeable correlation and numeric outcomes
 #'
 #' ## Multilevel models
 #' * unweighted single-level random-intercept Gaussian models from
-#'   `nlme::lme()` fitted with `method = "ML"`
-#' * unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models from
+#'   `nlme::lme()` fitted with `method = "ML"`, matching Stata's
+#'   `xtreg, mle` (full observed-information bread). For Stata's `mixed`
+#'   layout, fit the same model with `lme4::lmer(..., REML = FALSE)`; the
+#'   standard errors differ only slightly
+#' * unweighted binomial (logit, probit, cloglog), Poisson-log, negative-binomial
+#'   NB2 log, Gaussian-identity, and Gamma-log models from
 #'   `glmmTMB::glmmTMB()` with one grouping variable and one conditional random
 #'   intercept; the final parameter is the log random-intercept standard
 #'   deviation, and response predictions integrate over the Gaussian random
-#'   effect. NB2 models must use the default constant dispersion model
+#'   effect (probit `pnorm(eta/sqrt(1 + v))`, log links `exp(eta + v/2)`,
+#'   Gaussian `eta`, logit and cloglog by quadrature, where `v` is the
+#'   random-effect variance). Gaussian models add `log_sigma_e`, the log
+#'   residual standard deviation, and Gamma models `log_shape`, the log shape
+#'   parameter (Stata's `/logs` equals `-log_shape/2`), before the
+#'   random-effect parameters. Gaussian random-effects models from `lmer()` or
+#'   `glmmTMB()` use the covariance layout of Stata's `mixed`: the fixed
+#'   effects' bread is `(X'V^-1 X)^-1`, the variance parameters' bread is
+#'   their block of the full observed-information inverse, and the two blocks
+#'   are uncorrelated. NB2 models must use the default constant dispersion model
 #'   (`dispformula = ~1`); its estimated log size parameter `log_phi` precedes
 #'   `log_sigma`, with conditional variance `mu + mu^2/exp(log_phi)`.
 #'   Weights, offsets, and zero inflation are unsupported;
@@ -174,23 +226,21 @@
 #'   `sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))`.
 #'   This numerical boundary check is not a significance test and does not
 #'   guarantee an interior global maximum
-#' * unweighted binomial-logit, Poisson-log, and NB2-log `glmmTMB` models with one correlated random
+#' * the same `glmmTMB` families with one correlated random
 #'   intercept and numeric slope, `(1 + x | id)`, using an unstructured
 #'   covariance matrix. The slope must be a single untransformed numeric
 #'   column with a syntactically valid name. The nuisance parameters are
 #'   `log_sd_intercept`, `log_sd_slope`, and `atanh_rho`. NB2 requires the
 #'   default estimated constant dispersion (`dispformula = ~1`), includes
 #'   `log_phi` before these three parameters, and uses the NB2 boundary check
-#'   above. Count response predictions
-#'   are `exp(X beta + (var_intercept + 2*x*cov_intercept_slope +
-#'   x^2*var_slope)/2)`. Binomial response predictions integrate the logistic
-#'   probability over this Gaussian variance; responses must be Bernoulli.
+#'   above; Gaussian and Gamma models include `log_sigma_e` or `log_shape`
+#'   there. Response predictions use the random-intercept formulas with
+#'   `v = var_intercept + 2*x*cov_intercept_slope + x^2*var_slope`; binomial
+#'   responses must be Bernoulli.
 #'   Link predictions are `X beta`. Near-singular random
 #'   covariance is rejected in a centered, standardized predictor basis.
 #'   Weights, offsets, zero inflation, constraints, diagonal covariance,
-#'   multiple slopes, slope-only terms, and other random-slope families are
-#'   unsupported. Random-slope systems must contain models of the same family;
-#'   the slope variable must be supplied for response predictions even when
+#'   multiple slopes, and slope-only terms are unsupported. The slope variable must be supplied for response predictions even when
 #'   it is absent from the fixed-effects formula. Native model covariance is
 #'   used as supplied. Poorly scaled predictors can produce inaccurate native
 #'   numerical curvature even with convergence and a positive-definite Hessian;
@@ -202,9 +252,45 @@
 #'   requires further investigation; changing the finite-difference step
 #'   does not repair an inaccurate native model covariance
 #'
+#' * unweighted `lme4::lmer()` models fit with `REML = FALSE`, and
+#'   `lme4::glmer()` binomial (logit, probit, cloglog) and Poisson-log models,
+#'   with one grouping variable and a random intercept or one correlated
+#'   numeric slope. They use the same parameters and predictions as the
+#'   matching `glmmTMB` models. suest computes their group scores and observed
+#'   information from its own per-group likelihood: exact for `lmer`, Laplace
+#'   or adaptive Gauss-Hermite with the fit's `nAGQ` for `glmer`.
+#'   `glmer(..., nAGQ = 7)` uses mode-curvature adaptive quadrature with 7
+#'   points, Stata's `intmethod(mcaghermite) intpoints(7)`. lme4's default
+#'   Laplace fits stop the inner mode search early; for closer agreement with
+#'   other software, fit with `control = lme4::glmerControl(tolPwrss = 1e-12)`
+#'
+#' * unweighted random-intercept ordered logit and probit models from
+#'   `ordinal::clmm()` with one grouping variable and flexible thresholds
+#'   (Stata's `meologit`, `meoprobit`, `xtologit`, `xtoprobit`), fit with
+#'   Laplace (`nAGQ = 1`) or adaptive quadrature (`nAGQ > 1`; 7 points match
+#'   Stata's `intmethod(mcaghermite) intpoints(7)`). Parameters are the
+#'   thresholds, the coefficients, and `log_sigma`. suest computes scores and
+#'   observed information from its own per-group likelihood, which
+#'   reproduces clmm's. Predictions are category probabilities integrated
+#'   over the random intercept
+#'
+#' ## Combining random-effects and ordinary models
+#' Random-effects models from `nlme::lme()`, `pglm::pglm()`,
+#' `glmmTMB::glmmTMB()`, lme4, and `ordinal::clmm()` can be combined with each other, including different
+#' families, and with linear, binary logit, probit, and cloglog, Poisson,
+#' negative binomial, and ordered logit and probit models, as in Stata's
+#' suest2. Every random-effects model must use the same grouping variable,
+#' and the ordinary models' data must contain it. The system is clustered on
+#' that group, or on `cluster`, which must contain whole groups. Each model's
+#' block of the covariance then equals that model's own covariance clustered
+#' on the group, including the `(N - 1)/(N - k)` adjustment for linear
+#' models. `plm` and `geeglm` models combine only with models of the same
+#' type.
+#'
 #' ## Survey models
-#' * restricted survey-weighted Gaussian identity and binary
-#'   `quasibinomial()` logit/probit models from `survey::svyglm()`
+#' * restricted survey-weighted Gaussian identity, binary `quasibinomial()`
+#'   logit/probit/cloglog, and `quasipoisson()` log models from
+#'   `survey::svyglm()`, in any combination
 #'
 #' @examples
 #' dat <- mtcars
@@ -247,6 +333,8 @@ suest <- function(
   n_models <- length(models)
   if (n_models < 2L)
     stop("Supply at least two fitted models.", call. = FALSE)
+  models <- lapply(models, function(model)
+    .suest_prepare_heckman(.suest_wrap_vglm(.suest_wrap_lme4(.suest_unexclude(model)))))
 
   if (is.null(model_names)) {
     model_names <- vapply(
@@ -287,9 +375,9 @@ suest <- function(
         "plm::plm linear ",
         "panel model, an nlme::lme random-intercept ML model, a pglm::pglm ",
         "random-effects binary or Poisson model, a supported ",
-        "glmmTMB::glmmTMB random-effects model, a supported ",
+        "glmmTMB::glmmTMB or lme4 random-effects model, a VGAM::vglm generalized ordered model, a sampleSelection::selection ML Heckman model, an ordinal::clmm random-intercept ordered model, a supported ",
         "geepack::geeglm model, ",
-        "or a fixest::feols IV model. Unsupported model '",
+        "a fixest::feols IV model, or a fixest::fepois fixed-effects Poisson model. Unsupported model '",
         model_names[unsupported[1L]], "' has class '",
         class(models[[unsupported[1L]]])[1L], "'."
       ),
@@ -297,15 +385,33 @@ suest <- function(
     )
 
   plm_panel_types <- c("panel_fe", "panel_be", "panel_re")
+  glmm_types <- unique(model_types[.suest_is_glmm(model_types)])
   panel_types <- c(
     plm_panel_types, "panel_ml", "panel_gee", "panel_logit_re",
-    "panel_probit_re", "panel_poisson_re", "glmm_logit_ri", "glmm_logit_rs",
-    "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
+    "panel_probit_re", "panel_poisson_re", "panel_poisson_fe", "re_ologit",
+    "re_oprobit", glmm_types
   )
-  if (any(model_types %in% panel_types) &&
-      (length(unique(model_types)) != 1L || !all(model_types %in% panel_types)))
+  # Random-effects models can be combined with each other and with these
+  # ordinary models, all clustered on the shared highest-level group (as in
+  # Stata suest2's multilevel route).
+  multilevel_types <- c(
+    "panel_ml", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
+    "re_ologit", "re_oprobit", glmm_types
+  )
+  partner_types <- c(
+    "lm", "logit", "probit", "cloglog", "poisson", "negbin", "ologit", "oprobit"
+  )
+  is_panel <- model_types %in% panel_types
+  heterogeneous <- any(is_panel) && length(unique(model_types)) > 1L
+  if (heterogeneous && (!all(model_types[is_panel] %in% multilevel_types) ||
+      !all(model_types[!is_panel] %in% partner_types)))
     stop(
-      "Panel models can currently be combined only with other panel models of the same type.",
+      paste0(
+        "Random-effects models (nlme::lme, pglm, glmmTMB) can be combined with ",
+        "each other and with linear, logit, probit, cloglog, Poisson, negative ",
+        "binomial, ordered logit, and ordered probit models. Other panel ",
+        "models (plm, geeglm) can be combined only with models of the same type."
+      ),
       call. = FALSE
     )
 
@@ -353,7 +459,14 @@ suest <- function(
       call. = FALSE
     )
 
-  if (any(model_types == "ivreg") &&
+  if (any(model_types == "heckman") &&
+      !requireNamespace("sampleSelection", quietly = TRUE))
+    stop(
+      "Package 'sampleSelection' is required for Heckman selection models.",
+      call. = FALSE
+    )
+
+  if (any(model_types %in% c("ivreg", "panel_poisson_fe")) &&
       !requireNamespace("fixest", quietly = TRUE))
     stop(
       "Package 'fixest' is required for instrumental-variable models.",
@@ -398,14 +511,14 @@ suest <- function(
       call. = FALSE
     )
 
-  if (any(model_types %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) &&
+  if (any(.suest_is_glmm(model_types)) &&
       !requireNamespace("glmmTMB", quietly = TRUE))
     stop(
       "Package 'glmmTMB' is required for GLMM random-effects models.",
       call. = FALSE
     )
 
-  categorical <- model_types %in% c("ologit", "oprobit", "multinom")
+  categorical <- model_types %in% c("ologit", "oprobit", "multinom", "gologit", "re_ologit", "re_oprobit")
 
   category_levels <- Map(
     .suest_category_levels,
@@ -476,7 +589,7 @@ suest <- function(
         call. = FALSE
       )
 
-    if (type %in% c("panel_poisson_re", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs") &&
+    if ((type %in% c("panel_poisson_re", "panel_poisson_fe") || .suest_glmm_count(type)) &&
         (!is.numeric(y) || is.matrix(y) ||
          any(y < 0 | abs(y - round(y)) > 1e-8)))
       stop(
@@ -486,8 +599,8 @@ suest <- function(
 
     if (type %in% c(
       "logit", "probit", "cloglog", "ivprobit", "hetprobit", "hetlogit",
-      "panel_logit_re", "panel_probit_re", "glmm_logit_ri", "glmm_logit_rs"
-    )) {
+      "panel_logit_re", "panel_probit_re"
+    ) || .suest_glmm_binary(type)) {
       binary <- if (is.factor(y)) {
         nlevels(y) == 2L
       } else if (is.matrix(y)) {
@@ -596,9 +709,8 @@ suest <- function(
   local_names <- lapply(parameters, names)
 
   for (i in which(model_types %in% c(
-    "panel_fe", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
-    "glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
-  )))
+    "panel_fe", "panel_logit_re", "panel_probit_re", "panel_poisson_re"
+  ) | .suest_is_glmm(model_types)))
     models[[i]] <- .suest_set_parameters(
       models[[i]],
       parameters[[i]],
@@ -659,6 +771,9 @@ suest <- function(
       )
   }
 
+  if (is.null(observation_id))
+    .suest_check_row_alignment(model_frames, sources, sample_rows, model_names)
+
   sample_ids <- if (is.null(observation_id)) {
     NULL
   } else {
@@ -683,15 +798,21 @@ suest <- function(
   union_keys <- unique(unlist(sample_keys, use.names = FALSE))
   overlap_keys <- Reduce(intersect, sample_keys)
 
-  cluster_info <- if (is.null(cluster) && all(model_types %in% panel_types)) {
-    .suest_panel_clusters(models, model_frames, model_names)
+  group_name <- if (is.null(cluster) && any(is_panel) &&
+      all(model_types[is_panel] %in% multilevel_types))
+    .suest_shared_group_name(models[is_panel], model_names[is_panel],
+      required = !all(is_panel))
+  cluster_info <- if (is.null(cluster) && any(is_panel)) {
+    .suest_group_clusters(models, model_frames, is_panel, group_name, model_names)
   } else if (is.null(cluster)) {
     NULL
   } else {
     .suest_clusters(models, model_frames, cluster, model_names)
   }
-  if (all(model_types %in% panel_types))
-    .suest_validate_panel_cluster_nesting(models, cluster_info, model_names)
+  if (any(is_panel))
+    .suest_validate_panel_cluster_nesting(
+      models[is_panel], cluster_info[is_panel], model_names[is_panel]
+    )
   union_clusters <- if (is.null(cluster_info)) {
     NULL
   } else {
@@ -726,13 +847,14 @@ suest <- function(
     lapply(seq_along(scores), function(i) {
       # Stata's specialized 2SLS route stacks raw coefficient influences.
       # Ordinary suest models use the system-level G/(G-1) correction.
-      correction <- if (model_types[i] == "ivreg") {
+      # Stata's native xtpoisson, fe vce(robust) applies no G/(G-1) factor.
+      correction <- if (model_types[i] %in% c("ivreg", "panel_poisson_fe")) {
         1
       } else if (model_types[i] %in% c(
                    "panel_ml", "panel_gee", "panel_logit_re",
-                   "panel_probit_re", "panel_poisson_re", "glmm_logit_ri", "glmm_logit_rs",
-                   "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
-                 )) {
+                   "panel_probit_re", "panel_poisson_re",
+                   "re_ologit", "re_oprobit"
+                 ) || .suest_is_glmm(model_types[i])) {
         model_clusters <- length(unique(cluster_info[[i]]$keys))
         if (model_clusters < 2L)
           stop(
@@ -767,6 +889,24 @@ suest <- function(
           )
         (model_clusters / (model_clusters - 1)) *
           ((df_n - 1) / (df_n - k))
+      } else if (heterogeneous) {
+        # Each ordinary model's block equals its own fit with
+        # vce(cluster group), including regress's (N-1)/(N-k).
+        model_clusters <- length(unique(cluster_info[[i]]$keys))
+        if (model_clusters < 2L)
+          stop(
+            sprintf(
+              "Model '%s' must contain at least two clusters.",
+              model_names[i]
+            ),
+            call. = FALSE
+          )
+        small_sample <- if (model_types[i] == "lm") {
+          (n_model[i] - 1) / (n_model[i] - models[[i]]$rank)
+        } else {
+          1
+        }
+        (model_clusters / (model_clusters - 1)) * small_sample
       } else {
         n_clusters / (n_clusters - 1)
       }
@@ -845,6 +985,7 @@ suest <- function(
   out <- list(
     models = models,
     model_frames = model_frames,
+    raw_data = Map(.suest_raw_data, models, model_frames),
     model_weights = model_weights,
     weight_type = weight_type,
     coefficients = b,

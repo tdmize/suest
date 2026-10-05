@@ -9,3 +9,8 @@
 ^UPDATE-INSTRUCTIONS\.txt$
 ^_pkgdown\.yml$
 ^\.superpowers$
+^data-cache$
+^suest_full_test_(output\.txt|results\.csv)$
+^suest_pweight_test_(output\.txt|results\.csv)$
+^.*\.Rcheck$
+^.*\.bundle$

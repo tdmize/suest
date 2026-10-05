@@ -30,10 +30,32 @@
 #' `"imputationResultList"` wrappers are accepted as well. The `mitools`
 #' package is not required for an already-created result list.
 #'
-#' This initial interface supports coefficients, covariance matrices, summaries,
-#' and coefficient-level hypotheses. Predictions, slopes, and comparisons must
-#' be estimated within each imputation and pooled as estimands; they are not yet
-#' implemented for `"suest_mi"` objects.
+#' @section Marginal effects:
+#' Predictions, slopes, comparisons, and hypothesis tests from
+#' `marginaleffects` are estimated within each imputation, using that
+#' imputation's joint SUEST covariance, and then pooled with Rubin's rules, as
+#' Stata's `mimrgns` does. Cross-model differences, such as
+#' `hypothesis = difference ~ revpairwise`, are pooled the same way. This
+#' works on the `"mira"` object from `with(imp, suest(...))` and equally on a
+#' `"suest_mi"` object, so the two give identical results:
+#'
+#' ```
+#' analyses <- with(imp, suest(glm(y ~ x, family = binomial),
+#'                             glm(y ~ x + z, family = binomial)))
+#' marginaleffects::avg_comparisons(analyses, variables = "x",
+#'   hypothesis = difference ~ revpairwise)
+#' marginaleffects::avg_comparisons(suest_mi(analyses), variables = "x",
+#'   hypothesis = difference ~ revpairwise)
+#' ```
+#'
+#' Without `newdata`, each imputation's completed data are used when the
+#' imputations came from `mice`. For a plain list or `mitools` results, each
+#' imputation's own estimation sample is used instead, and `marginaleffects`
+#' warns that it could not recover the original data from a `mids` object;
+#' that warning does not apply to `suest()` results. `mice` warns
+#' "Large sample assumed." because SUEST, like Stata's `suest`, reports
+#' large-sample (z) statistics; the pooled degrees of freedom are then
+#' Rubin's large-sample values, as in Stata's `mi estimate`.
 #'
 #' @return A `"suest_mi"` object containing pooled coefficients, total,
 #'   within-imputation, and between-imputation covariance matrices, Rubin
@@ -149,6 +171,7 @@ suest_mi <- function(fits) {
 
   out <- list(
     fits = fits,
+    analyses = fits,
     coefficients = pooled,
     vcov = total,
     within_vcov = within,
@@ -166,9 +189,11 @@ suest_mi <- function(fits) {
     mice_call = mice_call,
     mice_call1 = mice_call1,
     mitools_call = mitools_call,
-    call = match.call()
+    # marginaleffects recovers the imputed data from a mice call named `call`.
+    call = if (is.null(mice_call)) match.call() else mice_call
   )
-  class(out) <- "suest_mi"
+  # As a "mira", marginaleffects estimates within each imputation and pools.
+  class(out) <- c("suest_mi", "mira")
   out
 }
 

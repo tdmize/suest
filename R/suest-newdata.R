@@ -6,6 +6,9 @@
 #'
 #' @param object A `"suest_model"` returned by [suest()].
 #'
+#' Variables used inside formula transformations, such as `g` in `factor(g)`,
+#' are included from the data the model was fit to.
+#'
 #' @return A data frame with the component model frames stacked vertically and
 #'   internal columns `.suest_model` and `.suest_rowid`, used to route rows
 #'   to the correct component model. For pweighted and survey models, `.suest_weight`
@@ -26,11 +29,21 @@ suest_newdata <- function(object) {
   if (!inherits(object, "suest_model"))
     stop("'object' must be a suest_model.", call. = FALSE)
 
+  raw_data <- object$raw_data
+  if (is.null(raw_data)) raw_data <- vector("list", length(object$model_frames))
+  model_frames <- Map(function(x, raw) {
+    for (nm in setdiff(names(raw), names(x))) x[[nm]] <- raw[[nm]]
+    # Matrix columns such as Surv() responses or poly() terms cannot be
+    # stacked; predictions rebuild them from the raw variables.
+    keep <- vapply(x, function(v) is.atomic(v) && is.null(dim(v)), logical(1))
+    x[keep]
+  }, object$model_frames, raw_data)
+
   reserved <- c(".suest_model", ".suest_rowid")
   if (any(object$weight_type %in% c("pweight", "survey")))
     reserved <- c(reserved, ".suest_weight")
   if (any(vapply(
-    object$model_frames,
+    model_frames,
     function(x) any(reserved %in% names(x)),
     logical(1)
   )))
@@ -43,12 +56,12 @@ suest_newdata <- function(object) {
   # sets cannot be corrupted by row binding, then restore factor classes from
   # the component model frames below.
   factor_names <- unique(unlist(lapply(
-    object$model_frames,
+    model_frames,
     function(x) names(x)[vapply(x, is.factor, logical(1))]
   ), use.names = FALSE))
 
   factor_specs <- lapply(factor_names, function(nm) {
-    present <- lapply(object$model_frames, function(x) {
+    present <- lapply(model_frames, function(x) {
       if (nm %in% names(x)) x[[nm]] else NULL
     })
     present <- Filter(Negate(is.null), present)
@@ -74,13 +87,13 @@ suest_newdata <- function(object) {
   names(factor_specs) <- factor_names
 
   row_offset <- c(0L, cumsum(vapply(
-    object$model_frames,
+    model_frames,
     nrow,
     integer(1)
-  ))[-length(object$model_frames)])
+  ))[-length(model_frames)])
 
-  frames <- lapply(seq_along(object$model_frames), function(i) {
-    x <- object$model_frames[[i]]
+  frames <- lapply(seq_along(model_frames), function(i) {
+    x <- model_frames[[i]]
 
     for (nm in names(x)) {
       if (is.factor(x[[nm]]))
@@ -121,3 +134,31 @@ suest_newdata <- function(object) {
 }
 
 # marginaleffects extension methods
+
+# Data marginaleffects uses when `newdata` is omitted, and that `datagrid()`
+# builds its grid from. When every model has the same estimation sample, one
+# row per observation with every model's variables: each model is then
+# averaged over its own sample, and grids include every model's predictors.
+# Otherwise each model's own sample, stacked as in suest_newdata().
+.suest_default_data <- function(object) {
+  stacked <- suest_newdata(object)
+  keys <- object$sample_keys
+  same_sample <- length(keys) > 1L &&
+    all(vapply(keys[-1L], identical, logical(1), keys[[1L]]))
+  if (!same_sample) return(stacked)
+
+  blocks <- split(stacked, factor(stacked$.suest_model,
+    levels = object$model_names))
+  out <- blocks[[1L]]
+  for (block in blocks[-1L]) {
+    for (nm in names(out)) {
+      fill <- is.na(out[[nm]]) & !is.na(block[[nm]])
+      if (any(fill)) out[[nm]][fill] <- block[[nm]][fill]
+    }
+  }
+  out$.suest_model <- NULL
+  out$.suest_rowid <- NULL
+  rownames(out) <- NULL
+  class(out) <- "data.frame"
+  out
+}

@@ -80,15 +80,16 @@ test_that("beta-regression precision parameters enter the joint covariance", {
 
   expect_true("Constant::(phi)" %in% names(coef(fit)))
   expect_true("Variable::(phi)_z" %in% names(coef(fit)))
+  # Observed-information sandwich, as in Stata's betareg.
   expect_equal(
     unname(vcov(fit)[fit$index[[1L]], fit$index[[1L]], drop = FALSE]),
-    unname(robust_vcov_direct(constant_precision)),
-    tolerance = 1e-8
+    unname(betareg_observed_vcov_direct(constant_precision)),
+    tolerance = 1e-4
   )
   expect_equal(
     unname(vcov(fit)[fit$index[[2L]], fit$index[[2L]], drop = FALSE]),
-    unname(robust_vcov_direct(variable_precision)),
-    tolerance = 1e-8
+    unname(betareg_observed_vcov_direct(variable_precision)),
+    tolerance = 1e-4
   )
 })
 

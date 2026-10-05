@@ -165,8 +165,8 @@ test_that("NB2 random-slope systems align all seven parameter influences across 
   expect_error(suest(first, second, observation_id = c("id", "time"), cluster = "time"), "Panel IDs must be nested", fixed = TRUE)
   intercept <- glmmtmb_nbinom2_rs_fit(y1 ~ x + z + (1 | id), dat)
   poisson <- glmmTMB::glmmTMB(y1 ~ x + z + (1 + x | id), data = dat, family = poisson())
-  expect_error(suest(first, intercept), "same type", fixed = TRUE)
-  expect_error(suest(first, poisson), "same type", fixed = TRUE)
+  expect_s3_class(suest(first, intercept, observation_id = c("id", "time")), "suest_model")
+  expect_s3_class(suest(first, poisson, observation_id = c("id", "time")), "suest_model")
 })
 
 test_that("NB2 random slopes enforce the dispersion and random-effect support contract", {

@@ -157,7 +157,7 @@ test_that("suest_mi accepts a real mitools imputationList workflow", {
   expect_equal(vcov(from_legacy), vcov(pooled), tolerance = 1e-14)
 })
 
-test_that("coefficient hypotheses work but MI predictions fail explicitly", {
+test_that("coefficient hypotheses pool the same as the pooled coefficients", {
   pooled <- suest_mi(mi_test_fits())
   hypothesis <- suppressWarnings(
     marginaleffects::hypotheses(pooled, hypothesis = "b1 = b2")
@@ -167,6 +167,46 @@ test_that("coefficient hypotheses work but MI predictions fail explicitly", {
     unname(coef(pooled)[1L] - coef(pooled)[2L]), tolerance = 1e-12)
   expect_equal(hypothesis$std.error,
     sqrt(drop(gradient %*% vcov(pooled) %*% gradient)), tolerance = 1e-8)
-  expect_error(marginaleffects::predictions(pooled, newdata = mtcars[1L, ]),
-    "not yet implemented")
+})
+
+test_that("marginal effects are pooled within imputations by Rubin's rules", {
+  skip_if_not_installed("mice")
+  set.seed(2026)
+  n <- 300L
+  d <- data.frame(x = rnorm(n), z = rnorm(n))
+  d$y <- rbinom(n, 1L, plogis(-0.2 + 0.7*d$x + 0.5*d$z))
+  d$z[sample(n, 60L)] <- NA
+  imp <- mice::mice(d, m = 3L, method = c("", "norm", ""), maxit = 2L,
+    printFlag = FALSE, seed = 11)
+  analyses <- with(imp, suest(
+    glm(y ~ x, family = binomial),
+    glm(y ~ x + z, family = binomial),
+    model_names = c("Base", "Full")
+  ))
+  difference <- function(fit) suppressWarnings(
+    marginaleffects::avg_comparisons(fit, variables = "x",
+      hypothesis = difference ~ revpairwise))
+
+  per_imputation <- lapply(analyses$analyses, difference)
+  estimates <- vapply(per_imputation, `[[`, numeric(1), "estimate")
+  variances <- vapply(per_imputation, `[[`, numeric(1), "std.error")^2
+  m <- length(estimates)
+  between <- stats::var(estimates)
+  total <- mean(variances) + (1 + 1/m)*between
+  rubin_df <- (m - 1)*(1 + mean(variances)/((1 + 1/m)*between))^2
+
+  from_mira <- difference(analyses)
+  from_suest_mi <- difference(suest_mi(analyses))
+  from_list <- difference(suest_mi(analyses$analyses))
+  for (result in list(from_mira, from_suest_mi, from_list)) {
+    expect_equal(result$estimate, mean(estimates), tolerance = 1e-12)
+    expect_equal(result$std.error, sqrt(total), tolerance = 1e-10)
+    expect_equal(result$df, rubin_df, tolerance = 1e-8)
+  }
+
+  by_model <- suppressWarnings(
+    marginaleffects::avg_predictions(suest_mi(analyses)))
+  expected <- rowMeans(vapply(analyses$analyses, function(fit)
+    marginaleffects::avg_predictions(fit)$estimate, numeric(2)))
+  expect_equal(by_model$estimate, expected, tolerance = 1e-12)
 })

@@ -13,7 +13,7 @@ test_that("unsupported glmmTMB family diagnostics give the family and link", {
   d <- data.frame(id = factor(rep(seq_len(18), each = 6)), x = rnorm(108))
   d$y <- exp(.3 + .2*d$x + rep(rnorm(18, sd = .3), each = 6) +
     rnorm(108, sd = .15))
-  fit <- glmmTMB::glmmTMB(y ~ x + (1 | id), data = d,
-    family = stats::Gamma(link = "log"))
-  expect_error(suest(fit, fit), "family 'Gamma'.*link 'log'")
+  fit <- suppressWarnings(glmmTMB::glmmTMB(y ~ x + (1 | id), data = d,
+    family = glmmTMB::tweedie()))
+  expect_error(suest(fit, fit), "family 'tweedie'.*link 'log'")
 })

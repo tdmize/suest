@@ -29,11 +29,13 @@
   family <- model$family$family
   link <- model$family$link
   if (identical(family, "gaussian") && identical(link, "identity")) return("survey_lm")
-  if (identical(family, "quasibinomial") && link %in% c("logit", "probit")) return(link)
+  if (identical(family, "quasibinomial") && link %in% c("logit", "probit", "cloglog"))
+    return(link)
+  if (identical(family, "quasipoisson") && identical(link, "log")) return("poisson")
   "unsupported"
 }
 
-# Direct reconstruction from the retained GLM fitting state, independent of
+# Direct reconstruction from the retained GLM fitting state (any GLM family), independent of
 # survey's optional stored influence. Algebraically, the working residual times
 # the final working weight is w_i (y_i-mu_i) mu'_i / V(mu_i), and naive.cov is
 # the inverse expected information used by svyglm(). Using the retained values
@@ -59,9 +61,7 @@
     stop("Survey systems currently require only survey::svyglm() models.", call. = FALSE)
   types <- vapply(models, .suest_survey_type, character(1))
   if (any(types == "unsupported"))
-    stop("Survey support is restricted to Gaussian identity and quasibinomial logit/probit svyglm() models.", call. = FALSE)
-  if (any(types == "survey_lm") && any(types != "survey_lm"))
-    stop("This survey increment does not combine Gaussian and binary survey models in one system.", call. = FALSE)
+    stop("Survey support is restricted to Gaussian identity, quasibinomial logit/probit/cloglog, and quasipoisson log svyglm() models.", call. = FALSE)
   if (is.null(design))
     stop("Supply the full common survey design with survey_design =, including observations outside the model samples.", call. = FALSE)
   if (!is.null(cluster) || !is.null(weight_type))
@@ -125,6 +125,10 @@
     if (type == "survey_lm") {
       if (!is.numeric(y) || is.matrix(y) || any(!is.finite(y)) || basic_bad)
         stop("Survey linear models require a full-rank numeric response, positive weights, and residual observations.", call. = FALSE)
+    } else if (type == "poisson") {
+      if (is.null(y) || !is.numeric(y) || is.matrix(y) || any(!is.finite(y)) ||
+          any(y < 0) || basic_bad)
+        stop("Survey Poisson models require a full-rank nonnegative numeric response, positive weights, and residual observations.", call. = FALSE)
     } else if (is.null(y) || !is.numeric(y) || is.matrix(y) || any(!is.finite(y)) ||
                any(!y %in% c(0, 1)) || basic_bad) {
       stop("Survey binary models require a full-rank numeric 0/1 response, positive weights, and residual observations.", call. = FALSE)

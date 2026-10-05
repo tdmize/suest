@@ -80,7 +80,7 @@ test_that("observation IDs align models fitted from different data objects", {
     subset = id >= 151
   )
 
-  default <- suest(separate1, separate2)
+  expect_warning(default <- suest(separate1, separate2), "different data objects")
   reference <- suest(common1, common2)
   aligned <- suest(
     separate1,

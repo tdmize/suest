@@ -1,5 +1,134 @@
 # suest 0.1.6.9000 (development)
 
+* Random-intercept ordered logit and probit models from `ordinal::clmm()`
+  (Stata's `meologit`, `meoprobit`, `xtologit`, `xtoprobit`) are now
+  supported, alone or combined with other models. suest computes their
+  scores and observed information from its own per-group likelihood
+  (Laplace or adaptive quadrature, as fitted), which reproduces clmm's log
+  likelihood. Predictions are category probabilities integrated over the
+  random intercept. A two-category `clmm()` matches the corresponding
+  `glmer()` system.
+
+* Maximum-likelihood Heckman selection models from
+  `sampleSelection::selection(method = "ml")` (Stata's `heckman`) are now
+  supported, with Stata's `lnsigma` and `athrho` parameters. Predictions are
+  the outcome equation's linear prediction, Stata's default. Scores and
+  information match an independently coded likelihood.
+
+* Generalized ordered logit models (Stata's `gologit2`) are now supported
+  through `VGAM::vglm()` with the `cumulative()` family: unconstrained,
+  proportional, and partial proportional odds forms, with logit, probit, or
+  cloglog links. suest computes the scores analytically and uses observed
+  information, as Stata does (VGAM's own covariance uses expected
+  information). A proportional-odds `vglm()` gives the same joint covariance
+  as `MASS::polr()`.
+
+* Fixed-effects Poisson models from `fixest::fepois()` (Stata's
+  `xtpoisson, fe`) are now supported, clustered on the absorbed fixed effect.
+  Each model's block equals Stata's native `xtpoisson, fe vce(robust)`
+  (fixest's clustered covariance with no small-sample or `G/(G-1)`
+  adjustment). Response predictions include each unit's fixed effect,
+  written as a function of the coefficients so the delta method accounts for
+  it; link-scale effects equal the coefficients.
+
+* Survey systems can now mix linear, binary, and count models, as Stata's
+  `svy:` with suest2 does, and accept binary cloglog (`quasibinomial("cloglog")`)
+  and Poisson (`quasipoisson()`) `svyglm()` models. Before, only linear or
+  only binary logit/probit models could be combined. Each model's native
+  design-based covariance is still reproduced before the joint matrix is
+  returned.
+
+* lme4 models are now supported: `lmer()` fit with `REML = FALSE`, and
+  `glmer()` binomial (logit, probit, cloglog) and Poisson models, with a
+  random intercept or one correlated slope. suest computes their scores and
+  observed information from its own per-group likelihood (exact for `lmer`,
+  Laplace or adaptive quadrature with the fit's `nAGQ` for `glmer`), which
+  reproduces lme4's log likelihood; `lmer` scores match merDeriv's analytic
+  scores. `glmer(..., nAGQ = 7)` corresponds to Stata's
+  `intmethod(mcaghermite) intpoints(7)`.
+
+* `glmmTMB` random-effects models now include binary probit and cloglog,
+  Gaussian (identity link), and Gamma (log link) families, with a random
+  intercept or one correlated random slope, alongside logit, Poisson, and NB2.
+  Population-averaged response predictions integrate over the random effects.
+  Gaussian models add `log_sigma_e` (log residual standard deviation) and
+  Gamma models `log_shape` (Stata's `/logs` is `-log_shape/2`). Scores match
+  an independently coded Laplace likelihood for each family. Gaussian models
+  (from `glmmTMB()` or `lmer()`) use the covariance layout of Stata's
+  `mixed`: `(X'V^-1 X)^-1` for the fixed effects, the full-information
+  inverse for the variance parameters, and no cross block; joint covariances
+  match `suest2` with `mixed` to about 3e-6. These are the R counterparts of Stata's
+  `meprobit`, `mecloglog`, `mixed`, and `meglm, family(gamma) link(log)`.
+
+* Random-effects models (`nlme::lme()`, `pglm()`, `glmmTMB()`) can now be
+  combined with ordinary linear, logit, probit, cloglog, Poisson, negative
+  binomial, ordered logit, and ordered probit models, and with random-effects
+  models of other families (for example, a random-intercept logit with a
+  random-intercept Poisson), as in Stata's suest2 1.1.0. All random-effects
+  models must use the same grouping variable; the system is clustered on it,
+  and each model's block equals its own fit with standard errors clustered on
+  the group (with the `(N - 1)/(N - k)` adjustment for linear models). Before,
+  panel and multilevel models combined only with models of exactly the same
+  type.
+
+* Multiple imputation: `marginaleffects` predictions, slopes, comparisons,
+  and hypothesis tests, including cross-model differences such as
+  `hypothesis = difference ~ revpairwise`, are now estimated within each
+  imputation and pooled with Rubin's rules, as Stata's `mimrgns` does. This
+  works on the object from `with(imp, suest(...))` and on `suest_mi()`
+  results, which before gave an error. `mice` warns "Large sample assumed.";
+  that is expected, since SUEST reports large-sample statistics.
+
+* GLMs with non-canonical links (binary cloglog; fractional probit, cloglog,
+  and log-log; other GLMs such as Gamma with a log link) and beta regressions
+  now use observed rather than expected information in the sandwich bread,
+  as Stata does and as binary probit already did. A returned Stata 19.5 run
+  of `suest2` now matches these systems' full joint covariance (largest
+  relative gap 6e-5, from optimizer differences); before, standard errors
+  differed by up to about 2.5% in the benchmark. Canonical links (logit,
+  Poisson log, Gaussian identity) are unchanged.
+
+* Fixed `survreg` models written with a bare `Surv()` (after
+  `library(survival)`) being treated as fit to different data. survival
+  wraps each formula in its own environment, so two models on the same data
+  were treated as having no observations in common: the cross-model
+  covariance was dropped and N doubled. Data sources are now matched on the
+  environment that holds the data object.
+
+* `suest()` now stops when models fit to the same data object have rows with
+  the same row names but different values, as happens when the data are
+  filtered and renumbered between fits. Before, those rows were silently
+  matched as the same observations.
+
+* `suest()` now warns when models fit to different data objects share row
+  names with identical values, which suggests overlapping observations
+  (for example, `data = d[d$id <= 400, ]` and `data = d[d$id > 200, ]`).
+  Such models are still treated as having no observations in common unless
+  `observation_id` is supplied.
+
+* Zero-inflated negative-binomial `pscl::zeroinfl()` fits no longer need
+  `x = TRUE`.
+
+* `suest_newdata()` now includes variables used inside formula
+  transformations, such as `g` in `factor(g)` or `x` in `log(x)`, and drops
+  matrix columns such as `Surv()` responses and `poly()` terms. Model-specific
+  averaging failed for such formulas and for every `survreg` system.
+
+* `marginaleffects` functions now work without `newdata`: each model is
+  averaged over its own estimation sample, the same as
+  `newdata = suest_newdata(fit)`. `datagrid()` now fills in every model's
+  variables when the models share one estimation sample; when they do not,
+  the error explains how to add `.suest_model` to the grid.
+
+* Models fit with `na.action = na.exclude` are now accepted.
+
+* Unsupported S4 model objects, such as `lme4::glmer()` fits, now get the
+  unsupported-model error naming their class.
+
+* Requires sandwich 3.1-1 or later. Earlier versions use the robust rather
+  than the model-based variance as the bread for `survreg` fits with
+  `robust = TRUE`.
+
 * Models fit on different samples: the joint covariance now applies one
   N/(N-1) correction, with N the number of observations in the combined
   samples, as Stata's `suest` does and as the weighted and clustered systems

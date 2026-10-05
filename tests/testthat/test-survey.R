@@ -128,7 +128,8 @@ test_that("survey restrictions reject ambiguous or unsupported designs", {
   expect_error(run(weight_type = "pweight"), "without cluster")
   expect_error(suest(a, lm(y ~ x, d$variables), survey_design = d, observation_id = "id"), "only survey")
   binary <- survey::svyglm(I(y > 2) ~ x, d, family = quasibinomial())
-  expect_error(suest(a, binary, survey_design = d, observation_id = "id"), "does not combine Gaussian and binary")
+  mixed <- suest(a, binary, survey_design = d, observation_id = "id")
+  expect_equal(unname(vcov(mixed)[3:4, 3:4]), unname(vcov(binary)), tolerance = 1e-10)
   wrong <- d
   wrong$prob[1] <- wrong$prob[1] / 2
   expect_error(run(wrong), "must agree")
@@ -361,13 +362,35 @@ test_that("survey binary restrictions remain narrow", {
   wrong$cov.unscaled <- wrong$cov.unscaled * 1.01
   expect_error(suest(logit, wrong, survey_design = d, observation_id = "id"), "native design-based covariance")
   cloglog <- survey::svyglm(yb ~ x, d, family = quasibinomial("cloglog"))
-  expect_error(suest(logit, cloglog, survey_design = d, observation_id = "id"), "quasibinomial logit/probit")
+  expect_no_error(suest(logit, cloglog, survey_design = d, observation_id = "id"))
   binomial <- suppressWarnings(survey::svyglm(yb ~ x, d, family = binomial("logit")))
-  expect_error(suest(logit, binomial, survey_design = d, observation_id = "id"), "quasibinomial logit/probit")
+  expect_error(suest(logit, binomial, survey_design = d, observation_id = "id"), "quasibinomial logit/probit/cloglog")
   linear <- survey::svyglm(y ~ x, d)
-  expect_error(suest(linear, logit, survey_design = d, observation_id = "id"), "does not combine Gaussian and binary")
+  expect_no_error(suest(linear, logit, survey_design = d, observation_id = "id"))
   raw$frac <- (raw$yb + .25) / 1.5
   frac_design <- survey::svydesign(~psu, strata = ~strata, weights = ~w, data = raw)
   frac <- survey::svyglm(frac ~ x, frac_design, family = quasibinomial("logit"))
   expect_error(suest(frac, frac, survey_design = frac_design, observation_id = "id"), "numeric 0/1 response")
+})
+
+test_that("survey systems combine linear, binary, and Poisson models", {
+  withr::local_options(survey.lonely.psu = "fail", survey.adjust.domain.lonely = FALSE)
+  fixture <- survey_fixture()
+  raw <- fixture$data
+  set.seed(8042)
+  raw$count <- rpois(nrow(raw), exp(0.3 + 0.4*raw$x))
+  raw$yb <- as.integer(raw$y > 2)
+  d <- survey::svydesign(~psu, strata = ~strata, weights = ~w, data = raw)
+  linear <- survey::svyglm(y ~ x + z, d, influence = TRUE)
+  binary <- survey::svyglm(yb ~ x, d, family = quasibinomial("probit"), influence = TRUE)
+  count <- survey::svyglm(count ~ x, d, family = quasipoisson(), influence = TRUE)
+  fit <- suest(linear, binary, count, survey_design = d, observation_id = "id",
+    model_names = c("linear", "probit", "poisson"))
+  expect_identical(unname(fit$model_types), c("survey_lm", "probit", "poisson"))
+  expect_equal(unname(vcov(fit)), unname(survey_manual_joint(list(linear, binary, count), d)),
+    tolerance = 1e-8)
+  expect_equal(unname(vcov(fit)[6:7, 6:7]), unname(vcov(count)), tolerance = 1e-10)
+  effects <- marginaleffects::avg_slopes(fit, variables = "x", newdata = raw)
+  expect_identical(nrow(effects), 3L)
+  expect_true(all(is.finite(effects$std.error)))
 })

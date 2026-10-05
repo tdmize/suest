@@ -180,14 +180,66 @@
   }
 })
 
+# glmmTMB families supported by suest: type key, glmmTMB family and link, and
+# the name of the family's dispersion parameter (NA when it has none).
+# Mean of 1 - exp(-exp(eta + sigma*u)) for standard normal u, by a fixed
+# 320-point Gauss-Hermite rule (smooth in eta and sigma).
+.suest_cloglog_normal_mean <- local({
+  rule <- NULL
+  function(eta, sigma) {
+    if (length(eta) != length(sigma) || any(!is.na(sigma) & (!is.finite(sigma) | sigma < 0)))
+      stop("Cloglog-normal predictions require finite nonnegative standard deviations.", call. = FALSE)
+    if (is.null(rule)) {
+      rule <<- .suest_normal_quadrature(320L)
+      rule$nodes <<- (rule$nodes - rev(rule$nodes))/2
+      rule$weights <<- (rule$weights + rev(rule$weights))/2
+      rule$weights <<- rule$weights/sum(rule$weights)
+    }
+    result <- rep(NA_real_, length(eta))
+    ok <- is.finite(eta) & !is.na(sigma)
+    if (any(ok))
+      result[ok] <- drop(-expm1(-exp(outer(sigma[ok], rule$nodes) + eta[ok])) %*%
+        rule$weights)
+    result
+  }
+})
+
+.suest_glmm_family_table <- data.frame(
+  key = c("logit", "probit", "cloglog", "poisson", "nbinom2", "gaussian", "gamma"),
+  family = c("binomial", "binomial", "binomial", "poisson", "nbinom2", "gaussian", "Gamma"),
+  link = c("logit", "probit", "cloglog", "log", "log", "identity", "log"),
+  dispersion = c(NA, NA, NA, NA, "log_phi", "log_sigma_e", "log_shape"),
+  stringsAsFactors = FALSE
+)
+
+.suest_is_glmm <- function(type) grepl("^glmm_[a-z0-9]+_r[is]$", type)
+
+.suest_glmm_family <- function(type) sub("^glmm_([a-z0-9]+)_r[is]$", "\\1", type)
+
+.suest_glmm_slope <- function(type) .suest_is_glmm(type) & endsWith(type, "_rs")
+
+.suest_glmm_dispersion_name <- function(type) {
+  table <- .suest_glmm_family_table
+  table$dispersion[match(.suest_glmm_family(type), table$key)]
+}
+
+.suest_glmm_binary <- function(type)
+  .suest_is_glmm(type) & .suest_glmm_family(type) %in% c("logit", "probit", "cloglog")
+
+.suest_glmm_count <- function(type)
+  .suest_is_glmm(type) & .suest_glmm_family(type) %in% c("poisson", "nbinom2")
+
+.suest_glmm_key <- function(family) {
+  table <- .suest_glmm_family_table
+  hit <- which(table$family == family$family & table$link == family$link)
+  if (length(hit) == 1L) table$key[hit] else NA_character_
+}
+
 .suest_glmmtmb_random_info <- function(model) {
   random <- model$modelInfo$reTrms$cond
   columns <- if (length(random$cnms) == 1L) unname(random$cnms[[1L]]) else character()
   slope <- length(columns) == 2L && identical(columns[1L], "(Intercept)") &&
-    ((model$modelInfo$family$family %in% c("poisson", "nbinom2") &&
-      identical(model$modelInfo$family$link, "log")) ||
-     (identical(model$modelInfo$family$family, "binomial") &&
-      identical(model$modelInfo$family$link, "logit")))
+    !is.na(.suest_glmm_key(model$modelInfo$family))
   if (!is.list(random) || length(random$cnms) != 1L ||
         length(random$flist) != 1L ||
       (!identical(columns, "(Intercept)") && !slope))
@@ -223,44 +275,48 @@
 }
 
 .suest_model_adapter <- function(model) {
+  if (inherits(model, "suest_lme4"))
+    return(.suest_lme4_adapter(model))
+  if (inherits(model, "suest_vglm"))
+    return(.suest_vglm_adapter(model))
+  if (inherits(model, "selection"))
+    return(.suest_heckman_adapter(model))
+  if (inherits(model, "clmm"))
+    return(.suest_clmm_adapter(model))
+  if (isS4(model) || !is.list(model))
+    return(list(engine = class(model)[1L], type = "unsupported"))
   if (inherits(model, "svyglm"))
     stop("Survey models require the dedicated survey_design route in suest().", call. = FALSE)
   .suest_reject_adjusted_glm(model)
 
   if (inherits(model, "glmmTMB")) {
     family <- model$modelInfo$family
-    model_type <- if (identical(family$family, "binomial") &&
-                      identical(family$link, "logit")) {
-      "glmm_logit_ri"
-    } else if (identical(family$family, "poisson") &&
-               identical(family$link, "log")) {
-      "glmm_poisson_ri"
-    } else if (identical(family$family, "nbinom2") &&
-               identical(family$link, "log")) {
-      "glmm_nbinom2_ri"
-    } else {
+    key <- .suest_glmm_key(family)
+    if (is.na(key))
       stop(
         paste0(
-          "glmmTMB support is currently limited to binomial-logit, ",
-          "Poisson-log, and nbinom2-log models with one conditional random intercept ",
-          "or one correlated intercept and numeric slope; ",
-          "received family '", family$family, "' with link '", family$link, "'."
+          "glmmTMB support is currently limited to binomial (logit, probit, ",
+          "cloglog), Poisson-log, nbinom2-log, Gaussian-identity, and Gamma-log ",
+          "models with one conditional random intercept or one correlated ",
+          "intercept and numeric slope; received family '", family$family,
+          "' with link '", family$link, "'."
         ),
         call. = FALSE
       )
-    }
+    model_type <- paste0("glmm_", key, "_ri")
+    dispersion_name <- .suest_glmm_dispersion_name(model_type)
 
     random <- .suest_glmmtmb_random_info(model)
     if (!is.null(random$slope)) model_type <- sub("_ri$", "_rs", model_type)
     if (length(model$modelInfo$reStruc$ziReStruc) ||
         length(model$modelInfo$reStruc$dispReStruc) ||
         length(glmmTMB::fixef(model)$zi) ||
-        (!model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs") && length(glmmTMB::fixef(model)$disp)))
+        (is.na(dispersion_name) && length(glmmTMB::fixef(model)$disp)))
       stop(
         "Zero-inflation and dispersion submodels are not supported for glmmTMB models.",
         call. = FALSE
       )
-    if (model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs")) {
+    if (!is.na(dispersion_name)) {
       dispersion_terms <- stats::terms(model$modelInfo$allForm$dispformula)
       log_phi <- model$fit$par[names(model$fit$par) == "betadisp"]
       beta <- glmmTMB::fixef(model)$cond
@@ -269,23 +325,25 @@
           length(attr(dispersion_terms, "offset")) || length(log_phi) != 1L ||
           !is.finite(log_phi) || !is.finite(exp(log_phi)) || exp(log_phi) <= 0)
         stop(
-          "glmmTMB nbinom2 requires one estimated, finite constant dispersion (dispformula = ~1).",
+          sprintf("glmmTMB %s requires one estimated, finite constant dispersion (dispformula = ~1).", key),
           call. = FALSE
         )
       if (length(model$obj$env$map) ||
           !identical(names(model$fit$par), c(rep("beta", length(beta)), "betadisp", rep("theta", if (is.null(random$slope)) 1L else 3L))))
-        stop("Mapped or constrained glmmTMB nbinom2 parameters are not supported.", call. = FALSE)
-      reserved <- if (is.null(random$slope)) c("log_phi", "log_sigma") else "log_phi"
+        stop(sprintf("Mapped or constrained glmmTMB %s parameters are not supported.", key), call. = FALSE)
+      reserved <- if (is.null(random$slope)) c(dispersion_name, "log_sigma") else dispersion_name
       if (any(names(beta) %in% reserved))
-        stop(paste("glmmTMB nbinom2 reserves coefficient names", paste(reserved, collapse = " and ")), call. = FALSE)
+        stop(sprintf("glmmTMB %s reserves coefficient names %s", key, paste(reserved, collapse = " and ")), call. = FALSE)
     }
-    if (model_type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+    if (.suest_glmm_slope(model_type)) {
       beta <- glmmTMB::fixef(model)$cond
       if (length(model$obj$env$map) || !identical(names(model$fit$par),
-          c(rep("beta", length(beta)), if (model_type == "glmm_nbinom2_rs") "betadisp", rep("theta", 3L))))
+          c(rep("beta", length(beta)), if (!is.na(dispersion_name)) "betadisp", rep("theta", 3L))))
         stop("Mapped or constrained glmmTMB random-slope parameters are not supported.", call. = FALSE)
       if (any(names(beta) %in% c("log_sd_intercept", "log_sd_slope", "atanh_rho")))
         stop("Random-slope models reserve names log_sd_intercept, log_sd_slope, and atanh_rho.", call. = FALSE)
+    } else if (is.na(dispersion_name) && "log_sigma" %in% names(glmmTMB::fixef(model)$cond)) {
+      stop("glmmTMB random-intercept models reserve the coefficient name log_sigma.", call. = FALSE)
     }
     if (isTRUE(model$modelInfo$REML))
       stop("glmmTMB models must use maximum likelihood.", call. = FALSE)
@@ -301,7 +359,7 @@
         length(fit_data$offset) != nrow(model$frame) ||
         any(!is.finite(fit_data$offset)) || any(fit_data$offset != 0))
       stop("Offsets are not supported for glmmTMB models.", call. = FALSE)
-    if (model_type %in% c("glmm_logit_ri", "glmm_logit_rs") &&
+    if (.suest_glmm_binary(model_type) &&
         (length(fit_data$size) != nrow(model$frame) ||
          any(fit_data$size != 1)))
       stop(
@@ -320,7 +378,7 @@
       )
 
     theta <- model$fit$par[names(model$fit$par) == "theta"]
-    if (model_type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+    if (.suest_glmm_slope(model_type)) {
       sd <- exp(theta[1:2]); rho <- tanh(asinh(theta[3L]))
       x <- model$frame[[random$slope]]
       center <- mean(x); spread <- stats::sd(x)
@@ -698,6 +756,9 @@
     return(list(engine = "plm::plm", type = panel_type))
   }
 
+  if (inherits(model, "fixest") && identical(model$method, "fepois"))
+    return(.suest_fepois_adapter(model))
+
   if (inherits(model, "fixest")) {
     valid_iv <- identical(model$method, "feols") && isTRUE(model$is_iv) &&
       identical(as.integer(model$iv_stage), 2L)
@@ -778,6 +839,16 @@
 
 .suest_model_frame <- function(model, engine) {
   engine <- .suest_engine_name(engine)
+  if (inherits(model, "suest_lme4"))
+    return(.suest_lme4_frame(model))
+  if (identical(engine, "fixest::fepois"))
+    return(.suest_fepois_frame(model))
+  if (inherits(model, "suest_vglm"))
+    return(.suest_vglm_frame(model))
+  if (identical(engine, "sampleSelection::selection"))
+    return(.suest_heckman_frame(model))
+  if (identical(engine, "ordinal::clmm"))
+    return(.suest_clmm_frame(model))
   if (identical(engine, "Rchoice::hetprob"))
     return(model$mf)
   if (identical(engine, "Rchoice::ivpml"))
@@ -964,6 +1035,10 @@
   engine <- .suest_engine_name(engine)
   if (identical(engine, "ordinal::clm")) {
     model$y.levels
+  } else if (identical(engine, "VGAM::vglm")) {
+    .suest_vglm_info(model)$levels
+  } else if (identical(engine, "ordinal::clmm")) {
+    model$y.levels
   } else if (engine %in% c("MASS::polr", "nnet::multinom")) {
     model$lev
   } else {
@@ -973,7 +1048,7 @@
 
 .suest_set_parameters <- function(model, parameters, type, engine) {
   engine <- .suest_engine_name(engine)
-  if (type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+  if (.suest_is_glmm(type)) {
     model$suest_parameters <- parameters
     return(model)
   }
@@ -990,6 +1065,11 @@
       model$beta <- numeric(0)
     }
 
+    return(model)
+  }
+
+  if (type %in% c("gologit", "heckman", "re_ologit", "re_oprobit")) {
+    model$suest_parameters <- parameters
     return(model)
   }
 
@@ -1132,6 +1212,10 @@
 
 .suest_predict_probabilities <- function(model, newdata, engine) {
   engine <- .suest_engine_name(engine)
+  if (identical(engine, "VGAM::vglm"))
+    return(.suest_vglm_predict(model, newdata))
+  if (identical(engine, "ordinal::clmm"))
+    return(.suest_clmm_predict(model, newdata))
   if (identical(engine, "ordinal::clm")) {
     response <- all.vars(stats::formula(model))[1L]
     prediction_data <- newdata
@@ -1177,52 +1261,70 @@
   }
   engine <- .suest_engine_name(engine)
 
-  if (model_type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+  if (.suest_is_glmm(model_type)) {
     parameters <- if (!is.null(model$suest_parameters)) {
       model$suest_parameters
     } else {
       .suest_extract_parameters(model, model_type, engine)
     }
-    beta_names <- names(glmmTMB::fixef(model)$cond)
-    terms <- stats::delete.response(stats::terms(model))
-    prediction_frame <- stats::model.frame(
-      terms, newdata, na.action = stats::na.pass,
-      xlev = .suest_glmmtmb_xlevels(model)
-    )
-    X <- stats::model.matrix(
-      terms, prediction_frame,
-      contrasts.arg = model$modelInfo$contrasts$cond[
-        intersect(names(model$modelInfo$contrasts$cond), names(prediction_frame))
-      ]
-    )
-    missing <- setdiff(beta_names, colnames(X))
-    if (length(missing))
-      stop(
-        "Unable to construct the glmmTMB random-effects prediction matrix.",
-        call. = FALSE
+    lme4_model <- inherits(model, "suest_lme4")
+    eta <- if (lme4_model) {
+      .suest_lme4_eta(model, parameters, newdata)
+    } else {
+      beta_names <- names(glmmTMB::fixef(model)$cond)
+      terms <- stats::delete.response(stats::terms(model))
+      prediction_frame <- stats::model.frame(
+        terms, newdata, na.action = stats::na.pass,
+        xlev = .suest_glmmtmb_xlevels(model)
       )
-    eta <- as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+      X <- stats::model.matrix(
+        terms, prediction_frame,
+        contrasts.arg = model$modelInfo$contrasts$cond[
+          intersect(names(model$modelInfo$contrasts$cond), names(prediction_frame))
+        ]
+      )
+      missing <- setdiff(beta_names, colnames(X))
+      if (length(missing))
+        stop(
+          "Unable to construct the glmmTMB random-effects prediction matrix.",
+          call. = FALSE
+        )
+      as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+    }
     if (identical(type, "link"))
       return(eta)
 
-    if (model_type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
-      variable <- .suest_glmmtmb_random_info(model)$slope
+    # Population-averaged response: integrate over the Gaussian random effects,
+    # whose variance on the linear-predictor scale is `variance`.
+    if (.suest_glmm_slope(model_type)) {
+      variable <- if (lme4_model) {
+        .suest_lme4_random_info(model)$slope
+      } else {
+        .suest_glmmtmb_random_info(model)$slope
+      }
       z <- newdata[[variable]]
       if (!is.numeric(z) || is.matrix(z) || length(z) != length(eta))
         stop("Random-slope predictions require the numeric slope column in newdata.", call. = FALSE)
       sd0 <- exp(parameters["log_sd_intercept"])
       sd1 <- exp(parameters["log_sd_slope"])
       rho <- tanh(parameters["atanh_rho"])
-      variance <- (sd0 + rho*sd1*z)^2 + (sd1*z)^2*(1-rho^2)
-      if (model_type == "glmm_logit_rs")
-        return(.suest_logit_normal_mean(eta, sqrt(variance)))
-      return(exp(eta + variance/2))
+      variance <- unname((sd0 + rho*sd1*z)^2 + (sd1*z)^2*(1-rho^2))
+    } else {
+      variance <- rep(exp(2*unname(parameters["log_sigma"])), length(eta))
     }
+    family <- .suest_glmm_family(model_type)
+    if (family %in% c("poisson", "nbinom2", "gamma"))
+      return(exp(eta + variance/2))
+    if (family == "gaussian")
+      return(eta)
+    if (family == "probit")
+      return(stats::pnorm(eta/sqrt(1 + variance)))
+    if (family == "cloglog")
+      return(.suest_cloglog_normal_mean(eta, sqrt(variance)))
+    if (.suest_glmm_slope(model_type))
+      return(.suest_logit_normal_mean(eta, sqrt(variance)))
 
-    sigma <- exp(unname(parameters["log_sigma"]))
-    if (model_type %in% c("glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"))
-      return(exp(eta + sigma^2/2))
-
+    sigma <- sqrt(variance)
     quadrature <- .suest_normal_quadrature(20L)
     probabilities <- vapply(
       seq_along(quadrature$nodes),
@@ -1345,6 +1447,14 @@
       numeric(length(eta))
     )
     return(rowSums(probabilities) / sqrt(pi))
+  }
+
+  if (model_type == "heckman")
+    return(.suest_heckman_predict(model, newdata))
+
+  if (model_type == "panel_poisson_fe") {
+    eta <- .suest_fepois_eta(model, newdata)
+    return(if (identical(type, "link")) eta else exp(eta))
   }
 
   if (model_type == "panel_poisson_re") {

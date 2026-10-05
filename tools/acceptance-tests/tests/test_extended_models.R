@@ -107,10 +107,41 @@ test_case("Beta regression: links and modeled precision", {
     newdata = extended_data
   )
 
+  # Observed-information sandwich (as in Stata), by central differences of the
+  # beta log likelihood in the mean and precision linear predictors.
+  observed_beta_vcov <- function(model) {
+    y <- model$y
+    X <- stats::model.matrix(model, model = "mean")
+    Z <- stats::model.matrix(model, model = "precision")
+    k <- ncol(X)
+    eta <- drop(X %*% stats::coef(model)[seq_len(k)])
+    zeta <- drop(Z %*% stats::coef(model)[-seq_len(k)])
+    mu <- model$link$mean$linkinv
+    phi <- model$link$precision$linkinv
+    ll <- function(e, z) {
+      m <- mu(e); p <- phi(z)
+      lgamma(p) - lgamma(m * p) - lgamma((1 - m) * p) +
+        (m * p - 1) * log(y) + ((1 - m) * p - 1) * log1p(-y)
+    }
+    he <- 1e-3 * (1 + abs(eta)); hz <- 1e-3 * (1 + abs(zeta))
+    ge <- (ll(eta + he, zeta) - ll(eta - he, zeta)) / (2 * he)
+    gz <- (ll(eta, zeta + hz) - ll(eta, zeta - hz)) / (2 * hz)
+    hee <- (ll(eta + he, zeta) - 2 * ll(eta, zeta) + ll(eta - he, zeta)) / he^2
+    hzz <- (ll(eta, zeta + hz) - 2 * ll(eta, zeta) + ll(eta, zeta - hz)) / hz^2
+    hez <- (ll(eta + he, zeta + hz) - ll(eta + he, zeta - hz) -
+              ll(eta - he, zeta + hz) + ll(eta - he, zeta - hz)) / (4 * he * hz)
+    U <- cbind(X * ge, Z * gz)
+    H <- rbind(cbind(crossprod(X, X * hee), crossprod(X, Z * hez)),
+               cbind(crossprod(Z, X * hez), crossprod(Z, Z * hzz)))
+    n <- nrow(U)
+    Hinv <- solve(-H)
+    Hinv %*% crossprod(U) %*% Hinv * n / (n - 1)
+  }
+
   expect_near(
     stats::vcov(combined)[combined$index[[1L]], combined$index[[1L]]],
-    extended_robust_vcov(constant),
-    tolerance = 1e-8,
+    observed_beta_vcov(constant),
+    tolerance = 1e-6,
     label = "beta robust covariance"
   )
   expect_true(any(grepl("\\(phi\\)", names(stats::coef(combined)))))

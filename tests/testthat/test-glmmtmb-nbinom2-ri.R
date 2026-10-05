@@ -324,5 +324,5 @@ test_that("NB2 excludes unvalidated dispersion and random-effect specifications"
   expect_error(suest(zero_offset, base), "Offsets are not supported", fixed = TRUE)
   expect_error(suest(zero_call_offset, base), "Offsets are not supported", fixed = TRUE)
   expect_error(suest(slope, base), "one conditional random intercept", fixed = TRUE)
-  expect_error(suest(base, poisson), "same type", fixed = TRUE)
+  expect_s3_class(suest(base, poisson, observation_id = c("id", "time")), "suest_model")
 })

@@ -106,15 +106,19 @@ test_that("same-family additional GLMs preserve robust covariance", {
     )
     fit <- suest(base, adjusted)
 
+    # Canonical links: native sandwich. Other links: observed information, as in Stata.
+    canonical <- specification$family$link %in% c("identity", "logit") &&
+      !identical(specification$family$family, "Gamma")
+    reference <- if (canonical) robust_vcov_direct else glm_observed_vcov_direct
     expect_equal(
       unname(fit$vcov[fit$index[[1L]], fit$index[[1L]], drop = FALSE]),
-      unname(robust_vcov_direct(base)),
-      tolerance = 1e-8
+      unname(reference(base)),
+      tolerance = if (canonical) 1e-8 else 1e-6
     )
     expect_equal(
       unname(fit$vcov[fit$index[[2L]], fit$index[[2L]], drop = FALSE]),
-      unname(robust_vcov_direct(adjusted)),
-      tolerance = 1e-8
+      unname(reference(adjusted)),
+      tolerance = if (canonical) 1e-8 else 1e-6
     )
   }
 })

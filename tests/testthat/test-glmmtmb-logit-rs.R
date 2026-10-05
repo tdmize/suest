@@ -145,7 +145,7 @@ test_that("Logit random-slope systems aggregate group influences across sample p
   expect_error(suest(first, second, observation_id = c("id", "time"), cluster = "time"),
     "Panel IDs must be nested", fixed = TRUE)
   intercept <- glmmtmb_logit_rs_fit(y1 ~ x + z + (1 | id), dat)
-  expect_error(suest(first, intercept), "same type", fixed = TRUE)
+  expect_s3_class(suest(first, intercept, observation_id = c("id", "time")), "suest_model")
 })
 
 test_that("logit random slopes propagate all parameters into marginal-effect uncertainty", {

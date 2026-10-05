@@ -47,16 +47,21 @@ get_vcov.suest_model <- function(model, vcov = NULL, ...) {
   model$vcov
 }
 
+# Data used when newdata is omitted and by datagrid().
+get_data.suest_model <- function(x, ...) .suest_default_data(x)
+
 get_coef.suest_mi <- function(model, ...) model$coefficients
 
 get_vcov.suest_mi <- function(model, vcov = NULL, ...) model$vcov
 
+# marginaleffects estimates within each imputation and pools (suest_mi is a
+# "mira"); this is reached only by functions without that support.
 get_predict.suest_mi <- function(model, newdata, type = "response", ...) {
   stop(
     paste0(
-      "Predictions, slopes, and comparisons are not yet implemented for ",
-      "multiply imputed SUEST systems. Estimate the target estimand within ",
-      "each imputation and pool it using Rubin's rules."
+      "This function does not pool across imputations. Use predictions(), ",
+      "comparisons(), slopes(), hypotheses(), or their avg_ versions, which ",
+      "estimate within each imputation and pool with Rubin's rules."
     ),
     call. = FALSE
   )
@@ -89,7 +94,7 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
   if (is.null(type))
     type <- "response"
 
-  categorical <- model$model_types %in% c("ologit", "oprobit", "multinom")
+  categorical <- model$model_types %in% c("ologit", "oprobit", "multinom", "gologit", "re_ologit", "re_oprobit")
 
   if (model$mixed_models && !type %in% c("response", "probs"))
     stop(
@@ -121,8 +126,13 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
     if (nrow(out) == 0L)
       stop(
         sprintf(
-          "No newdata rows were supplied for model '%s'.",
-          model$model_names[i]
+          paste0(
+            "No newdata rows were supplied for model '%s'. The .suest_model ",
+            "column says which model each row belongs to. If newdata came ",
+            "from datagrid(), add .suest_model = c(%s) to the datagrid() call."
+          ),
+          model$model_names[i],
+          paste0('"', model$model_names, '"', collapse = ", ")
         ),
         call. = FALSE
       )

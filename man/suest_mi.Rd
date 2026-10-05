@@ -60,9 +60,32 @@ Results from \code{mitools::with.imputationList()} use the same list-based route
 with their originating call retained in the returned object. Legacy
 \code{"imputationResultList"} wrappers are accepted as well. The \code{mitools}
 package is not required for an already-created result list.
-
-This initial interface supports coefficients, covariance matrices, summaries,
-and coefficient-level hypotheses. Predictions, slopes, and comparisons must
-be estimated within each imputation and pooled as estimands; they are not yet
-implemented for \code{"suest_mi"} objects.
 }
+\section{Marginal effects}{
+
+Predictions, slopes, comparisons, and hypothesis tests from
+\code{marginaleffects} are estimated within each imputation, using that
+imputation's joint SUEST covariance, and then pooled with Rubin's rules, as
+Stata's \code{mimrgns} does. Cross-model differences, such as
+\code{hypothesis = difference ~ revpairwise}, are pooled the same way. This
+works on the \code{"mira"} object from \code{with(imp, suest(...))} and equally on a
+\code{"suest_mi"} object, so the two give identical results:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{analyses <- with(imp, suest(glm(y ~ x, family = binomial),
+                            glm(y ~ x + z, family = binomial)))
+marginaleffects::avg_comparisons(analyses, variables = "x",
+  hypothesis = difference ~ revpairwise)
+marginaleffects::avg_comparisons(suest_mi(analyses), variables = "x",
+  hypothesis = difference ~ revpairwise)
+}\if{html}{\out{</div>}}
+
+Without \code{newdata}, each imputation's completed data are used when the
+imputations came from \code{mice}. For a plain list or \code{mitools} results, each
+imputation's own estimation sample is used instead, and \code{marginaleffects}
+warns that it could not recover the original data from a \code{mids} object;
+that warning does not apply to \code{suest()} results. \code{mice} warns
+"Large sample assumed." because SUEST, like Stata's \code{suest}, reports
+large-sample (z) statistics; the pooled degrees of freedom are then
+Rubin's large-sample values, as in Stata's \verb{mi estimate}.
+}
+

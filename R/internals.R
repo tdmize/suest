@@ -12,20 +12,19 @@
     "zip", "zinb", "truncreg", "censreg", "ivreg", "ivprobit", "hetprobit",
     "hetlogit", "biprobit", "panel_fe", "panel_be", "panel_re", "panel_ml",
     "panel_gee", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
-    "glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"
-  )
-  categorical <- types %in% c("ologit", "oprobit", "multinom")
+    "panel_poisson_fe", "heckman"
+  ) | .suest_is_glmm(types)
+  categorical <- types %in% c("ologit", "oprobit", "multinom", "gologit", "re_ologit", "re_oprobit")
 
   scale <- if (all(categorical)) {
     "category probabilities"
-  } else if (all(types %in% c("poisson", "negbin"))) {
-    "expected counts"
-  } else if (all(types %in% c("panel_poisson_re", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs"))) {
+  } else if (all(types %in% c("poisson", "negbin", "panel_poisson_re", "panel_poisson_fe") |
+                 .suest_glmm_count(types))) {
     "expected counts"
   } else if (all(types %in% c(
                "logit", "probit", "cloglog", "ivprobit", "biprobit",
-               "panel_logit_re", "panel_probit_re", "glmm_logit_ri", "glmm_logit_rs"
-             ))) {
+               "panel_logit_re", "panel_probit_re"
+             ) | .suest_glmm_binary(types))) {
     "predicted probabilities"
   } else if (all(types %in% c("hetprobit", "hetlogit"))) {
     "predicted probabilities"
@@ -38,8 +37,8 @@
   } else if (all(types %in% c("zip", "zinb"))) {
     "expected counts"
   } else if (all(types %in% c(
-               "lm", "panel_fe", "panel_be", "panel_re", "panel_ml"
-             ))) {
+               "lm", "panel_fe", "panel_be", "panel_re", "panel_ml", "heckman"
+             ) | types == "glmm_gaussian_ri" | types == "glmm_gaussian_rs")) {
     "fitted values"
   } else {
     "model-specific response values"
@@ -50,6 +49,72 @@
     mixed = !same_type,
     scale = scale
   )
+}
+
+# Row-name alignment checks: shared rows of the same data object must carry the
+# same raw values; overlapping rows of different data objects are flagged.
+.suest_check_row_alignment <- function(model_frames, sources, sample_rows, model_names) {
+  raw_cols <- function(mf) {
+    nm <- names(mf)
+    nm[nm == make.names(nm) & vapply(mf, function(x) is.atomic(x) && is.null(dim(x)), logical(1))]
+  }
+  same_values <- function(a, b) {
+    if (is.factor(a) || is.factor(b) || is.character(a) || is.character(b))
+      return(identical(as.character(a), as.character(b)))
+    isTRUE(all.equal(as.numeric(a), as.numeric(b), tolerance = 0, check.attributes = FALSE))
+  }
+  n <- length(model_frames)
+  for (i in seq_len(n - 1L)) for (j in seq.int(i + 1L, n)) {
+    shared <- intersect(sample_rows[[i]], sample_rows[[j]])
+    cols <- intersect(raw_cols(model_frames[[i]]), raw_cols(model_frames[[j]]))
+    if (!length(shared) || !length(cols)) next
+    a <- model_frames[[i]][match(shared, sample_rows[[i]]), cols, drop = FALSE]
+    b <- model_frames[[j]][match(shared, sample_rows[[j]]), cols, drop = FALSE]
+    agree <- vapply(cols, function(v) same_values(a[[v]], b[[v]]), logical(1))
+    if (identical(sources[[i]], sources[[j]]) && !all(agree))
+      stop(sprintf(paste0(
+        "Models '%s' and '%s' were fit to the same data object, but rows with the same ",
+        "row names have different values of %s. The data may have changed between fits ",
+        "(for example, rows filtered and renumbered). Refit both models on the same data, ",
+        "or identify observations with observation_id."),
+        model_names[i], model_names[j], paste(cols[!agree], collapse = ", ")), call. = FALSE)
+    if (!identical(sources[[i]], sources[[j]]) && all(agree))
+      warning(sprintf(paste0(
+        "Models '%s' and '%s' were fit to different data objects, so they are treated as ",
+        "having no observations in common. They share %d row names with identical values, ",
+        "which suggests overlapping observations. If they overlap, supply observation_id ",
+        "or fit both models to one data object with the subset argument."),
+        model_names[i], model_names[j], length(shared)), call. = FALSE)
+  }
+  invisible(NULL)
+}
+
+# Raw variables used inside formula transformations (factor(g), log(x), poly(x, 2))
+# are absent from the model frame; keep them so suest_newdata() can predict.
+.suest_raw_data <- function(model, mf) {
+  form <- tryCatch(stats::formula(model), error = function(e) NULL)
+  if (is.null(form) || is.null(model$call$data)) return(NULL)
+  needed <- setdiff(all.vars(form), names(mf))
+  if (!length(needed)) return(NULL)
+  data <- tryCatch(eval(model$call$data, environment(form)), error = function(e) NULL)
+  if (!is.data.frame(data) || is.null(rownames(mf))) return(NULL)
+  index <- match(rownames(mf), rownames(data))
+  if (anyNA(index)) return(NULL)
+  shared <- intersect(names(mf)[names(mf) == make.names(names(mf))], names(data))
+  for (v in shared)
+    if (!identical(as.character(mf[[v]]), as.character(data[[v]][index]))) return(NULL)
+  needed <- intersect(needed, names(data))
+  if (!length(needed)) return(NULL)
+  out <- as.data.frame(data)[index, needed, drop = FALSE]
+  rownames(out) <- rownames(mf)
+  out
+}
+
+# na.exclude pads residuals and scores with NA rows; na.omit fits the same model.
+.suest_unexclude <- function(model) {
+  if (is.list(model) && !isS4(model) && inherits(model$na.action, "exclude"))
+    class(model$na.action) <- "omit"
+  model
 }
 
 .suest_data_source <- function(model) {
@@ -67,6 +132,16 @@
     environment(source_formula)
   } else {
     environment(stats::formula(model))
+  }
+  # Modeling functions may wrap the formula environment (survival adds one with
+  # Surv per call); key on the environment that holds the data object instead.
+  data_symbol <- if (is.null(data_call)) NA_character_ else all.vars(data_call)[1L]
+  if (!is.na(data_symbol) && is.environment(env)) {
+    holder <- env
+    while (!identical(holder, emptyenv()) &&
+           !exists(data_symbol, envir = holder, inherits = FALSE))
+      holder <- parent.env(holder)
+    if (!identical(holder, emptyenv())) env <- holder
   }
   env_key <- format(env)
 
@@ -424,9 +499,81 @@
     model$groups[[1L]]
   } else if (inherits(model, "glmmTMB")) {
     .suest_glmmtmb_random_info(model)$id
+  } else if (inherits(model, "suest_lme4")) {
+    .suest_lme4_random_info(model)$id
+  } else if (inherits(model, "fixest")) {
+    .suest_fepois_id(model)
+  } else if (inherits(model, "clmm")) {
+    .suest_clmm_id(model)
   } else {
     stop("Internal error: unsupported panel-model object.", call. = FALSE)
   }
+}
+
+# Name of a random-effects model's highest-level grouping variable, or NULL.
+.suest_panel_group_name <- function(model) {
+  name <- if (.suest_is_pglm(model)) {
+    data <- get("data", .suest_pglm_environment(model), inherits = FALSE)
+    names(attr(data, "index"))[1L]
+  } else if (inherits(model, "lme")) {
+    names(model$groups)[1L]
+  } else if (inherits(model, "glmmTMB")) {
+    .suest_glmmtmb_random_info(model)$name
+  } else if (inherits(model, "suest_lme4")) {
+    .suest_lme4_random_info(model)$name
+  } else if (inherits(model, "clmm")) {
+    names(model$gfList)[1L]
+  } else {
+    NULL
+  }
+  if (length(name) != 1L || is.na(name) || !identical(make.names(name), name))
+    return(NULL)
+  name
+}
+
+# Combined random-effects systems are clustered on one grouping variable.
+.suest_shared_group_name <- function(models, model_names, required = TRUE) {
+  names <- lapply(models, .suest_panel_group_name)
+  unknown <- vapply(names, is.null, logical(1))
+  if (any(unknown) && !required)
+    return(NULL)
+  if (any(unknown))
+    stop(
+      sprintf(
+        paste0(
+          "Could not identify the grouping variable of model '%s'. Supply ",
+          "the shared group with 'cluster'."
+        ),
+        model_names[which(unknown)[1L]]
+      ),
+      call. = FALSE
+    )
+  names <- unlist(names)
+  if (length(unique(names)) > 1L)
+    stop(
+      sprintf(
+        "Combined random-effects models must use the same grouping variable; these use %s.",
+        paste(sprintf("'%s'", unique(names)), collapse = " and ")
+      ),
+      call. = FALSE
+    )
+  names[1L]
+}
+
+# Panel models are clustered on their own group IDs; ordinary models in a
+# combined system on the same grouping variable, read from their data.
+.suest_group_clusters <- function(models, model_frames, is_panel, group_name,
+    model_names) {
+  Map(
+    function(model, model_frame, panel, model_name) {
+      if (panel)
+        return(.suest_cluster_keys(
+          .suest_panel_id(model), nrow(model_frame), model_name
+        ))
+      .suest_clusters_from_model(model, model_frame, group_name, model_name)
+    },
+    models, model_frames, is_panel, model_names
+  )
 }
 
 .suest_panel_clusters <- function(models, model_frames, model_names) {
@@ -500,15 +647,24 @@
 
 .suest_extract_parameters <- function(model, type, engine) {
   engine <- .suest_engine_name(engine)
-  if (type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+  if (type == "gologit")
+    return(.suest_vglm_parameters(model))
+  if (type == "heckman")
+    return(.suest_heckman_parameters(model))
+  if (type %in% c("re_ologit", "re_oprobit"))
+    return(.suest_clmm_parameters(model))
+  if (.suest_is_glmm(type)) {
     if (!is.null(model$suest_parameters))
       return(model$suest_parameters)
+    if (inherits(model, "suest_lme4"))
+      return(.suest_lme4_parameters(model, type))
     beta <- glmmTMB::fixef(model)$cond
     theta <- model$fit$par[names(model$fit$par) == "theta"]
-    dispersion <- if (type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs")) {
-      c(log_phi = unname(glmmTMB::fixef(model)$disp))
+    dispersion_name <- .suest_glmm_dispersion_name(type)
+    dispersion <- if (!is.na(dispersion_name)) {
+      stats::setNames(unname(glmmTMB::fixef(model)$disp), dispersion_name)
     } else numeric(0)
-    if (type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs"))
+    if (.suest_glmm_slope(type))
       return(c(beta, dispersion, log_sd_intercept = unname(theta[1L]),
         log_sd_slope = unname(theta[2L]), atanh_rho = asinh(unname(theta[3L]))))
     c(beta, dispersion, log_sigma = unname(theta))
@@ -1121,7 +1277,7 @@
       call. = FALSE
     )
 
-  if (type %in% c("glmm_logit_rs", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
+  if (.suest_glmm_slope(type)) {
     # Fisher z = asinh(native scaled correlation); transform covariance and
     # scores in opposite directions before forming coefficient influences.
     raw_correlation <- utils::tail(model$fit$par, 1L)
@@ -1432,6 +1588,22 @@
   )
 }
 
+
+# Stata's mixed reports a block-diagonal covariance: (X'V^-1 X)^-1 for the
+# fixed effects and, for the variance parameters, their block of the full
+# observed-information inverse (the curvature of the profile likelihood), with
+# no covariance between the two blocks. suest uses the same bread for linear
+# mixed models (lmer and Gaussian glmmTMB); the scores are unchanged.
+.suest_mixed_bread <- function(B, n_fixed) {
+  fixed <- seq_len(n_fixed)
+  out <- matrix(0, nrow(B), ncol(B), dimnames = dimnames(B))
+  # B is n times the inverse information, so the fixed-effect block of its
+  # inverse is the fixed-effect information divided by n.
+  out[fixed, fixed] <- .suest_information_inverse(
+    .suest_information_inverse(B)[fixed, fixed, drop = FALSE])
+  out[-fixed, -fixed] <- B[-fixed, -fixed]
+  out
+}
 
 .suest_information_inverse <- function(A) {
   A <- (A + t(A)) / 2
@@ -1756,9 +1928,9 @@
 }
 
 .suest_zinb_components <- function(model) {
-  X <- model$x$count
-  Z <- model$x$zero
-  y <- as.numeric(model$y)
+  X <- if (is.null(model$x$count)) stats::model.matrix(model, model = "count") else model$x$count
+  Z <- if (is.null(model$x$zero)) stats::model.matrix(model, model = "zero") else model$x$zero
+  y <- as.numeric(if (is.null(model$y)) stats::model.response(stats::model.frame(model)) else model$y)
   weights <- as.numeric(model$weights)
   beta <- model$coefficients$count
   gamma <- model$coefficients$zero
@@ -1906,8 +2078,24 @@
   engine <- .suest_engine_name(engine)
   if (identical(weight_type, "pweight") && type == "lm") {
     .suest_lm_pweight_components(model)
-  } else if (type %in% c("glmm_logit_ri", "glmm_logit_rs", "glmm_poisson_ri", "glmm_nbinom2_ri", "glmm_poisson_rs", "glmm_nbinom2_rs")) {
-    .suest_glmmtmb_ri_components(model, type)
+  } else if (type == "panel_poisson_fe") {
+    .suest_fepois_components(model)
+  } else if (type == "gologit") {
+    .suest_vglm_components(model)
+  } else if (type == "heckman") {
+    .suest_heckman_components(model)
+  } else if (type %in% c("re_ologit", "re_oprobit")) {
+    .suest_clmm_components(model)
+  } else if (.suest_is_glmm(type) && inherits(model, "suest_lme4")) {
+    out <- .suest_lme4_components(model, type)
+    if (.suest_glmm_family(type) == "gaussian")
+      out$bread <- .suest_mixed_bread(out$bread, length(lme4::fixef(model$fit)))
+    out
+  } else if (.suest_is_glmm(type)) {
+    out <- .suest_glmmtmb_ri_components(model, type)
+    if (.suest_glmm_family(type) == "gaussian")
+      out$bread <- .suest_mixed_bread(out$bread, length(glmmTMB::fixef(model)$cond))
+    out
   } else if (type == "panel_fe") {
     .suest_plm_fe_components(model)
   } else if (type == "panel_be") {
@@ -1928,6 +2116,10 @@
     .suest_ivprobit_components(model)
   } else if (type == "lm") {
     .suest_lm_components(model)
+  } else if (type == "betareg") {
+    .suest_betareg_components(model, type, engine)
+  } else if (.suest_glm_noncanonical(model, type)) {
+    .suest_glm_observed_components(model, type, engine)
   } else if (type == "probit" ||
              (identical(weight_type, "pweight") && type == "logit")) {
     .suest_binary_pweight_components(model, type)
@@ -1960,6 +2152,79 @@
   }
 }
 
+
+# Beta regression: analytic scores and observed information, as in Stata.
+.suest_betareg_components <- function(model, type, engine) {
+  parameters <- .suest_extract_parameters(model, type, engine)
+  X <- stats::model.matrix(model, model = "mean")
+  Z <- stats::model.matrix(model, model = "precision")
+  y <- as.numeric(model$y)
+  w <- if (is.null(model$weights)) rep(1, length(y)) else as.numeric(model$weights)
+  off_mean <- if (is.null(model$offset$mean)) 0 else model$offset$mean
+  off_prec <- if (is.null(model$offset$precision)) 0 else model$offset$precision
+  mean_link <- model$link$mean
+  prec_link <- model$link$precision
+  k <- ncol(X)
+  ystar <- stats::qlogis(y)
+  log1my <- log1p(-y)
+  scores <- function(theta) {
+    eta <- as.numeric(X %*% theta[seq_len(k)]) + off_mean
+    zeta <- as.numeric(Z %*% theta[-seq_len(k)]) + off_prec
+    mu <- mean_link$linkinv(eta)
+    phi <- prec_link$linkinv(zeta)
+    mustar <- digamma(mu * phi) - digamma((1 - mu) * phi)
+    cbind(X * (w * phi * (ystar - mustar) * mean_link$mu.eta(eta)),
+          Z * (w * (mu * (ystar - mustar) + log1my - digamma((1 - mu) * phi) +
+                      digamma(phi)) * prec_link$mu.eta(zeta)))
+  }
+  theta <- as.numeric(parameters)
+  U <- scores(theta)
+  A <- vapply(seq_along(theta), function(j) {
+    h <- 1e-5 * (1 + abs(theta[j]))
+    up <- theta; up[j] <- up[j] + h
+    down <- theta; down[j] <- down[j] - h
+    -(colSums(scores(up)) - colSums(scores(down))) / (2 * h)
+  }, numeric(length(theta)))
+  if (any(!is.finite(U)) || any(!is.finite(A)))
+    stop("Unable to construct finite beta-regression scores and observed information.", call. = FALSE)
+  B <- nrow(X) * .suest_information_inverse(A)
+  dimnames(B) <- list(names(parameters), names(parameters))
+  colnames(U) <- names(parameters)
+  rownames(U) <- rownames(X)
+  list(score = U, bread = B, parameters = parameters)
+}
+
+# GLMs with non-canonical links: observed-information bread, as in Stata.
+.suest_glm_noncanonical <- function(model, type) {
+  if (!inherits(model, "glm") || !type %in% c("cloglog", "fracprobit", "fraccloglog", "fracloglog", "glm"))
+    return(FALSE)
+  key <- paste(tolower(model$family$family), model$family$link, sep = ":")
+  !key %in% c("gaussian:identity", "binomial:logit", "quasibinomial:logit",
+              "poisson:log", "quasipoisson:log", "gamma:inverse", "inverse.gaussian:1/mu^2")
+}
+
+.suest_glm_observed_components <- function(model, type, engine) {
+  parameters <- .suest_extract_parameters(model, type, engine)
+  family <- model$family
+  X <- stats::model.matrix(model)
+  eta <- as.numeric(model$linear.predictors)
+  mu <- as.numeric(model$fitted.values)
+  y <- as.numeric(model$y)
+  w <- as.numeric(model$prior.weights)
+  ratio <- function(e) family$mu.eta(e) / family$variance(family$linkinv(e))
+  step <- 1e-4 * (1 + abs(eta))
+  ratio_slope <- (ratio(eta + step) - ratio(eta - step)) / (2 * step)
+  information <- w * (family$mu.eta(eta) * ratio(eta) - (y - mu) * ratio_slope)
+  U <- X * (w * (y - mu) * ratio(eta))
+  A <- crossprod(X, X * information)
+  if (any(!is.finite(U)) || any(!is.finite(A)))
+    stop("Unable to construct finite GLM scores and observed information.", call. = FALSE)
+  B <- nrow(X) * .suest_information_inverse(A)
+  dimnames(B) <- list(names(parameters), names(parameters))
+  colnames(U) <- names(parameters)
+  rownames(U) <- rownames(X)
+  list(score = U, bread = B, parameters = parameters)
+}
 
 .suest_block_diag <- function(...) {
   matrices <- list(...)

@@ -7,7 +7,10 @@
 suest_newdata(object)
 }
 \arguments{
-\item{object}{A \code{"suest_model"} returned by \code{\link[=suest]{suest()}}.}
+\item{object}{A \code{"suest_model"} returned by \code{\link[=suest]{suest()}}.
+
+Variables used inside formula transformations, such as \code{g} in \code{factor(g)},
+are included from the data the model was fit to.}
 }
 \value{
 A data frame with the component model frames stacked vertically and

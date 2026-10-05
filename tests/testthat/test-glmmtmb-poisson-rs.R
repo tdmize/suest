@@ -166,7 +166,7 @@ test_that("Random-slope systems aggregate group influences across sample pattern
   expect_error(suest(first, second, observation_id = c("id", "time"), cluster = "time"),
     "Panel IDs must be nested", fixed = TRUE)
   intercept <- glmmtmb_poisson_rs_fit(y1 ~ x + z + (1 | id), dat)
-  expect_error(suest(first, intercept), "same type", fixed = TRUE)
+  expect_s3_class(suest(first, intercept, observation_id = c("id", "time")), "suest_model")
 })
 
 test_that("Random-slope support rejects unvalidated structures and boundary fits", {

@@ -191,7 +191,7 @@ test_that("pglm integrated probit predictions work with marginaleffects", {
     altered_prediction$estimate[first_rows])), 1e-5)
 })
 
-test_that("random-effects panel logit and probit cannot be mixed yet", {
+test_that("random-effects panel logit and probit can be combined", {
   skip_if_not_installed("pglm")
   maxLik <- maxLik::maxLik
   dat <- panel_probit_re_test_data(groups = 45L)
@@ -202,7 +202,7 @@ test_that("random-effects panel logit and probit cannot be mixed yet", {
     method = "bfgs", print.level = 0,
     start = c(coef(glm(y2 ~ x + z, dat, family = binomial("logit"))), sigma = 1)
   )
-  expect_error(suest(probit, logit), "same type", fixed = TRUE)
+  expect_s3_class(suest(probit, logit, observation_id = c("id", "time")), "suest_model")
 })
 
 test_that("pglm panel probit reproduces the returned Stata benchmark", {

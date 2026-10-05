@@ -19,7 +19,8 @@ Depends:
 Imports:
     marginaleffects,
     MASS,
-    sandwich,
+    methods,
+    sandwich (>= 3.1-1),
     stats
 Suggests:
     betareg,
@@ -30,12 +31,15 @@ Suggests:
     glmmTMB (>= 1.1.14),
     glm2,
     haven,
+    insight,
     mice,
     mitools,
     nlme,
     ordinal,
     knitr,
+    lme4,
     maxLik,
+    merDeriv,
     mvProbit,
     mvtnorm,
     nnet,
@@ -44,11 +48,13 @@ Suggests:
     pscl,
     rmarkdown,
     Rchoice,
+    sampleSelection,
     survival,
     survey (>= 4.2),
     testthat (>= 3.0.0),
     TMB,
     truncreg,
+    VGAM,
     withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr

@@ -174,9 +174,9 @@ test_that("glmmTMB validation is deliberately narrow", {
   skip_if_not_installed("glmmTMB", minimum_version = "1.1.14")
   dat <- glmmtmb_logit_ri_data(groups = 45L)
   dat$constant_offset <- 0.1
-  probit <- glmmTMB::glmmTMB(
-    y1 ~ x + z + (1 | id), data = dat,
-    family = stats::binomial("probit"))
+  dat$positive <- exp(dat$x)
+  tweedie <- suppressWarnings(glmmTMB::glmmTMB(
+    positive ~ z + (1 | id), data = dat, family = glmmTMB::tweedie()))
   poisson <- glmmTMB::glmmTMB(
     y1 ~ x + z + (1 | id), data = dat, family = stats::poisson())
   random_slope <- suppressWarnings(glmmTMB::glmmTMB(
@@ -187,7 +187,7 @@ test_that("glmmTMB validation is deliberately narrow", {
   offset <- glmmtmb_logit_ri_fit(
     y1 ~ x + z + offset(constant_offset) + (1 | id), dat)
 
-  expect_error(suest(probit, probit), "binomial-logit", fixed = TRUE)
+  expect_error(suest(tweedie, tweedie), "glmmTMB support is currently limited", fixed = TRUE)
   expect_s3_class(suest(poisson, poisson), "suest_model")
   expect_error(suest(random_slope, random_slope),
     "one conditional random intercept", fixed = TRUE)
