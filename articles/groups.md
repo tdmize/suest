@@ -1,8 +1,6 @@
 # Separate samples or groups
 
-Example 6.6 of Mize, Doan, and Long (2019). The [same example in
-Stata](https://www.trentonmize.com/software/mecompare/examples/groups.html)
-uses `mecompare`.
+Example 6.6 of Mize, Doan, and Long (2019).
 
 This example compares effects from the same binary logit model fitted to
 two different samples, one from 1986 and one from 2016. The same
@@ -39,7 +37,6 @@ model1986 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
 model2016 <- glm(helpsickB ~ conserv + faminc + employed + woman + age +
                    college + married + parent + race, family = binomial("logit"),
                  data = dat66, subset = year == 2016)
-stopifnot(nobs(model1986) == 1254, nobs(model2016) == 1670)
 c(`1986` = nobs(model1986), `2016` = nobs(model2016))
 #> 1986 2016 
 #> 1254 1670

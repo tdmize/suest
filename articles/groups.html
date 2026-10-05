@@ -75,8 +75,7 @@
 
     
     
-<p>Example 6.6 of Mize, Doan, and Long (2019). The <a href="https://www.trentonmize.com/software/mecompare/examples/groups.html" class="external-link">same
-example in Stata</a> uses <code>mecompare</code>.</p>
+<p>Example 6.6 of Mize, Doan, and Long (2019).</p>
 <p>This example compares effects from the same binary logit model fitted
 to two different samples, one from 1986 and one from 2016. The same
 approach works for comparing groups, such as men and women. The samples
@@ -107,7 +106,6 @@ sample.</p>
 <span><span class="va">model2016</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">helpsickB</span> <span class="op">~</span> <span class="va">conserv</span> <span class="op">+</span> <span class="va">faminc</span> <span class="op">+</span> <span class="va">employed</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span></span>
 <span>                   <span class="va">college</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span> <span class="va">race</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>,</span>
 <span>                 data <span class="op">=</span> <span class="va">dat66</span>, subset <span class="op">=</span> <span class="va">year</span> <span class="op">==</span> <span class="fl">2016</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model1986</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1254</span>, <span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model2016</span><span class="op">)</span> <span class="op">==</span> <span class="fl">1670</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>`1986` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model1986</span><span class="op">)</span>, `2016` <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/nobs.html" class="external-link">nobs</a></span><span class="op">(</span><span class="va">model2016</span><span class="op">)</span><span class="op">)</span></span>
 <span><span class="co">#&gt; 1986 2016 </span></span>
 <span><span class="co">#&gt; 1254 1670</span></span>

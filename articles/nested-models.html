@@ -75,8 +75,7 @@
 
     
     
-<p>Example 6.2 of Mize, Doan, and Long (2019). The <a href="https://www.trentonmize.com/software/mecompare/examples/nested-models.html" class="external-link">same
-example in Stata</a> uses <code>mecompare</code>.</p>
+<p>Example 6.2 of Mize, Doan, and Long (2019).</p>
 <p>This example uses binary logit models to see how the effect of
 college changes when more variables are added to the model.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
@@ -95,7 +94,6 @@ college changes when more variables are added to the model.</p>
 <span>            <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>, <span class="st">"reltrad"</span>, <span class="st">"year"</span>, <span class="st">"employed"</span><span class="op">)</span></span>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">gss</span>, <span class="va">year</span> <span class="op">&gt;=</span> <span class="fl">2000</span> <span class="op">&amp;</span> <span class="va">employed</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="va">dat62</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">[</span><span class="va">vars62</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">)</span> <span class="op">==</span> <span class="fl">9216</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 9216</span></span>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat62</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>,</span>

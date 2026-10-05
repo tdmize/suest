@@ -1,8 +1,6 @@
 # Different model types
 
-Example 6.5 of Mize, Doan, and Long (2019). The [same example in
-Stata](https://www.trentonmize.com/software/mecompare/examples/model-types.html)
-uses `mecompare`.
+Example 6.5 of Mize, Doan, and Long (2019).
 
 This example compares effects across two model types, an ordinal model
 and a nominal model, with the same outcome and predictors. It also shows
@@ -29,7 +27,6 @@ vars65 <- c("partyid5", "woman", "edyrs", "age", "parent", "married",
             "faminc", "employed", "region4", "year", "race")
 dat65 <- subset(gss, year >= 2010)
 dat65 <- dat65[complete.cases(dat65[vars65]), ]
-stopifnot(nrow(dat65) == 8179)
 nrow(dat65)
 #> [1] 8179
 dat65 <- factorize(dat65, c("woman", "parent", "married", "race",

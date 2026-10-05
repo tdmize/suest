@@ -1,16 +1,12 @@
 # Different outcomes
 
-Example 6.4 of Mize, Doan, and Long (2019). The [same example in
-Stata](https://www.trentonmize.com/software/mecompare/examples/different-outcomes.html)
-uses `mecompare`.
+Example 6.4 of Mize, Doan, and Long (2019).
 
 This example compares effects across different outcomes. Two counts,
 poor mental-health days and poor physical-health days, are modeled with
 negative binomial regression, and effects are on the predicted-rate
 scale. Effects and cross-model comparisons are calculated for all
-predictors. The sample also drops cases missing `reltrad`, which keeps
-the analysis sample of the paper even though `reltrad` isn’t in either
-model.
+predictors.
 
 ``` r
 
@@ -31,7 +27,6 @@ factorize <- function(data, variables) {
 vars64 <- c("mntlhlth", "physhlth", "woman", "married", "age",
             "faminc", "race", "college", "parent", "reltrad")
 dat64 <- gss[complete.cases(gss[vars64]), ]
-stopifnot(nrow(dat64) == 5062)
 nrow(dat64)
 #> [1] 5062
 

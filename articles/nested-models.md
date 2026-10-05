@@ -1,8 +1,6 @@
 # Nested logit models and mediation/attenuation
 
-Example 6.2 of Mize, Doan, and Long (2019). The [same example in
-Stata](https://www.trentonmize.com/software/mecompare/examples/nested-models.html)
-uses `mecompare`.
+Example 6.2 of Mize, Doan, and Long (2019).
 
 This example uses binary logit models to see how the effect of college
 changes when more variables are added to the model.
@@ -27,7 +25,6 @@ vars62 <- c("vhappy", "college", "wages", "occprest", "age", "married",
             "parent", "woman", "conserv", "reltrad", "year", "employed")
 dat62 <- subset(gss, year >= 2000 & employed == 1)
 dat62 <- dat62[complete.cases(dat62[vars62]), ]
-stopifnot(nrow(dat62) == 9216)
 nrow(dat62)
 #> [1] 9216
 dat62 <- factorize(dat62, c("college", "married", "parent", "woman", "conserv",

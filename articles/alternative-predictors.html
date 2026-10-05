@@ -75,8 +75,7 @@
 
     
     
-<p>Example 6.3 of Mize, Doan, and Long (2019). The <a href="https://www.trentonmize.com/software/mecompare/examples/alternative-predictors.html" class="external-link">same
-example in Stata</a> uses <code>mecompare</code>.</p>
+<p>Example 6.3 of Mize, Doan, and Long (2019).</p>
 <p>This example uses two binary logit models with alternative
 predictors: two different ways to measure sexuality, sexual behavior
 (<code>sexbehav</code>) in one model and sexual identity
@@ -96,7 +95,6 @@ predictors: two different ways to measure sexuality, sexual behavior
 <code class="sourceCode R"><span><span class="va">vars63</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"samesexB"</span>, <span class="st">"sexident"</span>, <span class="st">"sexbehav"</span>, <span class="st">"college"</span>,</span>
 <span>            <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"age"</span>, <span class="st">"year"</span><span class="op">)</span></span>
 <span><span class="va">dat63</span> <span class="op">&lt;-</span> <span class="va">gss</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">gss</span><span class="op">[</span><span class="va">vars63</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat63</span><span class="op">)</span> <span class="op">==</span> <span class="fl">4921</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat63</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 4921</span></span>
 <span><span class="va">dat63</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat63</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"sexident"</span>, <span class="st">"sexbehav"</span>, <span class="st">"college"</span>, <span class="st">"woman"</span>, <span class="st">"race"</span>, <span class="st">"year"</span><span class="op">)</span><span class="op">)</span></span>

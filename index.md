@@ -9,7 +9,15 @@ directly with [`marginaleffects`](https://marginaleffects.com/), so you
 can calculate predictions and effects for each model and test whether
 they differ across models.
 
-The package implements the framework in:
+Combining models this way is seemingly unrelated estimation, developed
+by:
+
+> Weesie, Jeroen. 1999. “Seemingly Unrelated Estimation and the
+> Cluster-Adjusted Sandwich Estimator.” *Stata Technical Bulletin*
+> 52:34–47.
+
+The package implements the framework for comparing predictions and
+marginal effects across models in:
 
 > Mize, Trenton D., Long Doan, and J. Scott Long. 2019. “A General
 > Framework for Comparing Predictions and Marginal Effects Across

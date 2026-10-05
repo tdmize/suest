@@ -75,15 +75,12 @@
 
     
     
-<p>Example 6.4 of Mize, Doan, and Long (2019). The <a href="https://www.trentonmize.com/software/mecompare/examples/different-outcomes.html" class="external-link">same
-example in Stata</a> uses <code>mecompare</code>.</p>
+<p>Example 6.4 of Mize, Doan, and Long (2019).</p>
 <p>This example compares effects across different outcomes. Two counts,
 poor mental-health days and poor physical-health days, are modeled with
 negative binomial regression, and effects are on the predicted-rate
 scale. Effects and cross-model comparisons are calculated for all
-predictors. The sample also drops cases missing <code>reltrad</code>,
-which keeps the analysis sample of the paper even though
-<code>reltrad</code> isn’t in either model.</p>
+predictors.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tdmize.github.io/suest/">suest</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marginaleffects.com/" class="external-link">marginaleffects</a></span><span class="op">)</span></span>
@@ -99,7 +96,6 @@ which keeps the analysis sample of the paper even though
 <code class="sourceCode R"><span><span class="va">vars64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"mntlhlth"</span>, <span class="st">"physhlth"</span>, <span class="st">"woman"</span>, <span class="st">"married"</span>, <span class="st">"age"</span>,</span>
 <span>            <span class="st">"faminc"</span>, <span class="st">"race"</span>, <span class="st">"college"</span>, <span class="st">"parent"</span>, <span class="st">"reltrad"</span><span class="op">)</span></span>
 <span><span class="va">dat64</span> <span class="op">&lt;-</span> <span class="va">gss</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">gss</span><span class="op">[</span><span class="va">vars64</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">)</span> <span class="op">==</span> <span class="fl">5062</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 5062</span></span>
 <span></span>

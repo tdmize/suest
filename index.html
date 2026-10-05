@@ -65,7 +65,11 @@
 </h1></div>
 <p><a href="https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/tdmize/suest/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></p>
 <p><code>suest</code> lets you compare predictions and marginal effects across regression models in R. It combines two or more separately fitted models into one object with a joint robust covariance matrix. That object works directly with <a href="https://marginaleffects.com/" class="external-link"><code>marginaleffects</code></a>, so you can calculate predictions and effects for each model and test whether they differ across models.</p>
-<p>The package implements the framework in:</p>
+<p>Combining models this way is seemingly unrelated estimation, developed by:</p>
+<blockquote>
+<p>Weesie, Jeroen. 1999. “Seemingly Unrelated Estimation and the Cluster-Adjusted Sandwich Estimator.” <em>Stata Technical Bulletin</em> 52:34–47.</p>
+</blockquote>
+<p>The package implements the framework for comparing predictions and marginal effects across models in:</p>
 <blockquote>
 <p>Mize, Trenton D., Long Doan, and J. Scott Long. 2019. “A General Framework for Comparing Predictions and Marginal Effects Across Models.” <em>Sociological Methodology</em> 49(1):152–189. <a href="https://doi.org/10.1177/0081175019852763" class="external-link">doi:10.1177/0081175019852763</a></p>
 </blockquote>

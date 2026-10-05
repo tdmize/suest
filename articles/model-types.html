@@ -75,8 +75,7 @@
 
     
     
-<p>Example 6.5 of Mize, Doan, and Long (2019). The <a href="https://www.trentonmize.com/software/mecompare/examples/model-types.html" class="external-link">same
-example in Stata</a> uses <code>mecompare</code>.</p>
+<p>Example 6.5 of Mize, Doan, and Long (2019).</p>
 <p>This example compares effects across two model types, an ordinal
 model and a nominal model, with the same outcome and predictors. It also
 shows a custom effect for a continuous predictor: a change in age from
@@ -97,7 +96,6 @@ shows a custom effect for a continuous predictor: a change in age from
 <span>            <span class="st">"faminc"</span>, <span class="st">"employed"</span>, <span class="st">"region4"</span>, <span class="st">"year"</span>, <span class="st">"race"</span><span class="op">)</span></span>
 <span><span class="va">dat65</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">gss</span>, <span class="va">year</span> <span class="op">&gt;=</span> <span class="fl">2010</span><span class="op">)</span></span>
 <span><span class="va">dat65</span> <span class="op">&lt;-</span> <span class="va">dat65</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">[</span><span class="va">vars65</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/stopifnot.html" class="external-link">stopifnot</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">)</span> <span class="op">==</span> <span class="fl">8179</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat65</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 8179</span></span>
 <span><span class="va">dat65</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat65</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"woman"</span>, <span class="st">"parent"</span>, <span class="st">"married"</span>, <span class="st">"race"</span>,</span>

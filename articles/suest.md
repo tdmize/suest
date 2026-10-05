@@ -311,8 +311,8 @@ avg_comparisons(analyses, variables = "x",
 ```
 
 `mice` warns “Large sample assumed.” here. That is expected: SUEST
-reports large-sample statistics, as Stata’s `suest` does, so the pooled
-degrees of freedom are Rubin’s large-sample values.
+reports large-sample statistics, so the pooled degrees of freedom are
+Rubin’s large-sample values.
 
 [`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
 pools the coefficients and their joint covariance:

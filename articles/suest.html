@@ -540,9 +540,8 @@ Rubin’s rules, including cross-model differences:</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">analyses</span>, variables <span class="op">=</span> <span class="st">"x"</span>,</span>
 <span>  hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span></code></pre></div>
 <p><code>mice</code> warns “Large sample assumed.” here. That is
-expected: SUEST reports large-sample statistics, as Stata’s
-<code>suest</code> does, so the pooled degrees of freedom are Rubin’s
-large-sample values.</p>
+expected: SUEST reports large-sample statistics, so the pooled degrees
+of freedom are Rubin’s large-sample values.</p>
 <p><code><a href="../reference/suest_mi.html">suest_mi()</a></code> pools the coefficients and their joint
 covariance:</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">

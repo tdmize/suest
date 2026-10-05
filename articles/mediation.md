@@ -1,8 +1,6 @@
 # Curvilinear effects and mediation/attenuation
 
-Example 6.1 of Mize, Doan, and Long (2019). The [same example in
-Stata](https://www.trentonmize.com/software/mecompare/examples/mediation.html)
-uses `mecompare`.
+Example 6.1 of Mize, Doan, and Long (2019).
 
 This example uses a linear regression with a nonlinear effect of income,
 included as income and income squared. We test whether adding a
@@ -29,7 +27,6 @@ factorize <- function(data, variables) {
 
 vars61 <- c("depsympB", "income", "inc10", "age", "woman", "race", "college", "jobsat")
 dat61 <- ah[complete.cases(ah[vars61]), ]
-stopifnot(nrow(dat61) == 4307)
 nrow(dat61)
 #> [1] 4307
 dat61 <- factorize(dat61, c("woman", "race", "jobsat"))

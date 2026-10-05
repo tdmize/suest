@@ -2,6 +2,13 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Documentation: the README cites Weesie (1999) as the origin of
+  seemingly unrelated estimation. The example articles no longer link to
+  the Stata versions or show the sample-size checks, an aside about the
+  analysis sample in the different-outcomes example was removed, and a
+  comparison with Stata was removed from Getting started. No code
+  changes.
+
 - Random-intercept ordered logit and probit models from
   [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
   (Stata’s `meologit`, `meoprobit`, `xtologit`, `xtoprobit`) are now
