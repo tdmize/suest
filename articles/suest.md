@@ -102,6 +102,8 @@ significant and the other is not.
 | Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with the same predictors in both equations |
 | Instrumental-variable regression (two-stage least squares) | [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html), unweighted and without absorbed fixed effects |
 | Instrumental-variable probit | [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html); predictions are average structural probabilities |
+| Generalized ordered logit (gologit2), including partial proportional odds | [`VGAM::vglm()`](https://rdrr.io/pkg/VGAM/man/vglm.html) with `cumulative(reverse = TRUE)` |
+| Heckman selection (maximum likelihood) | `sampleSelection::selection(method = "ml")` |
 
 ### Panel models
 
@@ -110,6 +112,7 @@ significant and the other is not.
 | Linear fixed-, between-, and random-effects | [`plm::plm()`](https://rdrr.io/pkg/plm/man/plm.html) with individual effects |
 | Random-effects logit and probit | `pglm::pglm(model = "random", effect = "individual")` |
 | Random-effects Poisson | `pglm::pglm(model = "random", effect = "individual", other = "sd")` |
+| Fixed-effects Poisson | `fixest::fepois(y ~ x | id)` |
 | Population-averaged (GEE) linear, logit, probit, complementary log-log, and Poisson | [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html) with independence or exchangeable correlation |
 
 ### Multilevel models
@@ -117,15 +120,19 @@ significant and the other is not.
 | Model | Fitted with |
 |----|----|
 | Linear random-intercept | `nlme::lme(method = "ML")` |
-| Random-intercept logit, Poisson, and negative binomial | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
-| Random intercept and slope, `(1 + x | id)`: logit, Poisson, and negative binomial | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
+| Random-intercept logit, probit, cloglog, Poisson, negative binomial, linear, and Gamma (log link) | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
+| Random intercept and slope, `(1 + x | id)`, for the same families | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
+| Linear random intercept or slope (ML) | `lme4::lmer(REML = FALSE)` |
+| Random-intercept or slope logit, probit, cloglog, and Poisson | [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html), any `nAGQ` |
+| Random-intercept ordered logit and probit | [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) |
 
 ### Survey models
 
 | Model | Fitted with |
 |----|----|
 | Linear regression | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) |
-| Binary logit and probit | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) with [`quasibinomial()`](https://rdrr.io/r/stats/family.html) |
+| Binary logit, probit, and cloglog | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) with [`quasibinomial()`](https://rdrr.io/r/stats/family.html) |
+| Poisson | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) with [`quasipoisson()`](https://rdrr.io/r/stats/family.html) |
 
 See [Survey data](#survey-data) below.
 
@@ -135,10 +142,16 @@ Models can use the same, partially overlapping, or completely different
 samples. Any single-level models can be combined, including models for
 different outcomes and models for categorical outcomes. Results on
 different scales are labeled separately rather than treated as directly
-comparable. Panel and multilevel models can be combined only with models
-of the same kind, such as two random-intercept logit models, and must be
-unweighted. Offsets are supported, except in `pglm()` and `glmmTMB()`
-models.
+comparable. Random-effects models
+([`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html), `pglm()`,
+`glmmTMB()`, lme4,
+[`clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)) can be combined
+with each other, including different families, and with linear, binary,
+count, and ordered models, such as a logit model with a random-intercept
+logit model. They must share one grouping variable, which the system is
+clustered on, and must be unweighted. Other panel models (`plm()`,
+`geeglm()`) can be combined only with models of the same kind. Offsets
+are supported, except in `pglm()` and `glmmTMB()` models.
 
 A few models have settings worth knowing about; see [Notes on specific
 models](https://tdmize.github.io/suest/articles/model-notes.md).
@@ -258,9 +271,10 @@ avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
 
 ## Survey data
 
-`suest` supports linear and binary logit or probit models fitted with
+`suest` supports linear, binary (logit, probit, cloglog), and Poisson
+models fitted with
 [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) from
-one common one-stage survey design:
+one common one-stage survey design, in any combination:
 
 ``` r
 
@@ -274,42 +288,50 @@ avg_slopes(fit, variables = "x", newdata = suest_newdata(fit), wts = ".suest_wei
 
 If either model uses a subset (domain) of the data, keep `design` as the
 full sampled design. The joint covariance accounts for strata, PSUs, and
-optional one-stage finite population corrections. Linear and binary
-models can’t be mixed in the same system. Replicate weights, multistage
-designs, calibration, and PPS designs are not supported.
+optional one-stage finite population corrections. Replicate weights,
+multistage designs, calibration, and PPS designs are not supported.
 
 ## Multiple imputation
 
 To combine results across imputed datasets, fit the same `suest` system
-in each one and pool them with
-[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md).
-Results from
-[`mice::with()`](https://amices.org/mice/reference/with.mids.html) can
-be pooled directly:
+in each one. With `mice`, [`with()`](https://rdrr.io/r/base/with.html)
+does this, and `marginaleffects` functions then estimate within each
+imputation and pool the results with Rubin’s rules, including
+cross-model differences:
 
 ``` r
 
 analyses <- with(imp, suest(
-  lm(y ~ x),
-  lm(y ~ x + z),
+  glm(y ~ x, family = binomial),
+  glm(y ~ x + z, family = binomial),
   model_names = c("Base", "Adjusted")
 ))
+avg_comparisons(analyses, variables = "x",
+  hypothesis = difference ~ revpairwise)
+```
+
+`mice` warns “Large sample assumed.” here. That is expected: SUEST
+reports large-sample statistics, as Stata’s `suest` does, so the pooled
+degrees of freedom are Rubin’s large-sample values.
+
+[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
+pools the coefficients and their joint covariance:
+
+``` r
+
 pooled <- suest_mi(analyses)
 summary(pooled)
 ```
 
-A list of [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
-results, one per imputation, or the result of
+`marginaleffects` functions give the same results on `pooled` as on
+`analyses`. A list of
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) results,
+one per imputation, or the result of
 `with(mitools::imputationList(...), suest(...))` can also be passed to
-[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md).
-
-[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
-applies Rubin’s rules to the full set of coefficients, keeping the
-covariance between models both within and between imputations. Tests of
-coefficients work through
-[`marginaleffects::hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html).
-Predictions, slopes, and comparisons are not yet available for pooled
-results.
+[`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md);
+`marginaleffects` then warns that it could not recover the original data
+from a `mids` object, which does not affect
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) results.
 
 ## Examples
 

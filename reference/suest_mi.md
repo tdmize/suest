@@ -82,7 +82,30 @@ the returned object. Legacy `"imputationResultList"` wrappers are
 accepted as well. The `mitools` package is not required for an
 already-created result list.
 
-This initial interface supports coefficients, covariance matrices,
-summaries, and coefficient-level hypotheses. Predictions, slopes, and
-comparisons must be estimated within each imputation and pooled as
-estimands; they are not yet implemented for `"suest_mi"` objects.
+## Marginal effects
+
+Predictions, slopes, comparisons, and hypothesis tests from
+`marginaleffects` are estimated within each imputation, using that
+imputation's joint SUEST covariance, and then pooled with Rubin's rules,
+as Stata's `mimrgns` does. Cross-model differences, such as
+`hypothesis = difference ~ revpairwise`, are pooled the same way. This
+works on the `"mira"` object from `with(imp, suest(...))` and equally on
+a `"suest_mi"` object, so the two give identical results:
+
+    analyses <- with(imp, suest(glm(y ~ x, family = binomial),
+                                glm(y ~ x + z, family = binomial)))
+    marginaleffects::avg_comparisons(analyses, variables = "x",
+      hypothesis = difference ~ revpairwise)
+    marginaleffects::avg_comparisons(suest_mi(analyses), variables = "x",
+      hypothesis = difference ~ revpairwise)
+
+Without `newdata`, each imputation's completed data are used when the
+imputations came from `mice`. For a plain list or `mitools` results,
+each imputation's own estimation sample is used instead, and
+`marginaleffects` warns that it could not recover the original data from
+a `mids` object; that warning does not apply to
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) results.
+`mice` warns "Large sample assumed." because SUEST, like Stata's
+`suest`, reports large-sample (z) statistics; the pooled degrees of
+freedom are then Rubin's large-sample values, as in Stata's
+`mi estimate`.

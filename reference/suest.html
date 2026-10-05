@@ -118,7 +118,9 @@ frame aligned to each model's estimation sample. Cluster IDs must be
 complete. Shared observations must have the same cluster ID in every
 model; disjoint observations may still share clusters across models.
 Supported panel systems default to the panel identifier when <code>cluster</code> is
-omitted. Supplied clusters for these models must contain whole panels.</p></dd>
+omitted, and systems that combine random-effects models with ordinary
+models default to the random-effects grouping variable. Supplied clusters
+for these models must contain whole panels.</p></dd>
 
 
 <dt id="arg-weight-type">weight_type<a class="anchor" aria-label="anchor" href="#arg-weight-type"></a></dt>
@@ -131,8 +133,9 @@ negative-binomial, ordered logit/probit, and multinomial logit models.</p></dd>
 
 <dt id="arg-survey-design">survey_design<a class="anchor" aria-label="anchor" href="#arg-survey-design"></a></dt>
 <dd><p>Full common one-stage <code><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">survey::svydesign()</a></code> object for
-supported <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> models: Gaussian identity or binary
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit. Requires <code>observation_id</code> column names.
+supported <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> models: Gaussian identity, binary
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit/cloglog, or <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasipoisson()</a></code> log.
+Requires <code>observation_id</code> column names.
 Retain the design before model-specific domain subsetting. Specify weights
 and clusters in this design, without <code>weight_type</code> or <code>cluster</code>. Ordinary
 models leave this argument <code>NULL</code>.</p></dd>
@@ -155,7 +158,13 @@ overlapping, or completely disjoint samples. When the model calls refer to
 the same data source, model-frame row names identify overlapping
 observations. Models fitted from different data objects are treated as
 disjoint by default because shared observations cannot be inferred safely.
-Use <code>observation_id</code> to identify their common observations explicitly.</p>
+Use <code>observation_id</code> to identify their common observations explicitly.
+<code>suest()</code> warns when such models share row names with identical values, and
+stops when models fit to the same data object disagree on rows with the same
+row names (for example, after the data were filtered and renumbered).</p>
+<p>When <code>newdata</code> is omitted in <code>marginaleffects</code> functions, each model is
+averaged over its own estimation sample, as with
+<code>newdata = suest_newdata(fit)</code>.</p>
 <p>All combinations of the supported scalar-response models can be combined,
 including models whose response variables or response scales differ. All
 combinations of the supported categorical-response models can be combined,
@@ -166,7 +175,9 @@ variance (<code>log(RSS / df.residual)</code> for unweighted fits). It has no ef
 predictions or marginal effects.
 Negative-binomial models include <code>log(theta)</code> in the joint parameter vector.
 Ordered and multinomial models use analytic score and observed-information
-calculations for stable robust covariance estimation.</p>
+calculations for stable robust covariance estimation.
+Probit and other GLMs with non-canonical links, and beta regressions, use
+observed information in the sandwich bread, as Stata does.</p>
 <p>Aliased parameters are not supported. Nonunit weights are rejected unless
 <code>weight_type = "pweight"</code>. Pweights must be finite and
 strictly positive. For observations included in any pair of models, evaluated
@@ -187,9 +198,9 @@ the joint sandwich covariance.</p>
     <h2 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a></h2>
 
 
-<p>Survey support combines coefficients from Gaussian identity-link and binary
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit <code>svyglm()</code> fits under one common one-stage
-design. Gaussian and binary fits are not mixed in the same survey system.
+<p>Survey support combines coefficients from Gaussian identity-link, binary
+<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit/cloglog, and <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasipoisson()</a></code> log
+<code>svyglm()</code> fits under one common one-stage design, in any combination.
 Strata and first-stage finite-population corrections are supported.
 Model-specific subsets and missing outcomes are aligned using observation
 IDs, with zero influence outside each model's estimation sample. The full
@@ -249,6 +260,30 @@ response predictions use the average structural probability</p></li>
 </ul></div>
 
 <div class="section">
+<h3 id="selection-models">Selection models<a class="anchor" aria-label="anchor" href="#selection-models"></a></h3>
+
+<ul><li><p>unweighted maximum-likelihood Heckman selection models from
+<code>sampleSelection::selection(method = "ml")</code>, Stata's <code>heckman</code>. The
+ancillary parameters use Stata's scale, <code>lnsigma</code> and <code>athrho</code>, and the
+equations are labeled <code>selection:</code> and <code>outcome:</code>. Predictions are the
+outcome equation's linear prediction, Stata's default</p></li>
+</ul></div>
+
+<div class="section">
+<h3 id="generalized-ordered-models">Generalized ordered models<a class="anchor" aria-label="anchor" href="#generalized-ordered-models"></a></h3>
+
+<ul><li><p>unweighted <code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm()</a></code> models with the <code>cumulative()</code> family and a
+logit, probit, or cloglog link: generalized ordered logit (Stata's
+<code>gologit2</code>), including the proportional (<code>parallel = TRUE</code>) and partial
+proportional odds forms (for example <code>parallel = FALSE ~ x</code>). Use
+<code>reverse = TRUE</code> for gologit2's <code>P(Y &gt; j) = F(eta_j)</code> parameterization;
+both directions are supported. suest computes the scores analytically
+and the observed information (as Stata does) by differentiating them;
+VGAM's own covariance uses expected information. Predictions are
+category probabilities</p></li>
+</ul></div>
+
+<div class="section">
 <h3 id="panel-models">Panel models<a class="anchor" aria-label="anchor" href="#panel-models"></a></h3>
 
 <ul><li><p>unweighted individual fixed-effects, between-effects, and Swamy-Arora
@@ -264,6 +299,15 @@ and <code>R = 12</code>; response predictions integrate over the random effect</
 <li><p>unweighted gamma random-effects Poisson log models from <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code>
 fitted with <code>model = "random"</code>, <code>effect = "individual"</code>, and
 <code>other = "sd"</code>; the final parameter is exposed as gamma variance <code>alpha</code></p></li>
+<li><p>unweighted fixed-effects Poisson models from <code><a href="https://lrberge.github.io/fixest/reference/feglm.html" class="external-link">fixest::fepois()</a></code> with one
+absorbed fixed effect (Stata's <code>xtpoisson, fe</code>), clustered on that
+effect with no <code>G/(G-1)</code> factor, as in Stata's native
+<code>xtpoisson, fe vce(robust)</code>. Each unit's fixed effect is a function of the coefficients,
+<code>log(sum(y_i)) - log(sum(exp(x_i b)))</code>, so response predictions
+<code>exp(x b + alpha_i)</code> match <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for fixest and carry the
+coefficients' uncertainty; newdata must contain the fixed-effect
+variable. Link-scale effects equal the coefficients, as in Stata. These
+models combine only with other fixed-effects Poisson models</p></li>
 <li><p>unweighted GEE from <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity,
 binary logit/probit/cloglog, and Poisson log, with independence or
 exchangeable correlation and numeric outcomes</p></li>
@@ -273,12 +317,25 @@ exchangeable correlation and numeric outcomes</p></li>
 <h3 id="multilevel-models">Multilevel models<a class="anchor" aria-label="anchor" href="#multilevel-models"></a></h3>
 
 <ul><li><p>unweighted single-level random-intercept Gaussian models from
-<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> fitted with <code>method = "ML"</code></p></li>
-<li><p>unweighted binomial-logit, Poisson-log, and negative-binomial NB2 log models from
+<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> fitted with <code>method = "ML"</code>, matching Stata's
+<code>xtreg, mle</code> (full observed-information bread). For Stata's <code>mixed</code>
+layout, fit the same model with <code>lme4::lmer(..., REML = FALSE)</code>; the
+standard errors differ only slightly</p></li>
+<li><p>unweighted binomial (logit, probit, cloglog), Poisson-log, negative-binomial
+NB2 log, Gaussian-identity, and Gamma-log models from
 <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with one grouping variable and one conditional random
 intercept; the final parameter is the log random-intercept standard
 deviation, and response predictions integrate over the Gaussian random
-effect. NB2 models must use the default constant dispersion model
+effect (probit <code>pnorm(eta/sqrt(1 + v))</code>, log links <code>exp(eta + v/2)</code>,
+Gaussian <code>eta</code>, logit and cloglog by quadrature, where <code>v</code> is the
+random-effect variance). Gaussian models add <code>log_sigma_e</code>, the log
+residual standard deviation, and Gamma models <code>log_shape</code>, the log shape
+parameter (Stata's <code>/logs</code> equals <code>-log_shape/2</code>), before the
+random-effect parameters. Gaussian random-effects models from <code>lmer()</code> or
+<code>glmmTMB()</code> use the covariance layout of Stata's <code>mixed</code>: the fixed
+effects' bread is <code>(X'V^-1 X)^-1</code>, the variance parameters' bread is
+their block of the full observed-information inverse, and the two blocks
+are uncorrelated. NB2 models must use the default constant dispersion model
 (<code>dispformula = ~1</code>); its estimated log size parameter <code>log_phi</code> precedes
 <code>log_sigma</code>, with conditional variance <code>mu + mu^2/exp(log_phi)</code>.
 Weights, offsets, and zero inflation are unsupported;
@@ -288,22 +345,21 @@ the same fixed effects and dispersion by more than
 <code>sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))</code>.
 This numerical boundary check is not a significance test and does not
 guarantee an interior global maximum</p></li>
-<li><p>unweighted binomial-logit, Poisson-log, and NB2-log <code>glmmTMB</code> models with one correlated random
+<li><p>the same <code>glmmTMB</code> families with one correlated random
 intercept and numeric slope, <code>(1 + x | id)</code>, using an unstructured
 covariance matrix. The slope must be a single untransformed numeric
 column with a syntactically valid name. The nuisance parameters are
 <code>log_sd_intercept</code>, <code>log_sd_slope</code>, and <code>atanh_rho</code>. NB2 requires the
 default estimated constant dispersion (<code>dispformula = ~1</code>), includes
 <code>log_phi</code> before these three parameters, and uses the NB2 boundary check
-above. Count response predictions
-are <code>exp(X beta + (var_intercept + 2*x*cov_intercept_slope + x^2*var_slope)/2)</code>. Binomial response predictions integrate the logistic
-probability over this Gaussian variance; responses must be Bernoulli.
+above; Gaussian and Gamma models include <code>log_sigma_e</code> or <code>log_shape</code>
+there. Response predictions use the random-intercept formulas with
+<code>v = var_intercept + 2*x*cov_intercept_slope + x^2*var_slope</code>; binomial
+responses must be Bernoulli.
 Link predictions are <code>X beta</code>. Near-singular random
 covariance is rejected in a centered, standardized predictor basis.
 Weights, offsets, zero inflation, constraints, diagonal covariance,
-multiple slopes, slope-only terms, and other random-slope families are
-unsupported. Random-slope systems must contain models of the same family;
-the slope variable must be supplied for response predictions even when
+multiple slopes, and slope-only terms are unsupported. The slope variable must be supplied for response predictions even when
 it is absent from the fixed-effects formula. Native model covariance is
 used as supplied. Poorly scaled predictors can produce inaccurate native
 numerical curvature even with convergence and a positive-definite Hessian;
@@ -314,13 +370,51 @@ For logit random-slope <code><a href="https://rdrr.io/pkg/marginaleffects/man/sl
 steps (for example, <code>5e-5</code> and <code>2e-4</code>). An unstable standard error
 requires further investigation; changing the finite-difference step
 does not repair an inaccurate native model covariance</p></li>
+<li><p>unweighted <code><a href="https://rdrr.io/pkg/lme4/man/lmer.html" class="external-link">lme4::lmer()</a></code> models fit with <code>REML = FALSE</code>, and
+<code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code> binomial (logit, probit, cloglog) and Poisson-log models,
+with one grouping variable and a random intercept or one correlated
+numeric slope. They use the same parameters and predictions as the
+matching <code>glmmTMB</code> models. suest computes their group scores and observed
+information from its own per-group likelihood: exact for <code>lmer</code>, Laplace
+or adaptive Gauss-Hermite with the fit's <code>nAGQ</code> for <code>glmer</code>.
+<code>glmer(..., nAGQ = 7)</code> uses mode-curvature adaptive quadrature with 7
+points, Stata's <code>intmethod(mcaghermite) intpoints(7)</code>. lme4's default
+Laplace fits stop the inner mode search early; for closer agreement with
+other software, fit with <code>control = lme4::glmerControl(tolPwrss = 1e-12)</code></p></li>
+<li><p>unweighted random-intercept ordered logit and probit models from
+<code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> with one grouping variable and flexible thresholds
+(Stata's <code>meologit</code>, <code>meoprobit</code>, <code>xtologit</code>, <code>xtoprobit</code>), fit with
+Laplace (<code>nAGQ = 1</code>) or adaptive quadrature (<code>nAGQ &gt; 1</code>; 7 points match
+Stata's <code>intmethod(mcaghermite) intpoints(7)</code>). Parameters are the
+thresholds, the coefficients, and <code>log_sigma</code>. suest computes scores and
+observed information from its own per-group likelihood, which
+reproduces clmm's. Predictions are category probabilities integrated
+over the random intercept</p></li>
 </ul></div>
+
+<div class="section">
+<h3 id="combining-random-effects-and-ordinary-models">Combining random-effects and ordinary models<a class="anchor" aria-label="anchor" href="#combining-random-effects-and-ordinary-models"></a></h3>
+
+
+<p>Random-effects models from <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>, <code><a href="https://rdrr.io/pkg/pglm/man/pglm.html" class="external-link">pglm::pglm()</a></code>,
+<code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code>, lme4, and <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code> can be combined with each other, including different
+families, and with linear, binary logit, probit, and cloglog, Poisson,
+negative binomial, and ordered logit and probit models, as in Stata's
+suest2. Every random-effects model must use the same grouping variable,
+and the ordinary models' data must contain it. The system is clustered on
+that group, or on <code>cluster</code>, which must contain whole groups. Each model's
+block of the covariance then equals that model's own covariance clustered
+on the group, including the <code>(N - 1)/(N - k)</code> adjustment for linear
+models. <code>plm</code> and <code>geeglm</code> models combine only with models of the same
+type.</p>
+</div>
 
 <div class="section">
 <h3 id="survey-models-1">Survey models<a class="anchor" aria-label="anchor" href="#survey-models-1"></a></h3>
 
-<ul><li><p>restricted survey-weighted Gaussian identity and binary
-<code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> logit/probit models from <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code></p></li>
+<ul><li><p>restricted survey-weighted Gaussian identity, binary <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code>
+logit/probit/cloglog, and <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasipoisson()</a></code> log models from
+<code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code>, in any combination</p></li>
 </ul></div>
 
     </div>

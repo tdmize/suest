@@ -17,6 +17,9 @@ suest_newdata(object)
   A `"suest_model"` returned by
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md).
 
+  Variables used inside formula transformations, such as `g` in
+  `factor(g)`, are included from the data the model was fit to.
+
 ## Value
 
 A data frame with the component model frames stacked vertically and

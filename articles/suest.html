@@ -253,6 +253,18 @@ effects</td>
 <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>; predictions are average structural
 probabilities</td>
 </tr>
+<tr class="even">
+<td>Generalized ordered logit (gologit2), including partial proportional
+odds</td>
+<td>
+<code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm()</a></code> with
+<code>cumulative(reverse = TRUE)</code>
+</td>
+</tr>
+<tr class="odd">
+<td>Heckman selection (maximum likelihood)</td>
+<td><code>sampleSelection::selection(method = "ml")</code></td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -283,6 +295,10 @@ probabilities</td>
 <td><code>pglm::pglm(model = "random", effect = "individual", other = "sd")</code></td>
 </tr>
 <tr class="even">
+<td>Fixed-effects Poisson</td>
+<td><code>fixest::fepois(y ~ x | id)</code></td>
+</tr>
+<tr class="odd">
 <td>Population-averaged (GEE) linear, logit, probit, complementary
 log-log, and Poisson</td>
 <td>
@@ -310,13 +326,28 @@ correlation</td>
 <td><code>nlme::lme(method = "ML")</code></td>
 </tr>
 <tr class="even">
-<td>Random-intercept logit, Poisson, and negative binomial</td>
+<td>Random-intercept logit, probit, cloglog, Poisson, negative binomial,
+linear, and Gamma (log link)</td>
 <td><code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code></td>
 </tr>
 <tr class="odd">
-<td>Random intercept and slope, <code>(1 + x | id)</code>: logit,
-Poisson, and negative binomial</td>
+<td>Random intercept and slope, <code>(1 + x | id)</code>, for the same
+families</td>
 <td><code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code></td>
+</tr>
+<tr class="even">
+<td>Linear random intercept or slope (ML)</td>
+<td><code>lme4::lmer(REML = FALSE)</code></td>
+</tr>
+<tr class="odd">
+<td>Random-intercept or slope logit, probit, cloglog, and Poisson</td>
+<td>
+<code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>, any <code>nAGQ</code>
+</td>
+</tr>
+<tr class="even">
+<td>Random-intercept ordered logit and probit</td>
+<td><code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code></td>
 </tr>
 </tbody>
 </table>
@@ -325,6 +356,10 @@ Poisson, and negative binomial</td>
 <h3 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a>
 </h3>
 <table class="table">
+<colgroup>
+<col width="50%">
+<col width="50%">
+</colgroup>
 <thead><tr class="header">
 <th>Model</th>
 <th>Fitted with</th>
@@ -335,9 +370,15 @@ Poisson, and negative binomial</td>
 <td><code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code></td>
 </tr>
 <tr class="even">
-<td>Binary logit and probit</td>
+<td>Binary logit, probit, and cloglog</td>
 <td>
 <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code>
+</td>
+</tr>
+<tr class="odd">
+<td>Poisson</td>
+<td>
+<code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasipoisson()</a></code>
 </td>
 </tr>
 </tbody>
@@ -351,9 +392,14 @@ Poisson, and negative binomial</td>
 different samples. Any single-level models can be combined, including
 models for different outcomes and models for categorical outcomes.
 Results on different scales are labeled separately rather than treated
-as directly comparable. Panel and multilevel models can be combined only
-with models of the same kind, such as two random-intercept logit models,
-and must be unweighted. Offsets are supported, except in
+as directly comparable. Random-effects models (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>,
+<code>pglm()</code>, <code>glmmTMB()</code>, lme4, <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">clmm()</a></code>)
+can be combined with each other, including different families, and with
+linear, binary, count, and ordered models, such as a logit model with a
+random-intercept logit model. They must share one grouping variable,
+which the system is clustered on, and must be unweighted. Other panel
+models (<code>plm()</code>, <code>geeglm()</code>) can be combined only
+with models of the same kind. Offsets are supported, except in
 <code>pglm()</code> and <code>glmmTMB()</code> models.</p>
 <p>A few models have settings worth knowing about; see <a href="model-notes.html">Notes on specific models</a>.</p>
 </div>
@@ -461,9 +507,9 @@ different samples. When the models have different estimation samples,
 <div class="section level2">
 <h2 id="survey-data">Survey data<a class="anchor" aria-label="anchor" href="#survey-data"></a>
 </h2>
-<p><code>suest</code> supports linear and binary logit or probit models
-fitted with <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> from one common one-stage
-survey design:</p>
+<p><code>suest</code> supports linear, binary (logit, probit, cloglog),
+and Poisson models fitted with <code><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">survey::svyglm()</a></code> from one
+common one-stage survey design, in any combination:</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
 <span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="va">psu</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">strata</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">w</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
@@ -474,33 +520,42 @@ survey design:</p>
 <p>If either model uses a subset (domain) of the data, keep
 <code>design</code> as the full sampled design. The joint covariance
 accounts for strata, PSUs, and optional one-stage finite population
-corrections. Linear and binary models can’t be mixed in the same system.
-Replicate weights, multistage designs, calibration, and PPS designs are
-not supported.</p>
+corrections. Replicate weights, multistage designs, calibration, and PPS
+designs are not supported.</p>
 </div>
 <div class="section level2">
 <h2 id="multiple-imputation">Multiple imputation<a class="anchor" aria-label="anchor" href="#multiple-imputation"></a>
 </h2>
 <p>To combine results across imputed datasets, fit the same
-<code>suest</code> system in each one and pool them with
-<code><a href="../reference/suest_mi.html">suest_mi()</a></code>. Results from <code><a href="https://amices.org/mice/reference/with.mids.html" class="external-link">mice::with()</a></code> can be
-pooled directly:</p>
+<code>suest</code> system in each one. With <code>mice</code>,
+<code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> does this, and <code>marginaleffects</code>
+functions then estimate within each imputation and pool the results with
+Rubin’s rules, including cross-model differences:</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">analyses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, family <span class="op">=</span> <span class="va">binomial</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, family <span class="op">=</span> <span class="va">binomial</span><span class="op">)</span>,</span>
 <span>  model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest_mi.html">suest_mi</a></span><span class="op">(</span><span class="va">analyses</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">analyses</span>, variables <span class="op">=</span> <span class="st">"x"</span>,</span>
+<span>  hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span></code></pre></div>
+<p><code>mice</code> warns “Large sample assumed.” here. That is
+expected: SUEST reports large-sample statistics, as Stata’s
+<code>suest</code> does, so the pooled degrees of freedom are Rubin’s
+large-sample values.</p>
+<p><code><a href="../reference/suest_mi.html">suest_mi()</a></code> pools the coefficients and their joint
+covariance:</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest_mi.html">suest_mi</a></span><span class="op">(</span><span class="va">analyses</span><span class="op">)</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
-<p>A list of <code><a href="../reference/suest.html">suest()</a></code> results, one per imputation, or the
-result of <code>with(mitools::imputationList(...), suest(...))</code>
-can also be passed to <code><a href="../reference/suest_mi.html">suest_mi()</a></code>.</p>
-<p><code><a href="../reference/suest_mi.html">suest_mi()</a></code> applies Rubin’s rules to the full set of
-coefficients, keeping the covariance between models both within and
-between imputations. Tests of coefficients work through
-<code><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">marginaleffects::hypotheses()</a></code>. Predictions, slopes, and
-comparisons are not yet available for pooled results.</p>
+<p><code>marginaleffects</code> functions give the same results on
+<code>pooled</code> as on <code>analyses</code>. A list of
+<code><a href="../reference/suest.html">suest()</a></code> results, one per imputation, or the result of
+<code>with(mitools::imputationList(...), suest(...))</code> can also be
+passed to <code><a href="../reference/suest_mi.html">suest_mi()</a></code>; <code>marginaleffects</code> then
+warns that it could not recover the original data from a
+<code>mids</code> object, which does not affect <code><a href="../reference/suest.html">suest()</a></code>
+results.</p>
 </div>
 <div class="section level2">
 <h2 id="examples">Examples<a class="anchor" aria-label="anchor" href="#examples"></a>
