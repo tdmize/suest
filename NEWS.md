@@ -1,5 +1,10 @@
 # suest 0.1.6.9000 (development)
 
+* Works with lme4 2.1. For Poisson `glmer()` fits with `nAGQ > 1`, lme4 2.1
+  reports the full log likelihood, while lme4 1.1 reported it less that of the
+  saturated model; suest's check that it reproduces lme4's log likelihood now
+  accepts either, so these models are no longer refused.
+
 * `suest()` is much faster for multilevel and panel models with many groups:
   lme4 (`lmer()`, `glmer()`), `glmmTMB()`, and `ordinal::clmm()` models. Each
   group's likelihood is now computed for all groups at once instead of one

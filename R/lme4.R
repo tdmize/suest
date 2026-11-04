@@ -217,14 +217,15 @@
   glmer <- identical(wrapper$engine, "lme4::glmer")
   nagq <- unname(wrapper$fit@devcomp$dims["nAGQ"])
   laplace <- glmer && nagq == 1L
-  # With nAGQ > 1, lme4 reports the log likelihood less that of the saturated
-  # model (zero for Bernoulli outcomes).
+  # For nAGQ > 1 Poisson fits, lme4 1.1 reports the log likelihood less that of
+  # the saturated model and lme4 2.1 the full value; accept either.
   y <- as.numeric(lme4::getME(wrapper$fit, "y"))
   saturated <- if (glmer && nagq > 1L && .suest_glmm_family(type) == "poisson")
     sum(stats::dpois(y, y, log = TRUE)) else 0
   base <- evaluate(parameters, scores = TRUE)
-  if (!isTRUE(all.equal(sum(base$loglik), as.numeric(stats::logLik(wrapper$fit)) + saturated,
-      tolerance = if (laplace) 1e-4 else 1e-6)))
+  reported <- as.numeric(stats::logLik(wrapper$fit)) + unique(c(0, saturated))
+  if (!any(vapply(reported, function(value) isTRUE(all.equal(sum(base$loglik), value,
+      tolerance = if (laplace) 1e-4 else 1e-6)), logical(1))))
     stop("Could not reproduce the lme4 log likelihood for its scores.", call. = FALSE)
   .suest_re_components(evaluate, parameters, base,
     .suest_lme4_random_info(wrapper)$id, rownames(wrapper$frame))
