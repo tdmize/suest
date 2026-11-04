@@ -177,3 +177,41 @@ test_that("disjoint samples retain every multi-category factor contrast", {
   compare_predictions(predictions, pred_pre, "Pre")
   compare_predictions(predictions, pred_post, "Post")
 })
+
+test_that("counterfactual predictions keep the values set in variables", {
+  m1 <- lm(mpg ~ hp + wt, data = mtcars)
+  m2 <- lm(mpg ~ hp + wt + qsec, data = mtcars)
+  fit <- suest(m1, m2, model_names = c("A", "B"))
+
+  p <- marginaleffects::avg_predictions(fit,
+    variables = list(hp = c(100, 200)), newdata = mtcars)
+  expect_equal(nrow(p), 4)
+  expect_equal(sort(unique(p$hp)), c(100, 200))
+  for (m in list(list("A", m1), list("B", m2))) for (h in c(100, 200)) {
+    nd <- transform(mtcars, hp = h)
+    expect_equal(p$estimate[p$group == m[[1]] & p$hp == h],
+                 mean(predict(m[[2]], nd)), tolerance = 1e-8)
+  }
+
+  d <- marginaleffects::avg_predictions(fit,
+    variables = list(hp = c(100, 200)), newdata = mtcars,
+    hypothesis = difference ~ pairwise | hp)
+  expect_equal(nrow(d), 2)
+
+  four <- lm(mpg ~ hp, data = mtcars, subset = cyl == 4)
+  other <- lm(mpg ~ hp, data = mtcars, subset = cyl != 4)
+  sep <- suest(four, other, model_names = c("Four", "Other"))
+  ps <- marginaleffects::avg_predictions(sep,
+    variables = list(hp = 100), newdata = suest_newdata(sep))
+  expect_equal(ps$estimate, c(sum(coef(four) * c(1, 100)),
+                              sum(coef(other) * c(1, 100))), tolerance = 1e-8)
+
+  ord <- MASS::polr(ordered(gear) ~ hp + wt, data = mtcars, Hess = TRUE)
+  nom <- nnet::multinom(factor(gear) ~ hp + wt, data = mtcars,
+                        trace = FALSE, Hess = TRUE)
+  cat_fit <- suest(ord, nom, model_names = c("ord", "nom"))
+  pc <- marginaleffects::avg_predictions(cat_fit,
+    variables = list(hp = c(100, 200)), newdata = mtcars)
+  expect_equal(nrow(pc), 12)
+  expect_equal(sort(unique(pc$hp)), c(100, 200))
+})

@@ -1246,8 +1246,7 @@
     model, type, "glmmTMB::glmmTMB")
   frame <- .suest_model_frame(model, "glmmTMB::glmmTMB")
   panel <- droplevels(factor(.suest_panel_id(model)))
-  panel_score <- sandwich::estfun(
-    model, full = TRUE, cluster = panel, rawnames = FALSE)
+  panel_score <- .suest_glmmtmb_group_scores(model, type)
   covariance <- as.matrix(stats::vcov(model, full = TRUE))
   n <- nrow(frame)
   p <- length(parameters)
@@ -1292,10 +1291,8 @@
     0, nrow = n, ncol = p,
     dimnames = list(rownames(frame), names(parameters))
   )
-  for (level in levels(panel)) {
-    rows <- which(panel == level)
-    score[rows[length(rows)], ] <- panel_score[level, ]
-  }
+  last <- which(!duplicated(panel, fromLast = TRUE))
+  score[last, ] <- panel_score[as.character(panel[last]), ]
 
   B <- n * covariance
   if (any(!is.finite(score)) || any(!is.finite(B)))

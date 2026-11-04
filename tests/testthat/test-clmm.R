@@ -19,7 +19,7 @@ test_that("clmm per-group likelihoods reproduce ordinal's log likelihood", {
     loglik <- suest:::.suest_clmm_group_loglik(model)
     parameters <- suest:::.suest_clmm_parameters(model)
     # clmm's Laplace stops its inner mode search at gradTol = 1e-4.
-    expect_equal(sum(loglik(parameters)), as.numeric(stats::logLik(model)),
+    expect_equal(sum(loglik(parameters)$loglik), as.numeric(stats::logLik(model)),
       tolerance = if (q == 1L) 1e-5 else 1e-9)
     component <- suest:::.suest_clmm_components(model)
     if (q > 1L) expect_lt(max(abs(colSums(component$score))), 1e-3)

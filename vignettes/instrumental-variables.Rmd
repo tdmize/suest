@@ -1,0 +1,49 @@
+---
+title: "Instrumental-variable models"
+description: "Comparing effects across two-stage least squares models with different instruments."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Instrumental-variable models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Two-stage least squares models fit with `fixest::feols()` can be combined
+like any other model. Here median rent in the 50 states (1980 Census) is
+regressed on median housing value, treated as endogenous, and the percent of
+the population that is urban. The first model instruments housing value with
+family income; the second adds the census regions as instruments.
+
+```{r iv}
+library(suest)
+library(marginaleffects)
+library(haven)
+library(fixest)
+
+hsng <- zap_labels(read_dta("https://tdmize.github.io/data/data/hsng2.dta"))
+
+iv1 <- feols(rent ~ pcturban | hsngval ~ faminc, data = hsng)
+iv2 <- feols(rent ~ pcturban | hsngval ~ faminc + factor(region), data = hsng)
+fit_iv <- suest(iv1, iv2, model_names = c("Income", "Income and region"))
+fit_iv
+```
+
+The effect of percent urban in each model, and the difference:
+
+```{r iv-effects}
+urban <- avg_slopes(fit_iv, variables = "pcturban", newdata = hsng)
+urban
+hypotheses(urban, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation:** Neither model shows a significant effect of the
+percent urban on rent. But the effects differ significantly across the two
+sets of instruments: adding the regions as instruments raises the effect by
+0.59 (\(p < .05\)).

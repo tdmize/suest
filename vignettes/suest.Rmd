@@ -41,20 +41,27 @@ remotes::install_github("tdmize/suest")
 ```{r libraries}
 library(suest)
 library(marginaleffects)
+library(haven)
 ```
 
 ## Basic workflow
 
-```{r basic-workflow}
-dat <- mtcars
-dat$am <- factor(dat$am)
+Two logit models of union membership, the second adding wages and work
+experience:
 
-base <- glm(am ~ wt, family = binomial("logit"), data = dat)
-adjusted <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
+```{r basic-workflow}
+nlsw <- zap_labels(read_dta("https://tdmize.github.io/data/data/nlsw88.dta"))
+nlsw <- nlsw[!is.na(nlsw$union), ]
+nlsw[c("collgrad", "south")] <- lapply(nlsw[c("collgrad", "south")], factor)
+
+base <- glm(union ~ collgrad + age + south, family = binomial("logit"),
+            data = nlsw)
+adjusted <- glm(union ~ collgrad + age + south + wage + ttl_exp,
+                family = binomial("logit"), data = nlsw)
 combined <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
 combined
 
-effects <- avg_comparisons(combined, variables = "wt", newdata = dat)
+effects <- avg_comparisons(combined, variables = "collgrad", newdata = nlsw)
 effects
 hypotheses(effects, hypothesis = difference ~ revpairwise)
 ```
@@ -62,6 +69,18 @@ hypotheses(effects, hypothesis = difference ~ revpairwise)
 The last command tests the difference between the two effects directly. That
 is different from checking whether one effect is statistically significant and
 the other is not.
+
+## Tests on coefficients
+
+`hypotheses()` lists the coefficients of every model with their joint robust
+standard errors. `b1`, `b2`, ... refer to them in that order, so they can be
+tested against each other across models:
+
+```{r coefficients}
+hypotheses(combined)
+hypotheses(combined, hypothesis = "b2 = b6")
+hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
+```
 
 ## Supported models
 
@@ -144,11 +163,14 @@ use `suest_newdata()` so each model's effects are averaged over its own
 sample:
 
 ```{r groups}
-four <- lm(mpg ~ wt + hp, data = mtcars, subset = cyl == 4)
-other <- lm(mpg ~ wt + hp, data = mtcars, subset = cyl != 4)
-fit_groups <- suest(four, other, model_names = c("Four cylinders", "Other"))
+south_model <- glm(union ~ age + hours + collgrad, family = binomial("logit"),
+                   data = nlsw, subset = south == 1)
+nonsouth_model <- glm(union ~ age + hours + collgrad, family = binomial("logit"),
+                      data = nlsw, subset = south == 0)
+fit_groups <- suest(south_model, nonsouth_model,
+                    model_names = c("South", "Non-South"))
 
-effects_groups <- avg_comparisons(fit_groups, variables = "wt",
+effects_groups <- avg_comparisons(fit_groups, variables = "collgrad",
                                   newdata = suest_newdata(fit_groups))
 effects_groups
 hypotheses(effects_groups, hypothesis = difference ~ revpairwise)
@@ -275,3 +297,10 @@ Six examples from Mize, Doan, and Long (2019), with code and output:
 4. [Different outcomes](different-outcomes.html)
 5. [Different model types](model-types.html): ordinal versus nominal
 6. [Separate samples or groups](groups.html)
+
+More examples: [group comparisons](chapter-groups.html) from Mize and Han
+(forthcoming), [multilevel models](multilevel.html),
+[panel models](panel.html), [within-person effects](within-person.html), and
+[instrumental-variable models](instrumental-variables.html).
+[Predictions and graphs](predictions.html) shows predictions from each model
+and tests and graphs of their differences.

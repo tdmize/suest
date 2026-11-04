@@ -515,7 +515,7 @@ suest <- function(
       call. = FALSE
     )
 
-  if (any(.suest_is_glmm(model_types)) &&
+  if (any(.suest_is_glmm(model_types) & model_engines == "glmmTMB::glmmTMB") &&
       !requireNamespace("glmmTMB", quietly = TRUE))
     stop(
       "Package 'glmmTMB' is required for GLMM random-effects models.",

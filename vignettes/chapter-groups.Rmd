@@ -1,0 +1,111 @@
+---
+title: "Group comparisons"
+description: "Section 4.2 of Mize and Han (forthcoming): separate models for each group."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Group comparisons}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+Section 4.2 of Mize and Han (forthcoming).
+
+Separate models for each group let *every* effect differ across the groups.
+These examples fit a model to each group and compare the effects across the
+models.
+
+```{r data}
+library(suest)
+library(marginaleffects)
+library(haven)
+
+gss <- zap_labels(read_dta("https://tdmize.github.io/data/data/gss_cme.dta"))
+wvs <- zap_labels(read_dta("https://tdmize.github.io/data/data/lvm_wvs6.dta"))
+
+factorize <- function(data, variables) {
+  data[variables] <- lapply(data[variables], factor)
+  data
+}
+```
+
+## Separate models for men and women (Table 6)
+
+The probability of being very happy among employed GSS respondents from 2000
+on, modeled separately for men and for women.
+
+```{r table-6-models}
+vars6 <- c("vhappy", "college", "wages", "occprest", "age", "married",
+           "parent", "woman", "conserv", "race")
+dat6 <- subset(gss, year >= 2000 & employed == 1)
+dat6 <- dat6[complete.cases(dat6[vars6]), ]
+dat6 <- factorize(dat6, c("college", "married", "parent", "conserv", "race"))
+
+men6 <- glm(vhappy ~ college + married + parent + conserv + race + age + I(age^2),
+            family = binomial("logit"), data = dat6, subset = woman == 0)
+women6 <- glm(vhappy ~ college + married + parent + conserv + race + age + I(age^2),
+              family = binomial("logit"), data = dat6, subset = woman == 1)
+fit6 <- suest(men6, women6, model_names = c("Men", "Women"))
+```
+
+The effect of every predictor, each averaged over its own group's sample,
+with all of the race contrasts and a one-standard-deviation increase in age:
+
+```{r table-6}
+effects6 <- avg_comparisons(fit6,
+  variables = list(college = "reference", married = "reference",
+                   parent = "reference", conserv = "reference",
+                   race = "pairwise", age = sd(dat6$age)),
+  newdata = suest_newdata(fit6))
+effects6
+```
+
+The difference between men and women in each effect:
+
+```{r table-6-differences}
+hypotheses(effects6, hypothesis = difference ~ revpairwise | term + contrast)
+```
+
+**Example interpretation:** Married men and married women both report being
+happier than their unmarried counterparts, and college degrees and
+conservatism have similar positive effects for both. The one significant
+gender difference is the effect of being a parent: it does not affect the
+probability of being very happy for men, but women who are parents are less
+likely to be very happy than women who are not.
+
+## Separate models for Germany and Nigeria
+
+Acceptance of same-sex relationships in the World Values Survey, regressed on
+age (with a squared term) separately in Germany and Nigeria. Each country has
+its own coefficients and its own observations, so the cross-model difference
+reflects both.
+
+```{r countries}
+wvs <- subset(wvs, age >= 18 & country %in% c(276, 566))
+
+germany <- lm(Jgaylesbian ~ age + I(age^2), data = wvs, subset = country == 276)
+nigeria <- lm(Jgaylesbian ~ age + I(age^2), data = wvs, subset = country == 566)
+fit_countries <- suest(germany, nigeria, model_names = c("Germany", "Nigeria"))
+
+age_effects <- avg_comparisons(fit_countries, variables = list(age = 10),
+                               newdata = suest_newdata(fit_countries))
+age_effects
+hypotheses(age_effects, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation:** A ten-year increase in age reduces acceptance of
+same-sex relationships in both countries, but much more in Germany than in
+Nigeria.
+
+## Reference
+
+Mize, Trenton D. and Bing Han. Forthcoming. "Marginal effects: flexible
+methods for interpretation across linear and nonlinear models." In
+*Understanding Data Modeling and Data Analysis*, edited by David Weakliem.
+Edward Elgar Publishing.

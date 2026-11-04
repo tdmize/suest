@@ -28,6 +28,7 @@ Suggests:
     censReg,
     fixest,
     geepack,
+    ggplot2,
     glmmTMB (>= 1.1.14),
     glm2,
     haven,

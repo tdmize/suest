@@ -35,7 +35,11 @@
                    envir = namespace)
   registerS3method("get_predict", "suest_mi", get_predict.suest_mi,
                    envir = namespace)
-  if (requireNamespace("insight", quietly = TRUE))
+  if (requireNamespace("insight", quietly = TRUE)) {
     registerS3method("get_data", "suest_model", get_data.suest_model,
                      envir = asNamespace("insight"))
+    registerS3method("find_predictors", "suest_model",
+                     find_predictors.suest_model,
+                     envir = asNamespace("insight"))
+  }
 }

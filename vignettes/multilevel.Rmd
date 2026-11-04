@@ -1,0 +1,98 @@
+---
+title: "Multilevel models"
+description: "Students nested in schools, and women nested in districts: mixed-effects logit and probit."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multilevel models}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100, scipen = 10)
+```
+
+```{r data}
+library(suest)
+library(marginaleffects)
+library(haven)
+library(lme4)
+
+ah <- zap_labels(read_dta("https://tdmize.github.io/data/data/ah_si_2026.dta"))
+bangladesh <- zap_labels(read_dta("https://tdmize.github.io/data/data/bangladesh.dta"))
+```
+
+## Ordinary and multilevel logit
+
+The coefficients of a multilevel logit are on a different scale than those of
+an ordinary logit, so they cannot be compared directly; the marginal effects
+can. The example uses wave 1 of Add Health: about 5,800 students in 132
+schools. The outcome is being a current smoker. The predictors are sex, age,
+race, and whether the student's mother has a college degree, plus a
+school-level variable: the share of students in the school whose mother has a
+college degree. The same model is fit as an ordinary logit, which ignores the
+schools, and as a logit with a random intercept for the school.
+
+```{r school-models}
+ah <- subset(ah, wave == 1)
+ah$school <- ah$cluster
+ah <- ah[complete.cases(ah[c("smoker", "male", "age", "race", "momeduc")]), ]
+ah$momcollege <- as.numeric(ah$momeduc >= 4)
+ah$school_momcollege <- ave(ah$momcollege, ah$school)
+ah[c("male", "race", "momcollege")] <- lapply(ah[c("male", "race", "momcollege")], factor)
+
+ordinary <- glm(smoker ~ male + age + race + momcollege + school_momcollege,
+                family = binomial("logit"), data = ah)
+multilevel <- glmer(smoker ~ male + age + race + momcollege + school_momcollege +
+                      (1 | school), family = binomial("logit"), data = ah)
+fit_school <- suest(ordinary, multilevel, model_names = c("Ordinary", "Multilevel"))
+```
+
+`suest()` clusters the standard errors on the school. The marginal effects
+average over the random intercept, so they are changes in predicted
+probabilities, as after the ordinary logit. Age and the school's share of
+college-educated mothers are increased by one standard deviation:
+
+```{r school-effects}
+effects_school <- avg_comparisons(fit_school,
+  variables = list(male = "reference", age = sd(ah$age), race = "reference",
+                   momcollege = "reference",
+                   school_momcollege = sd(ah$school_momcollege)),
+  newdata = ah)
+effects_school
+hypotheses(effects_school, hypothesis = difference ~ revpairwise | term + contrast)
+```
+
+**Example interpretation:** Most effects are nearly the same in the two
+models. The ordinary logit gives somewhat larger effects of age and race: for
+example, its Latinx-White difference is 11.2 percentage points, compared with
+8.5 in the multilevel logit (the difference of 2.6 points has \(p < .01\)).
+
+## Random-intercept logit and probit
+
+The Bangladesh Fertility Survey: contraceptive use among about 1,900 women in
+60 districts, modeled with a random-intercept logit and a random-intercept
+probit.
+
+```{r district-models}
+bangladesh$urban <- factor(bangladesh$urban)
+
+logit_re <- glmer(c_use ~ urban + age + (1 | district),
+                  family = binomial("logit"), data = bangladesh, nAGQ = 5)
+probit_re <- glmer(c_use ~ urban + age + (1 | district),
+                   family = binomial("probit"), data = bangladesh, nAGQ = 5)
+fit_district <- suest(logit_re, probit_re, model_names = c("Logit", "Probit"))
+
+effects_district <- avg_comparisons(fit_district,
+  variables = list(urban = "reference", age = 1), newdata = bangladesh)
+effects_district
+hypotheses(effects_district, hypothesis = difference ~ revpairwise | term + contrast)
+```
+
+**Example interpretation:** The logit and probit models give the same
+marginal effects. Living in an urban area raises the probability of using
+contraception by 15 percentage points in both models, and neither effect
+differs across them.

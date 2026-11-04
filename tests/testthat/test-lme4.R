@@ -59,7 +59,7 @@ test_that("glmer scores come from the fit's own quadrature", {
   wrapper <- suest:::.suest_wrap_lme4(adaptive)
   loglik <- suest:::.suest_lme4_group_loglik(wrapper, "glmm_logit_ri")
   parameters <- suest:::.suest_lme4_parameters(wrapper, "glmm_logit_ri")
-  expect_equal(sum(loglik(parameters)), as.numeric(stats::logLik(adaptive)),
+  expect_equal(sum(loglik(parameters)$loglik), as.numeric(stats::logLik(adaptive)),
     tolerance = 1e-9)
   component <- suest:::.suest_lme4_components(wrapper, "glmm_logit_ri")
   expect_lt(max(abs(colSums(component$score))), 1e-3)
@@ -134,4 +134,52 @@ test_that("lmer and Gaussian glmmTMB use Stata mixed's covariance layout", {
   score <- rowsum(component$score, d$id)[, 1:2]
   robust <- groups/(groups - 1)*bread[1:2, 1:2] %*% crossprod(score) %*% bread[1:2, 1:2]
   expect_equal(unname(vcov(fit)[1:2, 1:2]), unname(robust), tolerance = 1e-8)
+})
+
+test_that("glmer random-intercept scores are exact derivatives of the group log likelihood", {
+  skip_if_not_installed("lme4")
+  d <- lme4_test_data()
+  numeric_scores <- function(evaluate, theta) {
+    vapply(seq_along(theta), function(j) {
+      h <- 1e-5*max(1, abs(theta[j]))
+      up <- down <- theta
+      up[j] <- up[j] + h
+      down[j] <- down[j] - h
+      (evaluate(up)$loglik - evaluate(down)$loglik)/(2*h)
+    }, numeric(nlevels(d$id)))
+  }
+  fits <- list(
+    lme4::glmer(yb ~ x + (1 | id), family = binomial, data = d,
+      control = lme4::glmerControl(tolPwrss = 1e-12)),
+    lme4::glmer(yb ~ x + (1 | id), family = binomial, data = d, nAGQ = 7),
+    lme4::glmer(yb ~ x + (1 | id), family = binomial("probit"), data = d, nAGQ = 7),
+    lme4::glmer(yb ~ x + (1 | id), family = binomial("cloglog"), data = d, nAGQ = 7),
+    lme4::glmer(count ~ x + (1 | id), family = poisson, data = d,
+      control = lme4::glmerControl(tolPwrss = 1e-12)),
+    lme4::glmer(count ~ x + (1 | id), family = poisson, data = d, nAGQ = 7))
+  for (fit in fits) {
+    wrapper <- suest:::.suest_wrap_lme4(fit)
+    type <- suest:::.suest_lme4_adapter(wrapper)$type
+    evaluate <- suest:::.suest_lme4_group_loglik(wrapper, type)
+    theta <- suest:::.suest_lme4_parameters(wrapper, type)
+    exact <- evaluate(theta, scores = TRUE)$score
+    expect_equal(exact, numeric_scores(evaluate, theta), tolerance = 1e-6)
+  }
+})
+
+test_that("glmer random-slope systems match glmmTMB and singular fits are refused", {
+  skip_if_not_installed("lme4")
+  skip_if_not_installed("glmmTMB", minimum_version = "1.1.14")
+  d <- lme4_test_data()
+  slope <- lme4::glmer(count ~ x + (1 + x | id), family = poisson, data = d,
+    control = lme4::glmerControl(tolPwrss = 1e-12))
+  slope_tmb <- glmmTMB::glmmTMB(count ~ x + (1 + x | id), family = poisson, data = d)
+  partner <- lm(yc ~ x, d)
+  expect_equal(vcov(suest(slope, partner, model_names = c("m", "p"))),
+    vcov(suest(slope_tmb, partner, model_names = c("m", "p"))), tolerance = 1e-3)
+
+  singular <- suppressMessages(lme4::glmer(yb ~ x + (1 + x | id), family = binomial,
+    data = d))
+  skip_if_not(lme4::isSingular(singular))
+  expect_error(suest(singular, partner), "fit is singular")
 })

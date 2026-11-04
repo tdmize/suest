@@ -1,0 +1,70 @@
+---
+title: "Within-person effects"
+description: "Correlated random effects (Mundlak) logits: the within-person effect compared with the random-effects estimate."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Within-person effects}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+With panel data, the effect of a variable that changes over time can come from
+differences between people (people who are married compared with people who
+are not) or from changes within a person (the same person when married
+compared with when not married). A random-effects model mixes the two. The
+correlated random effects (Mundlak) specification isolates the within-person
+effect: add each time-varying predictor's person mean to a random-effects
+model, and the marginal effect of the predictor, holding its person mean
+fixed, is then the within-person effect.
+
+The data are those of the [panel models](panel.html) example: depressive
+symptoms among adults aged 51 and older in a 30% sample of households from the
+Health and Retirement Study, 2010 to 2020. Marital status and age change over
+time, so each gets its person mean.
+
+```{r models}
+library(suest)
+library(marginaleffects)
+library(haven)
+library(lme4)
+
+hrs <- zap_labels(read_dta("https://tdmize.github.io/data/data/hrs_si_2025.dta"))
+hrs <- subset(hrs, year >= 2010 & age >= 51 & (hhidpn %/% 1000) %% 10 < 3)
+hrs$depressed <- as.numeric(hrs$cesd >= 4)
+vars <- c("depressed", "marstatB", "age", "woman", "race4cat", "collegeB")
+hrs <- hrs[complete.cases(hrs[vars]), ]
+hrs$mean_marstatB <- ave(hrs$marstatB, hrs$hhidpn)
+hrs$mean_age <- ave(hrs$age, hrs$hhidpn)
+hrs[c("marstatB", "woman", "race4cat", "collegeB")] <-
+  lapply(hrs[c("marstatB", "woman", "race4cat", "collegeB")], factor)
+
+re <- glmer(depressed ~ marstatB + I(age - 65) + woman + race4cat + collegeB +
+              (1 | hhidpn), family = binomial, data = hrs, nAGQ = 25,
+            control = glmerControl(optimizer = "bobyqa"))
+cre <- glmer(depressed ~ marstatB + mean_marstatB + I(age - 65) + I(mean_age - 65) +
+               woman + race4cat + collegeB + (1 | hhidpn), family = binomial,
+             data = hrs, nAGQ = 25, control = glmerControl(optimizer = "bobyqa"))
+fit <- suest(re, cre, model_names = c("Random effects", "Within-person"))
+```
+
+The marginal effect of being married in each model, and the difference:
+
+```{r effects}
+married <- avg_comparisons(fit, variables = "marstatB", newdata = hrs)
+married
+hypotheses(married, hypothesis = difference ~ revpairwise)
+```
+
+**Example interpretation:** In the random-effects model, being married is
+associated with a 9.6 percentage point reduction in the probability of
+depressive symptoms. Examining only within-person variation, the effect of
+being married is a 6.6 percentage point reduction. The random-effects
+estimate is 3.0 points larger (\(p < .001\)) because it pools both
+between- and within-person variation.

@@ -170,12 +170,15 @@
       result[regular] <- drop(stats::plogis(outer(sigma[regular], rule$nodes) +
         eta[regular]) %*% rule$weights)
     }
-    # Integrating over the logistic density stays smooth at large normal SDs.
+    # At large normal SDs, integrate over the logistic density instead: the
+    # integrand is smooth, so an evenly spaced rule on [-45, 45] is accurate
+    # to about 1e-14.
     wide <- which(is.finite(eta) & !is.na(sigma) & sigma > 3)
-    for (i in wide)
-      result[i] <- stats::integrate(function(t)
-        stats::plogis(t)*stats::plogis(-t)*stats::pnorm((eta[i]-t)/sigma[i]),
-        -Inf, Inf, rel.tol = 1e-12, abs.tol = 1e-13)$value
+    if (length(wide)) {
+      t <- seq(-45, 45, by = 0.25)
+      result[wide] <- drop(stats::pnorm(outer(eta[wide], t, "-")/sigma[wide]) %*%
+        (0.25*stats::dlogis(t)))
+    }
     result
   }
 })
@@ -505,7 +508,10 @@
         "Weighted pglm random-effects models are not supported.",
         call. = FALSE
       )
-    if (!identical(model$code, 0L))
+    # maxLik's optim-based methods (BFGS, Nelder-Mead, ...) return code 0 on
+    # success; its Newton-type methods (pglm's default) return 1, 2, or 8.
+    newton <- !is.null(model$type) && grepl("Newton|BHHH|BFGSR", model$type)
+    if (!(model$code %in% if (newton) c(1L, 2L, 8L) else 0L))
       stop(
         "The pglm random-effects model did not converge.",
         call. = FALSE

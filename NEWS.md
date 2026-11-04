@@ -1,5 +1,51 @@
 # suest 0.1.6.9000 (development)
 
+* `suest()` is much faster for multilevel and panel models with many groups:
+  lme4 (`lmer()`, `glmer()`), `glmmTMB()`, and `ordinal::clmm()` models. Each
+  group's likelihood is now computed for all groups at once instead of one
+  group at a time. Random-intercept `glmer()` and `clmm()` models use exact
+  group scores instead of numerical derivatives, and `glmmTMB()` models no
+  longer build a separate differentiation object for each group. Two
+  random-intercept logits on 26,000 people with 25-point quadrature now
+  combine in about 35 seconds instead of about 100 minutes. Results agree
+  with the previous version to about six digits (`glmmTMB()` scores to about
+  ten).
+
+* Population-averaged predictions from random-intercept logit models whose
+  random-intercept standard deviation is above 3 are much faster: one
+  numerical integral per observation is replaced by a quadrature rule applied
+  to all observations at once. Results agree to about 1e-14.
+
+* Fixed: `pglm()` random-effects models fit with pglm's default
+  Newton-Raphson method were refused as not converged. maxLik reports
+  convergence with codes 1, 2, or 8 for its Newton-type methods; code 0 is
+  only for its optim-based methods such as BFGS.
+
+* Singular lme4 fits, with a random-effect standard deviation of zero or an
+  intercept-slope correlation of -1 or 1, are now refused with a message
+  (`lme4::isSingular()`). Before, a correlation of -1 or 1 was not caught.
+
+* Fixed: `predictions()` and `avg_predictions()` with `variables` (for
+  example `avg_predictions(fit, variables = list(x = c(0, 10)))`) dropped the
+  values of `x` and averaged over all of them, so each model got one
+  prediction instead of one per value. suest now tells `marginaleffects`
+  which variables its models use (an `insight::find_predictors()` method), so
+  counterfactual grids keep those values. `datagrid(grid_type =
+  "counterfactual")` was not affected.
+
+* Fixed: `lme4::glmer()` models no longer require glmmTMB to be installed.
+
+* Documentation: new example articles: Predictions and graphs (Figures 3 to
+  6 of Mize, Doan, and Long 2019, and graphs of marginal effects and their
+  cross-model differences), group comparisons from Mize and Han
+  (forthcoming), multilevel models, panel models (random-effects logits and
+  fixed effects), within-person effects (correlated random effects), and
+  instrumental-variable models. Getting started now uses the `nlsw88` data and shows tests on
+  coefficients across models. The nested-models example compares all four
+  models, the mediation example adds the proportion mediated, and the
+  different-outcomes example tests the cross-outcome difference for every
+  predictor. `ggplot2` added to Suggests for the graphs.
+
 * Documentation: the README cites Weesie (1999) as the origin of seemingly
   unrelated estimation. The example articles no longer link to the Stata
   versions or show the sample-size checks, an aside about the analysis sample

@@ -54,14 +54,16 @@ variables64 <- list(woman = "reference", married = "reference", parent = "refere
   race = "reference", year = "reference")
 effects64 <- avg_comparisons(fit64, variables = variables64, newdata = dat64)
 effects64
-
-age64 <- avg_comparisons(fit64, variables = list(age = sd(dat64$age)),
-                         newdata = dat64)
-hypotheses(age64, hypothesis = difference ~ revpairwise)
 ```
 
 `age = sd(dat64$age)` asks for a one-standard-deviation increase from each
 person's observed age.
+
+The cross-outcome difference for each effect:
+
+```{r example-6-4-differences}
+hypotheses(effects64, hypothesis = difference ~ revpairwise | term + contrast)
+```
 
 **Example interpretations:** Women report about 0.99 more poor
 mental-health days and 0.77 more poor physical-health days per month than men.
@@ -72,7 +74,7 @@ Being married significantly reduces poor mental-health days by about 1.01,
 whereas its effect on poor physical-health days is not statistically
 significant. The direct comparison shows that the effect of marriage is
 significantly larger for mental health than for physical health
-(cross-model difference = -0.851, \(p < .01\)).
+(cross-model difference = -0.851, \(p < .001\)).
 
 Similarly, the effect of age differs significantly across the outcomes:
 aging is associated with fewer poor mental-health days but more poor

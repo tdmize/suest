@@ -44,109 +44,82 @@
 .suest_clmm_cdf <- function(link) {
   if (link == "logit")
     list(F = stats::plogis, f = stats::dlogis,
-      fprime = function(t) stats::dlogis(t)*(1 - 2*stats::plogis(t)))
+      fprime = function(t) stats::dlogis(t)*(1 - 2*stats::plogis(t)),
+      fsecond = function(t) {
+        f <- stats::dlogis(t)
+        f*(1 - 2*stats::plogis(t))^2 - 2*f^2
+      })
   else
     list(F = stats::pnorm, f = stats::dnorm,
-      fprime = function(t) ifelse(is.finite(t), -t*stats::dnorm(t), 0))
+      fprime = function(t) ifelse(is.finite(t), -t*stats::dnorm(t), 0),
+      fsecond = function(t) ifelse(is.finite(t), (t^2 - 1)*stats::dnorm(t), 0))
 }
 
+# Per-group log likelihood of the suest parameter vector (thresholds, fixed
+# effects, log SD) for all groups at once, with exact group scores.
 .suest_clmm_group_loglik <- function(model) {
   X <- .suest_clmm_design(model, model$model)
   y <- as.integer(model$model[[1L]])
   id <- .suest_clmm_id(model)
-  rows <- split(seq_along(y), id)
   K <- length(model$alpha)
   p <- ncol(X)
   cdf <- .suest_clmm_cdf(model$link)
-  rule <- if (model$nAGQ > 1L) .suest_normal_quadrature(model$nAGQ) else NULL
+  rule <- if (model$nAGQ > 1L) {
+    hermite <- .suest_normal_quadrature(model$nAGQ)
+    list(z = hermite$nodes, w = hermite$weights)
+  }
+  engine <- .suest_re_engine(id, X, rule = rule)
+  n <- length(y)
+  upper <- which(y <= K)
+  lower <- which(y >= 2L)
+  # Threshold columns: theta_y moves the upper bound, theta_(y-1) the lower one.
+  scatter <- function(on_upper, on_lower) {
+    out <- matrix(0, n, K)
+    out[cbind(upper, y[upper])] <- on_upper[upper]
+    out[cbind(lower, y[lower] - 1L)] <- on_lower[lower]
+    out
+  }
 
-  function(parameters, groups = seq_along(rows)) {
+  function(parameters, start = NULL, scores = FALSE) {
     theta <- c(-Inf, parameters[seq_len(K)], Inf)
-    beta <- parameters[K + seq_len(p)]
-    sigma2 <- exp(2*parameters[["log_sigma"]])
-    eta_all <- drop(X %*% beta)
-    upper_all <- theta[y + 1L]
-    lower_all <- theta[y]
-    vapply(groups, function(g) {
-      i <- rows[[g]]
-      a <- upper_all[i] - eta_all[i]
-      c <- lower_all[i] - eta_all[i]
-      h <- function(b) {
-        # Upper-tail differences keep precision for high categories.
-        P <- ifelse(c - b > 0, cdf$F(b - c) - cdf$F(b - a), cdf$F(a - b) - cdf$F(c - b))
-        fa <- cdf$f(a - b); fc <- cdf$f(c - b)
-        d1 <- -(fa - fc)/P
-        d2 <- (cdf$fprime(a - b) - cdf$fprime(c - b))/P - d1^2
-        list(value = sum(log(P)) - b^2/(2*sigma2) - 0.5*log(2*pi*sigma2),
-          gradient = sum(d1) - b/sigma2, hessian = sum(d2) - 1/sigma2)
-      }
-      b <- 0
-      for (iteration in 1:200) {
-        current <- h(b)
-        step <- current$gradient/current$hessian
-        if (!is.finite(step))
-          stop("Could not find the clmm() conditional modes.", call. = FALSE)
-        while (abs(step) > 1e-14 && !isTRUE(h(b - step)$value >= current$value - 1e-12))
-          step <- step/2
-        b <- b - step
-        if (abs(step) < 1e-12) break
-      }
-      mode <- h(b)
-      curvature <- -mode$hessian
-      if (is.null(rule))
-        return(mode$value + 0.5*log(2*pi) - 0.5*log(curvature))
-      scale <- 1/sqrt(curvature)
-      nodes <- rule$nodes
-      values <- vapply(nodes, function(z) h(b + scale*z)$value, numeric(1)) -
-        stats::dnorm(nodes, log = TRUE) + log(rule$weights)
-      log(scale) + max(values) + log(sum(exp(values - max(values))))
-    }, numeric(1))
+    eta <- drop(X %*% parameters[K + seq_len(p)])
+    density <- function(eta) {
+      # P(Y = y) = F(a) - F(c), a = theta_y - eta, c = theta_(y-1) - eta;
+      # upper-tail differences keep precision for high categories.
+      a <- theta[y + 1L] - eta
+      c <- theta[y] - eta
+      P <- ifelse(c > 0, cdf$F(-c) - cdf$F(-a), cdf$F(a) - cdf$F(c))
+      fa <- cdf$f(a); fc <- cdf$f(c)
+      f1a <- cdf$fprime(a); f1c <- cdf$fprime(c)
+      g0 <- fa - fc
+      g1 <- f1a - f1c
+      d1 <- -g0/P
+      list(l = log(P), d1 = d1, d2 = g1/P - d1^2,
+        d3 = if (scores) -(cdf$fsecond(a) - cdf$fsecond(c))/P + 3*g0*g1/P^2 - 2*g0^3/P^3,
+        extra = function(order) {
+          if (order == 0L) return(scatter(fa/P, -fc/P))
+          if (order == 1L) return(scatter(-f1a/P + g0*fa/P^2, f1c/P - g0*fc/P^2))
+          f2a <- cdf$fsecond(a); f2c <- cdf$fsecond(c)
+          g1_over <- (f1a - f1c)/P^2
+          scatter(f2a/P - g1_over*fa - 2*g0*f1a/P^2 + 2*g0^2*fa/P^3,
+            -f2c/P + g1_over*fc + 2*g0*f1c/P^2 - 2*g0^2*fc/P^3)
+        })
+    }
+    engine$intercept(eta, exp(2*parameters[["log_sigma"]]), density, start, scores)
   }
 }
 
 .suest_clmm_components <- function(model) {
   parameters <- .suest_clmm_parameters(model)
-  loglik <- .suest_clmm_group_loglik(model)
-  id <- .suest_clmm_id(model)
-  groups <- seq_along(levels(id))
-  k <- length(parameters)
+  evaluate <- .suest_clmm_group_loglik(model)
   # clmm's Laplace fits stop the inner mode search early (gradTol), so their
   # log likelihood can differ slightly from the exact Laplace value.
-  total <- sum(loglik(parameters))
-  if (!isTRUE(all.equal(total, as.numeric(stats::logLik(model)),
+  base <- evaluate(parameters, scores = TRUE)
+  if (!isTRUE(all.equal(sum(base$loglik), as.numeric(stats::logLik(model)),
       tolerance = if (model$nAGQ == 1L) 1e-4 else 1e-6)))
     stop("Could not reproduce the clmm() log likelihood for its scores.", call. = FALSE)
-
-  group_scores <- function(theta) {
-    step <- 1e-5*pmax(1, abs(theta))
-    matrix(vapply(seq_len(k), function(j) {
-      up <- down <- theta
-      up[j] <- up[j] + step[j]
-      down[j] <- down[j] - step[j]
-      (loglik(up, groups) - loglik(down, groups))/(2*step[j])
-    }, numeric(length(groups))), nrow = length(groups))
-  }
-  panel_score <- group_scores(parameters)
-  step <- 1e-4*pmax(1, abs(parameters))
-  information <- -vapply(seq_len(k), function(j) {
-    up <- down <- parameters
-    up[j] <- up[j] + step[j]
-    down[j] <- down[j] - step[j]
-    (colSums(group_scores(up)) - colSums(group_scores(down)))/(2*step[j])
-  }, numeric(k))
-  information <- (information + t(information))/2
-  dimnames(information) <- list(names(parameters), names(parameters))
-
-  frame <- model$model
-  n <- nrow(frame)
-  score <- matrix(0, n, k, dimnames = list(rownames(frame), names(parameters)))
-  for (g in groups) {
-    rows <- which(as.integer(id) == g)
-    score[rows[length(rows)], ] <- panel_score[g, ]
-  }
-  B <- n*.suest_information_inverse(information)
-  dimnames(B) <- dimnames(information)
-  list(score = score, bread = B, parameters = parameters)
+  .suest_re_components(evaluate, parameters, base, .suest_clmm_id(model),
+    rownames(model$model))
 }
 
 .suest_clmm_frame <- function(model) {

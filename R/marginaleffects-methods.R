@@ -50,6 +50,18 @@ get_vcov.suest_model <- function(model, vcov = NULL, ...) {
 # Data used when newdata is omitted and by datagrid().
 get_data.suest_model <- function(x, ...) .suest_default_data(x)
 
+# Variables of all models, so counterfactual grids (e.g. predictions(variables = ))
+# keep only these columns and get a fresh rowid; NULL if any model's are unknown.
+find_predictors.suest_model <- function(x, flatten = FALSE, ...) {
+  vars <- lapply(x$models, function(m) {
+    f <- tryCatch(stats::formula(m), error = function(e) m$formula)
+    unique(c(if (inherits(f, "formula")) all.vars(f), all.vars(m$call)))
+  })
+  if (any(lengths(vars) == 0L)) return(NULL)
+  out <- unique(c(unlist(vars), ".suest_model", ".suest_rowid", ".suest_weight"))
+  if (isTRUE(flatten)) out else list(conditional = out)
+}
+
 get_coef.suest_mi <- function(model, ...) model$coefficients
 
 get_vcov.suest_mi <- function(model, vcov = NULL, ...) model$vcov

@@ -347,3 +347,18 @@ test_that("pglm panel logit reproduces the returned Stata benchmark", {
   expect_equal(unname(vcov(disjoint)[1:4, 5:8]), matrix(0, 4L, 4L),
     tolerance = 1e-12)
 })
+
+test_that("pglm fits with its default Newton-Raphson method are accepted", {
+  skip_if_not_installed("pglm")
+  maxLik <- maxLik::maxLik
+  dat <- panel_logit_re_test_data()
+  model <- pglm::pglm(
+    y1 ~ x + z, data = dat, family = binomial("logit"),
+    model = "random", effect = "individual", index = c("id", "time"),
+    R = 12, print.level = 0, start = panel_logit_re_start(y1 ~ x + z, dat)
+  )
+  skip_if_not(model$code %in% c(1L, 2L, 8L))
+  fit <- suest(model, glm(y2 ~ x, binomial, dat), model_names = c("re", "logit"))
+  expect_s3_class(fit, "suest_model")
+  expect_equal(unname(coef(fit)[1:3]), unname(coef(model)[1:3]))
+})

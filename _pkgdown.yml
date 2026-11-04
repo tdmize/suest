@@ -12,6 +12,10 @@ home:
     href: https://doi.org/10.1177/0081175019852763
 
 articles:
+- title: Predictions and graphs
+  navbar: ~
+  contents:
+  - predictions
 - title: "Examples: Mize, Doan & Long (2019)"
   navbar: Examples
   contents:
@@ -21,6 +25,14 @@ articles:
   - different-outcomes
   - model-types
   - groups
+- title: More examples
+  navbar: More examples
+  contents:
+  - chapter-groups
+  - multilevel
+  - panel
+  - within-person
+  - instrumental-variables
 - title: More
   navbar: ~
   contents:
