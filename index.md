@@ -86,5 +86,19 @@ models](https://www.trentonmize.com/software/suest_r/articles/suest.html#support
   types](https://www.trentonmize.com/software/suest_r/articles/model-types.html),
   and [separate samples or
   groups](https://www.trentonmize.com/software/suest_r/articles/groups.html).
+- More examples: [group
+  comparisons](https://www.trentonmize.com/software/suest_r/articles/chapter-groups.html),
+  [multilevel
+  models](https://www.trentonmize.com/software/suest_r/articles/multilevel.html),
+  [panel
+  models](https://www.trentonmize.com/software/suest_r/articles/panel.html),
+  [within-person
+  effects](https://www.trentonmize.com/software/suest_r/articles/within-person.html),
+  and [instrumental-variable
+  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html).
+- [Predictions and
+  graphs](https://www.trentonmize.com/software/suest_r/articles/predictions.html):
+  predictions from each model, and tests and graphs of their
+  differences.
 - [Notes on specific
   models](https://www.trentonmize.com/software/suest_r/articles/model-notes.html).

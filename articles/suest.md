@@ -36,17 +36,24 @@ remotes::install_github("tdmize/suest")
 
 library(suest)
 library(marginaleffects)
+library(haven)
 ```
 
 ## Basic workflow
 
+Two logit models of union membership, the second adding wages and work
+experience:
+
 ``` r
 
-dat <- mtcars
-dat$am <- factor(dat$am)
+nlsw <- zap_labels(read_dta("https://tdmize.github.io/data/data/nlsw88.dta"))
+nlsw <- nlsw[!is.na(nlsw$union), ]
+nlsw[c("collgrad", "south")] <- lapply(nlsw[c("collgrad", "south")], factor)
 
-base <- glm(am ~ wt, family = binomial("logit"), data = dat)
-adjusted <- glm(am ~ wt + hp, family = binomial("logit"), data = dat)
+base <- glm(union ~ collgrad + age + south, family = binomial("logit"),
+            data = nlsw)
+adjusted <- glm(union ~ collgrad + age + south + wage + ttl_exp,
+                family = binomial("logit"), data = nlsw)
 combined <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
 combined
 #> Seemingly Unrelated Estimation
@@ -54,30 +61,62 @@ combined
 #> Model types: Base=logit, Adjusted=logit 
 #> Model engines: Base=stats::glm, Adjusted=stats::glm 
 #> Comparison scale: predicted probabilities 
-#> Observations: Base=32, Adjusted=32 
-#> Overlapping observations: 32 
-#> Union observations: 32 
-#> Parameters: 5
+#> Observations: Base=1,878, Adjusted=1,878 
+#> Overlapping observations: 1,878 
+#> Union observations: 1,878 
+#> Parameters: 10
 
-effects <- avg_comparisons(combined, variables = "wt", newdata = dat)
+effects <- avg_comparisons(combined, variables = "collgrad", newdata = nlsw)
 effects
 #> 
-#>     Group Estimate Std. Error     z Pr(>|z|)     S  2.5 % 97.5 %
-#>  Base       -0.277     0.0232 -11.9   <0.001 106.5 -0.322 -0.231
-#>  Adjusted   -0.355     0.0184 -19.3   <0.001 273.3 -0.391 -0.319
+#>     Group Estimate Std. Error    z Pr(>|z|)    S   2.5 % 97.5 %
+#>  Base       0.0966     0.0238 4.07   <0.001 14.4 0.05006  0.143
+#>  Adjusted   0.0574     0.0252 2.28   0.0227  5.5 0.00804  0.107
 #> 
-#> Term: wt
+#> Term: collgrad
 #> Type: response
-#> Comparison: +1
+#> Comparison: 1 - 0
 hypotheses(effects, hypothesis = difference ~ revpairwise)
 #> 
 #>           Hypothesis Estimate Std. Error    z Pr(>|z|)    S  2.5 % 97.5 %
-#>  (Base) - (Adjusted)   0.0779     0.0141 5.54   <0.001 25.0 0.0503  0.105
+#>  (Base) - (Adjusted)   0.0392    0.00912 4.29   <0.001 15.8 0.0213 0.0571
 ```
 
 The last command tests the difference between the two effects directly.
 That is different from checking whether one effect is statistically
 significant and the other is not.
+
+## Tests on coefficients
+
+[`hypotheses()`](https://rdrr.io/pkg/marginaleffects/man/hypotheses.html)
+lists the coefficients of every model with their joint robust standard
+errors. `b1`, `b2`, … refer to them in that order, so they can be tested
+against each other across models:
+
+``` r
+
+hypotheses(combined)
+#> 
+#>                   Term Estimate Std. Error      z Pr(>|z|)    S   2.5 %  97.5 %
+#>  Base::(Intercept)     -1.33993     0.7041 -1.903   0.0570  4.1 -2.7199  0.0400
+#>  Base::collgrad1        0.50691     0.1194  4.246   <0.001 15.5  0.2729  0.7409
+#>  Base::age              0.00925     0.0178  0.519   0.6041  0.7 -0.0257  0.0442
+#>  Base::south1          -0.74681     0.1161 -6.431   <0.001 32.9 -0.9744 -0.5192
+#>  Adjusted::(Intercept) -1.76067     0.7193 -2.448   0.0144  6.1 -3.1705 -0.3508
+#>  Adjusted::collgrad1    0.31130     0.1321  2.356   0.0185  5.8  0.0523  0.5703
+#>  Adjusted::age          0.00778     0.0182  0.428   0.6684  0.6 -0.0278  0.0434
+#>  Adjusted::south1      -0.67692     0.1184 -5.719   <0.001 26.5 -0.9089 -0.4449
+#>  Adjusted::wage         0.05384     0.0141  3.820   <0.001 12.9  0.0262  0.0815
+#>  Adjusted::ttl_exp      0.00615     0.0131  0.469   0.6387  0.6 -0.0195  0.0318
+hypotheses(combined, hypothesis = "b2 = b6")
+#> 
+#>  Hypothesis Estimate Std. Error    z Pr(>|z|)    S 2.5 % 97.5 %
+#>       b2=b6    0.196     0.0461 4.24   <0.001 15.5 0.105  0.286
+hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
+#> 
+#>    Hypothesis Estimate Std. Error    z Pr(>|z|)   S 2.5 % 97.5 %
+#>  (b2-b6)/b2=0    0.386      0.135 2.86  0.00419 7.9 0.122   0.65
+```
 
 ## Supported models
 
@@ -149,9 +188,10 @@ comparable. Random-effects models
 with each other, including different families, and with linear, binary,
 count, and ordered models, such as a logit model with a random-intercept
 logit model. They must share one grouping variable, which the system is
-clustered on, and must be unweighted. Other panel models (`plm()`,
-`geeglm()`) can be combined only with models of the same kind. Offsets
-are supported, except in `pglm()` and `glmmTMB()` models.
+clustered on, and must be unweighted. Other panel models
+([`plm()`](https://rdrr.io/pkg/plm/man/plm.html), `geeglm()`) can be
+combined only with models of the same kind. Offsets are supported,
+except in `pglm()` and `glmmTMB()` models.
 
 A few models have settings worth knowing about; see [Notes on specific
 models](https://tdmize.github.io/suest/articles/model-notes.md).
@@ -165,25 +205,28 @@ so each model’s effects are averaged over its own sample:
 
 ``` r
 
-four <- lm(mpg ~ wt + hp, data = mtcars, subset = cyl == 4)
-other <- lm(mpg ~ wt + hp, data = mtcars, subset = cyl != 4)
-fit_groups <- suest(four, other, model_names = c("Four cylinders", "Other"))
+south_model <- glm(union ~ age + hours + collgrad, family = binomial("logit"),
+                   data = nlsw, subset = south == 1)
+nonsouth_model <- glm(union ~ age + hours + collgrad, family = binomial("logit"),
+                      data = nlsw, subset = south == 0)
+fit_groups <- suest(south_model, nonsouth_model,
+                    model_names = c("South", "Non-South"))
 
-effects_groups <- avg_comparisons(fit_groups, variables = "wt",
+effects_groups <- avg_comparisons(fit_groups, variables = "collgrad",
                                   newdata = suest_newdata(fit_groups))
 effects_groups
 #> 
-#>           Group Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
-#>  Four cylinders    -5.12      1.083 -4.72   <0.001 18.7 -7.24  -2.99
-#>  Other             -2.56      0.575 -4.45   <0.001 16.8 -3.69  -1.43
+#>      Group Estimate Std. Error     z Pr(>|z|)    S   2.5 % 97.5 %
+#>  South       0.0264     0.0316 0.837    0.402  1.3 -0.0355 0.0883
+#>  Non-South   0.1341     0.0335 4.007   <0.001 14.0  0.0685 0.1998
 #> 
-#> Term: wt
+#> Term: collgrad
 #> Type: response
-#> Comparison: +1
+#> Comparison: 1 - 0
 hypotheses(effects_groups, hypothesis = difference ~ revpairwise)
 #> 
-#>                  Hypothesis Estimate Std. Error     z Pr(>|z|)   S 2.5 % 97.5 %
-#>  (Four cylinders) - (Other)    -2.55       1.23 -2.08   0.0373 4.7 -4.96  -0.15
+#>             Hypothesis Estimate Std. Error     z Pr(>|z|)   S  2.5 %  97.5 %
+#>  (South) - (Non-South)   -0.108      0.046 -2.34   0.0193 5.7 -0.198 -0.0175
 ```
 
 ## Cluster-robust standard errors
@@ -350,3 +393,16 @@ Six examples from Mize, Doan, and Long (2019), with code and output:
     ordinal versus nominal
 6.  [Separate samples or
     groups](https://tdmize.github.io/suest/articles/groups.md)
+
+More examples: [group
+comparisons](https://tdmize.github.io/suest/articles/chapter-groups.md)
+from Mize and Han (forthcoming), [multilevel
+models](https://tdmize.github.io/suest/articles/multilevel.md), [panel
+models](https://tdmize.github.io/suest/articles/panel.md),
+[within-person
+effects](https://tdmize.github.io/suest/articles/within-person.md), and
+[instrumental-variable
+models](https://tdmize.github.io/suest/articles/instrumental-variables.md).
+[Predictions and
+graphs](https://tdmize.github.io/suest/articles/predictions.md) shows
+predictions from each model and tests and graphs of their differences.

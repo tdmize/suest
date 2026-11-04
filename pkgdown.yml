@@ -3,14 +3,20 @@ pkgdown: 2.2.1
 pkgdown_sha: ~
 articles:
   alternative-predictors: alternative-predictors.html
+  chapter-groups: chapter-groups.html
   different-outcomes: different-outcomes.html
   groups: groups.html
+  instrumental-variables: instrumental-variables.html
   mediation: mediation.html
   model-notes: model-notes.html
   model-types: model-types.html
+  multilevel: multilevel.html
   nested-models: nested-models.html
+  panel: panel.html
+  predictions: predictions.html
   suest: suest.html
-last_built: 2026-10-05T17:12Z
+  within-person: within-person.html
+last_built: 2026-11-04T20:26Z
 urls:
   reference: https://tdmize.github.io/suest/reference
   article: https://tdmize.github.io/suest/articles

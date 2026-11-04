@@ -35,7 +35,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
+<li><a class="dropdown-item" href="../articles/predictions.html">Predictions and graphs</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
     <li><a class="dropdown-item" href="../articles/mediation.html">Curvilinear effects and mediation/attenuation</a></li>
     <li><a class="dropdown-item" href="../articles/nested-models.html">Nested logit models and mediation/attenuation</a></li>
@@ -43,6 +44,13 @@
     <li><a class="dropdown-item" href="../articles/different-outcomes.html">Different outcomes</a></li>
     <li><a class="dropdown-item" href="../articles/model-types.html">Different model types</a></li>
     <li><a class="dropdown-item" href="../articles/groups.html">Separate samples or groups</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More examples</h6></li>
+    <li><a class="dropdown-item" href="../articles/chapter-groups.html">Group comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/multilevel.html">Multilevel models</a></li>
+    <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
+    <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
+    <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul>
 </li>
@@ -77,7 +85,8 @@
     
 <p>Example 6.2 of Mize, Doan, and Long (2019).</p>
 <p>This example uses binary logit models to see how the effect of
-college changes when more variables are added to the model.</p>
+college changes as more variables are added: the bivariate model, then a
+full set of controls, then wages, then occupational prestige.</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tdmize.github.io/suest/">suest</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://marginaleffects.com/" class="external-link">marginaleffects</a></span><span class="op">)</span></span>
@@ -96,37 +105,65 @@ college changes when more variables are added to the model.</p>
 <span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="va">dat62</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/stats/complete.cases.html" class="external-link">complete.cases</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">[</span><span class="va">vars62</span><span class="op">]</span><span class="op">)</span>, <span class="op">]</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">nrow</a></span><span class="op">(</span><span class="va">dat62</span><span class="op">)</span></span>
 <span><span class="co">#&gt; [1] 9216</span></span>
-<span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="fu">factorize</span><span class="op">(</span><span class="va">dat62</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>,</span>
+<span><span class="va">dat62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/lme4/man/factorize.html" class="external-link">factorize</a></span><span class="op">(</span><span class="va">dat62</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"college"</span>, <span class="st">"married"</span>, <span class="st">"parent"</span>, <span class="st">"woman"</span>, <span class="st">"conserv"</span>,</span>
 <span>                            <span class="st">"reltrad"</span>, <span class="st">"year"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">model62a</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">vhappy</span> <span class="op">~</span> <span class="va">college</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat62</span><span class="op">)</span></span>
 <span><span class="va">model62b</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">vhappy</span> <span class="op">~</span> <span class="va">college</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">conserv</span> <span class="op">+</span> <span class="va">reltrad</span> <span class="op">+</span></span>
 <span>                  <span class="va">year</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">age</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat62</span><span class="op">)</span></span>
-<span><span class="va">fit62</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">model62a</span>, <span class="va">model62b</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Model 1"</span>, <span class="st">"Model 2"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">model62c</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">vhappy</span> <span class="op">~</span> <span class="va">college</span> <span class="op">+</span> <span class="va">wages</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">conserv</span> <span class="op">+</span></span>
+<span>                  <span class="va">reltrad</span> <span class="op">+</span> <span class="va">year</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">age</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>,</span>
+<span>                data <span class="op">=</span> <span class="va">dat62</span><span class="op">)</span></span>
+<span><span class="va">model62d</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">vhappy</span> <span class="op">~</span> <span class="va">college</span> <span class="op">+</span> <span class="va">wages</span> <span class="op">+</span> <span class="va">occprest</span> <span class="op">+</span> <span class="va">married</span> <span class="op">+</span> <span class="va">parent</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span></span>
+<span>                  <span class="va">conserv</span> <span class="op">+</span> <span class="va">reltrad</span> <span class="op">+</span> <span class="va">year</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">age</span><span class="op">^</span><span class="fl">2</span><span class="op">)</span>,</span>
+<span>                family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat62</span><span class="op">)</span></span>
+<span><span class="va">fit62</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">model62a</span>, <span class="va">model62b</span>, <span class="va">model62c</span>, <span class="va">model62d</span>,</span>
+<span>               model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Model 1"</span>, <span class="st">"Model 2"</span>, <span class="st">"Model 3"</span>, <span class="st">"Model 4"</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">effects62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit62</span>, variables <span class="op">=</span> <span class="st">"college"</span>, newdata <span class="op">=</span> <span class="va">dat62</span><span class="op">)</span></span>
 <span><span class="va">effects62</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;    Group Estimate Std. Error    z Pr(&gt;|z|)    S  2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  Model 1   0.0718     0.0103 6.95   &lt;0.001 38.0 0.0516 0.0921</span></span>
-<span><span class="co">#&gt;  Model 2   0.0599     0.0105 5.69   &lt;0.001 26.2 0.0393 0.0806</span></span>
+<span><span class="co">#&gt;    Group Estimate Std. Error    z Pr(&gt;|z|)    S   2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  Model 1   0.0718     0.0103 6.95   &lt;0.001 38.0  0.0516 0.0921</span></span>
+<span><span class="co">#&gt;  Model 2   0.0599     0.0105 5.69   &lt;0.001 26.2  0.0393 0.0806</span></span>
+<span><span class="co">#&gt;  Model 3   0.0360     0.0111 3.24   0.0012  9.7  0.0142 0.0577</span></span>
+<span><span class="co">#&gt;  Model 4   0.0192     0.0118 1.63   0.1034  3.3 -0.0039 0.0423</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Term: college</span></span>
 <span><span class="co">#&gt; Type: response</span></span>
-<span><span class="co">#&gt; Comparison: 1 - 0</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects62</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
+<span><span class="co">#&gt; Comparison: 1 - 0</span></span></code></pre></div>
+<p>Whether the effect of college diminishes at each step:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">steps62</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects62</span>,</span>
+<span>  hypothesis <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"b1 - b2 = 0"</span>, <span class="st">"b2 - b3 = 0"</span>, <span class="st">"b3 - b4 = 0"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">steps62</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;             Hypothesis Estimate Std. Error    z Pr(&gt;|z|)   S 2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  (Model 1) - (Model 2)   0.0119    0.00402 2.95  0.00313 8.3 0.004 0.0198</span></span></code></pre></div>
+<span><span class="co">#&gt;  Hypothesis Estimate Std. Error    z Pr(&gt;|z|)    S   2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;     b1-b2=0   0.0119    0.00402 2.95  0.00313  8.3 0.00400 0.0198</span></span>
+<span><span class="co">#&gt;     b2-b3=0   0.0240    0.00403 5.94  &lt; 0.001 28.4 0.01606 0.0319</span></span>
+<span><span class="co">#&gt;     b3-b4=0   0.0168    0.00445 3.77  &lt; 0.001 12.6 0.00805 0.0255</span></span></code></pre></div>
+<p>And whether the effect is the same in all four models:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">steps62</span>, joint <span class="op">=</span> <span class="cn">TRUE</span>, joint_test <span class="op">=</span> <span class="st">"chisq"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Joint hypothesis test:</span></span>
+<span><span class="co">#&gt;   = 0</span></span>
+<span><span class="co">#&gt;  </span></span>
+<span><span class="co">#&gt;  ChiSq Pr(&gt;|ChiSq|) Df</span></span>
+<span><span class="co">#&gt;   60.1       &lt;0.001  3</span></span></code></pre></div>
 <p><strong>Example interpretation for the effect of college:</strong> On
 average, the probability of being very happy is 0.072 higher for people
 with a college degree than for those without one
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.001</mn></mrow><annotation encoding="application/x-tex">p &lt; .001</annotation></semantics></math>).
-Model 2 adds demographic controls, reducing the average marginal effect
-of college to 0.060, which remains statistically significant. A direct
-test shows that adding the controls decreases the effect of college by
-0.012
-(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.01</mn></mrow><annotation encoding="application/x-tex">p &lt; .01</annotation></semantics></math>).</p>
+Each set of added variables reduces the effect significantly: by 0.012
+after adding the demographic controls
+(<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.01</mn></mrow><annotation encoding="application/x-tex">p &lt; .01</annotation></semantics></math>),
+by a further 0.024 after adding wages, and by a further 0.017 after
+adding occupational prestige (both
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.001</mn></mrow><annotation encoding="application/x-tex">p &lt; .001</annotation></semantics></math>).
+With all of them in the model, the effect of college is 0.019 and no
+longer statistically significant.</p>
   </main>
 </div>
 

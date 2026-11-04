@@ -2,6 +2,67 @@
 
 ## suest 0.1.6.9000 (development)
 
+- [`suest()`](https://tdmize.github.io/suest/reference/suest.md) is much
+  faster for multilevel and panel models with many groups: lme4
+  ([`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html),
+  [`glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)), `glmmTMB()`,
+  and [`ordinal::clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)
+  models. Each group’s likelihood is now computed for all groups at once
+  instead of one group at a time. Random-intercept
+  [`glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) and
+  [`clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) models use exact
+  group scores instead of numerical derivatives, and `glmmTMB()` models
+  no longer build a separate differentiation object for each group. Two
+  random-intercept logits on 26,000 people with 25-point quadrature now
+  combine in about 35 seconds instead of about 100 minutes. Results
+  agree with the previous version to about six digits (`glmmTMB()`
+  scores to about ten).
+
+- Population-averaged predictions from random-intercept logit models
+  whose random-intercept standard deviation is above 3 are much faster:
+  one numerical integral per observation is replaced by a quadrature
+  rule applied to all observations at once. Results agree to about
+  1e-14.
+
+- Fixed: `pglm()` random-effects models fit with pglm’s default
+  Newton-Raphson method were refused as not converged. maxLik reports
+  convergence with codes 1, 2, or 8 for its Newton-type methods; code 0
+  is only for its optim-based methods such as BFGS.
+
+- Singular lme4 fits, with a random-effect standard deviation of zero or
+  an intercept-slope correlation of -1 or 1, are now refused with a
+  message
+  ([`lme4::isSingular()`](https://rdrr.io/pkg/lme4/man/isSingular.html)).
+  Before, a correlation of -1 or 1 was not caught.
+
+- Fixed:
+  [`predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
+  and
+  [`avg_predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html)
+  with `variables` (for example
+  `avg_predictions(fit, variables = list(x = c(0, 10)))`) dropped the
+  values of `x` and averaged over all of them, so each model got one
+  prediction instead of one per value. suest now tells `marginaleffects`
+  which variables its models use (an
+  [`insight::find_predictors()`](https://easystats.github.io/insight/reference/find_predictors.html)
+  method), so counterfactual grids keep those values.
+  `datagrid(grid_type = "counterfactual")` was not affected.
+
+- Fixed: [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
+  models no longer require glmmTMB to be installed.
+
+- Documentation: new example articles: Predictions and graphs (Figures 3
+  to 6 of Mize, Doan, and Long 2019, and graphs of marginal effects and
+  their cross-model differences), group comparisons from Mize and Han
+  (forthcoming), multilevel models, panel models (random-effects logits
+  and fixed effects), within-person effects (correlated random effects),
+  and instrumental-variable models. Getting started now uses the
+  `nlsw88` data and shows tests on coefficients across models. The
+  nested-models example compares all four models, the mediation example
+  adds the proportion mediated, and the different-outcomes example tests
+  the cross-outcome difference for every predictor. `ggplot2` added to
+  Suggests for the graphs.
+
 - Documentation: the README cites Weesie (1999) as the origin of
   seemingly unrelated estimation. The example articles no longer link to
   the Stata versions or show the sample-size checks, an aside about the
@@ -18,7 +79,8 @@
   log likelihood. Predictions are category probabilities integrated over
   the random intercept. A two-category
   [`clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html) matches the
-  corresponding `glmer()` system.
+  corresponding [`glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html)
+  system.
 
 - Maximum-likelihood Heckman selection models from
   `sampleSelection::selection(method = "ml")` (Stata’s `heckman`) are
@@ -56,14 +118,17 @@
   combined. Each model’s native design-based covariance is still
   reproduced before the joint matrix is returned.
 
-- lme4 models are now supported: `lmer()` fit with `REML = FALSE`, and
-  `glmer()` binomial (logit, probit, cloglog) and Poisson models, with a
-  random intercept or one correlated slope. suest computes their scores
-  and observed information from its own per-group likelihood (exact for
-  `lmer`, Laplace or adaptive quadrature with the fit’s `nAGQ` for
-  `glmer`), which reproduces lme4’s log likelihood; `lmer` scores match
-  merDeriv’s analytic scores. `glmer(..., nAGQ = 7)` corresponds to
-  Stata’s `intmethod(mcaghermite) intpoints(7)`.
+- lme4 models are now supported:
+  [`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html) fit with
+  `REML = FALSE`, and
+  [`glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html) binomial (logit,
+  probit, cloglog) and Poisson models, with a random intercept or one
+  correlated slope. suest computes their scores and observed information
+  from its own per-group likelihood (exact for `lmer`, Laplace or
+  adaptive quadrature with the fit’s `nAGQ` for `glmer`), which
+  reproduces lme4’s log likelihood; `lmer` scores match merDeriv’s
+  analytic scores. `glmer(..., nAGQ = 7)` corresponds to Stata’s
+  `intmethod(mcaghermite) intpoints(7)`.
 
 - `glmmTMB` random-effects models now include binary probit and cloglog,
   Gaussian (identity link), and Gamma (log link) families, with a random
@@ -73,12 +138,12 @@
   standard deviation) and Gamma models `log_shape` (Stata’s `/logs` is
   `-log_shape/2`). Scores match an independently coded Laplace
   likelihood for each family. Gaussian models (from `glmmTMB()` or
-  `lmer()`) use the covariance layout of Stata’s `mixed`:
-  `(X'V^-1 X)^-1` for the fixed effects, the full-information inverse
-  for the variance parameters, and no cross block; joint covariances
-  match `suest2` with `mixed` to about 3e-6. These are the R
-  counterparts of Stata’s `meprobit`, `mecloglog`, `mixed`, and
-  `meglm, family(gamma) link(log)`.
+  [`lmer()`](https://rdrr.io/pkg/lme4/man/lmer.html)) use the covariance
+  layout of Stata’s `mixed`: `(X'V^-1 X)^-1` for the fixed effects, the
+  full-information inverse for the variance parameters, and no cross
+  block; joint covariances match `suest2` with `mixed` to about 3e-6.
+  These are the R counterparts of Stata’s `meprobit`, `mecloglog`,
+  `mixed`, and `meglm, family(gamma) link(log)`.
 
 - Random-effects models
   ([`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html), `pglm()`,
@@ -725,10 +790,8 @@
 - Made the acceptance-test runners remove stale global
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md) and
   [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-  functions before
-  [`devtools::load_all()`](https://devtools.r-lib.org/reference/load_all.html).
-  This prevents a previously sourced standalone implementation from
-  masking the package code.
+  functions before `devtools::load_all()`. This prevents a previously
+  sourced standalone implementation from masking the package code.
 
 - Added a test-runner guard and log entry confirming that tests use the
   package namespace and model-adapter implementation.

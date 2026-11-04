@@ -35,7 +35,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
+<li><a class="dropdown-item" href="../articles/predictions.html">Predictions and graphs</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
     <li><a class="dropdown-item" href="../articles/mediation.html">Curvilinear effects and mediation/attenuation</a></li>
     <li><a class="dropdown-item" href="../articles/nested-models.html">Nested logit models and mediation/attenuation</a></li>
@@ -43,6 +44,13 @@
     <li><a class="dropdown-item" href="../articles/different-outcomes.html">Different outcomes</a></li>
     <li><a class="dropdown-item" href="../articles/model-types.html">Different model types</a></li>
     <li><a class="dropdown-item" href="../articles/groups.html">Separate samples or groups</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More examples</h6></li>
+    <li><a class="dropdown-item" href="../articles/chapter-groups.html">Group comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/multilevel.html">Multilevel models</a></li>
+    <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
+    <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
+    <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul>
 </li>
@@ -126,6 +134,13 @@ amount from each observed value. So
 observed income with that income plus one standard deviation. This is
 different from <code>"sd"</code>, which asks for a
 one-standard-deviation change centered on the mean.</p>
+<p>The proportion of the effect of income that is mediated by job
+satisfaction:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects61</span>, hypothesis <span class="op">=</span> <span class="st">"(b1 - b2) / b1 = 0"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;    Hypothesis Estimate Std. Error    z Pr(&gt;|z|)    S 2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  (b1-b2)/b1=0    0.206     0.0295 6.99   &lt;0.001 38.4 0.148  0.264</span></span></code></pre></div>
 <p><strong>Example interpretation for the effect of income:</strong> In
 model 1, the marginal effect is -0.816, indicating that a
 standard-deviation increase in income is associated with about 0.8 fewer
@@ -134,7 +149,8 @@ for job satisfaction. The direct cross-model test shows that accounting
 for job satisfaction decreases the average effect of income by 0.168, a
 statistically significant reduction
 (<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.001</mn></mrow><annotation encoding="application/x-tex">p &lt; .001</annotation></semantics></math>)
-that is consistent with mediation.</p>
+that is consistent with mediation. Job satisfaction accounts for about
+21% of the effect of income.</p>
   </main>
 </div>
 

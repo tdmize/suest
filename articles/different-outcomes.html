@@ -35,7 +35,8 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
+<li><a class="dropdown-item" href="../articles/predictions.html">Predictions and graphs</a></li>
+    <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
     <li><a class="dropdown-item" href="../articles/mediation.html">Curvilinear effects and mediation/attenuation</a></li>
     <li><a class="dropdown-item" href="../articles/nested-models.html">Nested logit models and mediation/attenuation</a></li>
@@ -43,6 +44,13 @@
     <li><a class="dropdown-item" href="../articles/different-outcomes.html">Different outcomes</a></li>
     <li><a class="dropdown-item" href="../articles/model-types.html">Different model types</a></li>
     <li><a class="dropdown-item" href="../articles/groups.html">Separate samples or groups</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><h6 class="dropdown-header" data-toc-skip>More examples</h6></li>
+    <li><a class="dropdown-item" href="../articles/chapter-groups.html">Group comparisons</a></li>
+    <li><a class="dropdown-item" href="../articles/multilevel.html">Multilevel models</a></li>
+    <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
+    <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
+    <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul>
 </li>
@@ -137,16 +145,37 @@ predictors.</p>
 <span><span class="co">#&gt;  year    Physical 2010 - 2002         0.3233      0.261  1.240   0.2148  2.2 -0.187  0.83400</span></span>
 <span><span class="co">#&gt;  year    Physical 2014 - 2002        -0.2286      0.245 -0.933   0.3507  1.5 -0.709  0.25148</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Type: response</span></span>
-<span></span>
-<span><span class="va">age64</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit64</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>age <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/sd.html" class="external-link">sd</a></span><span class="op">(</span><span class="va">dat64</span><span class="op">$</span><span class="va">age</span><span class="op">)</span><span class="op">)</span>,</span>
-<span>                         newdata <span class="op">=</span> <span class="va">dat64</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">age64</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
-<span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;             Hypothesis Estimate Std. Error     z Pr(&gt;|z|)    S 2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;  (Mental) - (Physical)   -0.953      0.132 -7.22   &lt;0.001 40.8 -1.21 -0.694</span></span></code></pre></div>
+<span><span class="co">#&gt; Type: response</span></span></code></pre></div>
 <p><code>age = sd(dat64$age)</code> asks for a one-standard-deviation
 increase from each person’s observed age.</p>
+<p>The cross-outcome difference for each effect:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects64</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span> <span class="op">|</span> <span class="va">term</span> <span class="op">+</span> <span class="va">contrast</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     Term          Contrast            Hypothesis Estimate Std. Error      z Pr(&gt;|z|)    S   2.5 %</span></span>
+<span><span class="co">#&gt;  age     +13.0755231484462 (Mental) - (Physical)  -0.9535      0.132 -7.216   &lt;0.001 40.8 -1.2124</span></span>
+<span><span class="co">#&gt;  college 1 - 0             (Mental) - (Physical)  -0.3372      0.254 -1.327   0.1844  2.4 -0.8351</span></span>
+<span><span class="co">#&gt;  faminc  +35.054788229243  (Mental) - (Physical)  -0.0638      0.133 -0.481   0.6309  0.7 -0.3239</span></span>
+<span><span class="co">#&gt;  married 1 - 0             (Mental) - (Physical)  -0.8512      0.250 -3.409   &lt;0.001 10.6 -1.3405</span></span>
+<span><span class="co">#&gt;  parent  1 - 0             (Mental) - (Physical)   0.5434      0.274  1.981   0.0475  4.4  0.0059</span></span>
+<span><span class="co">#&gt;  race    2 - 1             (Mental) - (Physical)  -0.4851      0.279 -1.736   0.0826  3.6 -1.0328</span></span>
+<span><span class="co">#&gt;  race    3 - 1             (Mental) - (Physical)  -0.5832      0.385 -1.515   0.1299  2.9 -1.3379</span></span>
+<span><span class="co">#&gt;  woman   1 - 0             (Mental) - (Physical)   0.2196      0.229  0.959   0.3373  1.6 -0.2290</span></span>
+<span><span class="co">#&gt;  year    2006 - 2002       (Mental) - (Physical)  -0.6521      0.298 -2.187   0.0287  5.1 -1.2364</span></span>
+<span><span class="co">#&gt;  year    2010 - 2002       (Mental) - (Physical)  -0.3908      0.355 -1.101   0.2710  1.9 -1.0865</span></span>
+<span><span class="co">#&gt;  year    2014 - 2002       (Mental) - (Physical)  -0.3533      0.324 -1.091   0.2753  1.9 -0.9880</span></span>
+<span><span class="co">#&gt;   97.5 %</span></span>
+<span><span class="co">#&gt;  -0.6945</span></span>
+<span><span class="co">#&gt;   0.1607</span></span>
+<span><span class="co">#&gt;   0.1964</span></span>
+<span><span class="co">#&gt;  -0.3618</span></span>
+<span><span class="co">#&gt;   1.0808</span></span>
+<span><span class="co">#&gt;   0.0626</span></span>
+<span><span class="co">#&gt;   0.1715</span></span>
+<span><span class="co">#&gt;   0.6682</span></span>
+<span><span class="co">#&gt;  -0.0678</span></span>
+<span><span class="co">#&gt;   0.3050</span></span>
+<span><span class="co">#&gt;   0.2814</span></span></code></pre></div>
 <p><strong>Example interpretations:</strong> Women report about 0.99
 more poor mental-health days and 0.77 more poor physical-health days per
 month than men. Although the effect of gender is about 0.22 larger for
@@ -157,7 +186,7 @@ significant.</p>
 statistically significant. The direct comparison shows that the effect
 of marriage is significantly larger for mental health than for physical
 health (cross-model difference = -0.851,
-<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.01</mn></mrow><annotation encoding="application/x-tex">p &lt; .01</annotation></semantics></math>).</p>
+<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>p</mi><mo>&lt;</mo><mn>.001</mn></mrow><annotation encoding="application/x-tex">p &lt; .001</annotation></semantics></math>).</p>
 <p>Similarly, the effect of age differs significantly across the
 outcomes: aging is associated with fewer poor mental-health days but
 more poor physical-health days.</p>

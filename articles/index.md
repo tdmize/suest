@@ -1,5 +1,13 @@
 # Articles
 
+### Predictions and graphs
+
+- [Predictions and
+  graphs](https://tdmize.github.io/suest/articles/predictions.md):
+
+  Predictions from each model and their differences: Figures 3 to 6 of
+  Mize, Doan, and Long (2019).
+
 ### Examples: Mize, Doan & Long (2019)
 
 - [Curvilinear effects and
@@ -31,6 +39,37 @@
   groups](https://tdmize.github.io/suest/articles/groups.md):
 
   Example 6.6 of Mize, Doan, and Long (2019).
+
+### More examples
+
+- [Group
+  comparisons](https://tdmize.github.io/suest/articles/chapter-groups.md):
+
+  Section 4.2 of Mize and Han (forthcoming): separate models for each
+  group.
+
+- [Multilevel
+  models](https://tdmize.github.io/suest/articles/multilevel.md):
+
+  Students nested in schools, and women nested in districts:
+  mixed-effects logit and probit.
+
+- [Panel models](https://tdmize.github.io/suest/articles/panel.md):
+
+  Repeated observations of the same people: random-effects logits and
+  fixed-effects regressions for two outcomes.
+
+- [Within-person
+  effects](https://tdmize.github.io/suest/articles/within-person.md):
+
+  Correlated random effects (Mundlak) logits: the within-person effect
+  compared with the random-effects estimate.
+
+- [Instrumental-variable
+  models](https://tdmize.github.io/suest/articles/instrumental-variables.md):
+
+  Comparing effects across two-stage least squares models with different
+  instruments.
 
 ### More
 

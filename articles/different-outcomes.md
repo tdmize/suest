@@ -69,17 +69,42 @@ effects64
 #>  year    Physical 2014 - 2002        -0.2286      0.245 -0.933   0.3507  1.5 -0.709  0.25148
 #> 
 #> Type: response
-
-age64 <- avg_comparisons(fit64, variables = list(age = sd(dat64$age)),
-                         newdata = dat64)
-hypotheses(age64, hypothesis = difference ~ revpairwise)
-#> 
-#>             Hypothesis Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
-#>  (Mental) - (Physical)   -0.953      0.132 -7.22   <0.001 40.8 -1.21 -0.694
 ```
 
 `age = sd(dat64$age)` asks for a one-standard-deviation increase from
 each person’s observed age.
+
+The cross-outcome difference for each effect:
+
+``` r
+
+hypotheses(effects64, hypothesis = difference ~ revpairwise | term + contrast)
+#> 
+#>     Term          Contrast            Hypothesis Estimate Std. Error      z Pr(>|z|)    S   2.5 %
+#>  age     +13.0755231484462 (Mental) - (Physical)  -0.9535      0.132 -7.216   <0.001 40.8 -1.2124
+#>  college 1 - 0             (Mental) - (Physical)  -0.3372      0.254 -1.327   0.1844  2.4 -0.8351
+#>  faminc  +35.054788229243  (Mental) - (Physical)  -0.0638      0.133 -0.481   0.6309  0.7 -0.3239
+#>  married 1 - 0             (Mental) - (Physical)  -0.8512      0.250 -3.409   <0.001 10.6 -1.3405
+#>  parent  1 - 0             (Mental) - (Physical)   0.5434      0.274  1.981   0.0475  4.4  0.0059
+#>  race    2 - 1             (Mental) - (Physical)  -0.4851      0.279 -1.736   0.0826  3.6 -1.0328
+#>  race    3 - 1             (Mental) - (Physical)  -0.5832      0.385 -1.515   0.1299  2.9 -1.3379
+#>  woman   1 - 0             (Mental) - (Physical)   0.2196      0.229  0.959   0.3373  1.6 -0.2290
+#>  year    2006 - 2002       (Mental) - (Physical)  -0.6521      0.298 -2.187   0.0287  5.1 -1.2364
+#>  year    2010 - 2002       (Mental) - (Physical)  -0.3908      0.355 -1.101   0.2710  1.9 -1.0865
+#>  year    2014 - 2002       (Mental) - (Physical)  -0.3533      0.324 -1.091   0.2753  1.9 -0.9880
+#>   97.5 %
+#>  -0.6945
+#>   0.1607
+#>   0.1964
+#>  -0.3618
+#>   1.0808
+#>   0.0626
+#>   0.1715
+#>   0.6682
+#>  -0.0678
+#>   0.3050
+#>   0.2814
+```
 
 **Example interpretations:** Women report about 0.99 more poor
 mental-health days and 0.77 more poor physical-health days per month
@@ -90,7 +115,7 @@ Being married significantly reduces poor mental-health days by about
 1.01, whereas its effect on poor physical-health days is not
 statistically significant. The direct comparison shows that the effect
 of marriage is significantly larger for mental health than for physical
-health (cross-model difference = -0.851, $`p < .01`$).
+health (cross-model difference = -0.851, $`p < .001`$).
 
 Similarly, the effect of age differs significantly across the outcomes:
 aging is associated with fewer poor mental-health days but more poor

@@ -59,6 +59,17 @@ person’s observed income with that income plus one standard deviation.
 This is different from `"sd"`, which asks for a one-standard-deviation
 change centered on the mean.
 
+The proportion of the effect of income that is mediated by job
+satisfaction:
+
+``` r
+
+hypotheses(effects61, hypothesis = "(b1 - b2) / b1 = 0")
+#> 
+#>    Hypothesis Estimate Std. Error    z Pr(>|z|)    S 2.5 % 97.5 %
+#>  (b1-b2)/b1=0    0.206     0.0295 6.99   <0.001 38.4 0.148  0.264
+```
+
 **Example interpretation for the effect of income:** In model 1, the
 marginal effect is -0.816, indicating that a standard-deviation increase
 in income is associated with about 0.8 fewer depressive symptoms. The
@@ -66,3 +77,4 @@ effect is reduced to -0.648 after accounting for job satisfaction. The
 direct cross-model test shows that accounting for job satisfaction
 decreases the average effect of income by 0.168, a statistically
 significant reduction ($`p < .001`$) that is consistent with mediation.
+Job satisfaction accounts for about 21% of the effect of income.
