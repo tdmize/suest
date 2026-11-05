@@ -137,7 +137,7 @@ Germany than in Nigeria.
 
 ## Reference
 
-Mize, Trenton D. and Bing Han. Forthcoming. “Marginal effects: flexible
-methods for interpretation across linear and nonlinear models.” In
-*Understanding Data Modeling and Data Analysis*, edited by David
-Weakliem. Edward Elgar Publishing.
+Mize, Trenton D. and Bing Han. Forthcoming. “Marginal effects: a
+flexible method for substantively meaningful interpretations across
+linear and nonlinear models.” In *Understanding Data Modeling and Data
+Analysis*. Edward Elgar Publishing.
