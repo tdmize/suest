@@ -136,6 +136,12 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Linear regression | `survey::svyglm()` |
 | Binary logit, probit, and cloglog | `survey::svyglm()` with `quasibinomial()` |
 | Poisson | `survey::svyglm()` with `quasipoisson()` |
+| Ordered logit and probit | `survey::svyolr()` |
+| Multinomial logit | `svyVGAM::svy_vglm()` with `multinomial()` |
+| Negative binomial regression | `svyVGAM::svy_vglm()` with `negbinomial()` |
+| Generalized ordered logit (gologit2), including partial proportional odds | `svyVGAM::svy_vglm()` with `cumulative(reverse = TRUE)` |
+| Tobit, interval, and parametric survival regression | `survey::svysurvreg()` with a common scale |
+| Instrumental-variable regression (two-stage least squares) | `survey::svyivreg()` |
 
 See [Survey data](#survey-data) below.
 
@@ -234,9 +240,8 @@ avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
 
 ## Survey data
 
-`suest` supports linear, binary (logit, probit, cloglog), and Poisson models
-fitted with `survey::svyglm()` from one common one-stage survey design, in any
-combination:
+`suest` supports the survey models in the table above, fitted from one common
+one-stage survey design, in any combination:
 
 ```{r survey-example, eval=FALSE}
 library(survey)

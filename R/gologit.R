@@ -2,7 +2,9 @@
 # cumulative() family. With reverse = TRUE, P(Y > j) = F(eta_j), the gologit2
 # parameterization. Constraint matrices give the proportional (parallel) and
 # partial proportional odds forms. suest computes the scores analytically and
-# the observed information by differentiating them.
+# the observed information by differentiating them. Survey fits from
+# svyVGAM::svy_vglm() also use the multinomial() and negbinomial() families,
+# with the sampling weights in `wrapper$weights`.
 
 .suest_wrap_vglm <- function(model) {
   if (!methods::is(model, "vglm")) return(model)
@@ -35,8 +37,30 @@
 .suest_vglm_info <- function(wrapper) {
   fit <- wrapper$fit
   family <- methods::slot(fit, "family")
+  survey <- isTRUE(wrapper$survey)
+  if (survey && "multinomial" %in% family@vfamily) {
+    y <- stats::model.response(wrapper$frame)
+    levels <- if (is.factor(y)) levels(y) else as.character(sort(unique(y)))
+    reference <- fit@misc$refLevel
+    if (!is.numeric(reference) || length(reference) != 1L ||
+        !reference %in% seq_along(levels) || !identical(fit@misc$ynames, levels))
+      stop("Could not identify the reference category of the multinomial model.", call. = FALSE)
+    return(list(family = "multinomial", levels = levels, M = length(levels) - 1L,
+      reference = as.integer(reference)))
+  }
+  if (survey && "negbinomial" %in% family@vfamily) {
+    if (!identical(unname(fit@misc$link), c("loglink", "loglink")))
+      stop("Survey negative-binomial models must use log links for the mean and size.", call. = FALSE)
+    constraints <- methods::slot(fit, "constraints")
+    if (any(vapply(constraints[names(constraints) != "(Intercept)"],
+        function(H) any(H[2L, ] != 0), logical(1))))
+      stop("Survey negative-binomial models need an intercept-only size parameter, the negbinomial() default.",
+        call. = FALSE)
+    return(list(family = "negbinomial", M = 2L))
+  }
   if (!"cumulative" %in% family@vfamily)
-    stop("Only VGAM::vglm() models with the cumulative() family (generalized ordered models) are supported.",
+    stop(if (survey) "Survey VGAM models must use the cumulative(), multinomial(), or negbinomial() family." else
+      "Only VGAM::vglm() models with the cumulative() family (generalized ordered models) are supported.",
       call. = FALSE)
   links <- unique(unname(fit@misc$link))
   link <- c(logitlink = "logit", probitlink = "probit", clogloglink = "cloglog")[links]
@@ -44,7 +68,7 @@
     stop("Generalized ordered models must use a logit, probit, or cloglog link.", call. = FALSE)
   y <- stats::model.response(wrapper$frame)
   levels <- if (is.factor(y)) levels(y) else as.character(sort(unique(y)))
-  list(link = unname(link), reverse = isTRUE(fit@misc$reverse),
+  list(family = "cumulative", link = unname(link), reverse = isTRUE(fit@misc$reverse),
     levels = levels, M = length(levels) - 1L)
 }
 
@@ -76,14 +100,15 @@
   M <- .suest_vglm_info(wrapper)$M
   eta <- matrix(0, nrow(X), M)
   position <- 0L
-  for (term in names(constraints)) {
-    H <- constraints[[term]]
-    columns <- which(labels[assign + 1L] == term)
-    for (column in columns) {
-      index <- position + seq_len(ncol(H))
-      eta <- eta + outer(X[, column], drop(H %*% parameters[index]))
-      position <- position + ncol(H)
-    }
+  # Constraints are named by term or, for some fits, by model-matrix column.
+  for (column in seq_len(ncol(X))) {
+    key <- colnames(X)[column]
+    if (!key %in% names(constraints)) key <- labels[assign[column] + 1L]
+    H <- constraints[[key]]
+    if (is.null(H)) break
+    index <- position + seq_len(ncol(H))
+    eta <- eta + outer(X[, column], drop(H %*% parameters[index]))
+    position <- position + ncol(H)
   }
   if (position != length(parameters))
     stop("Could not map the VGAM::vglm() coefficients to its constraints.", call. = FALSE)
@@ -97,6 +122,13 @@
 
 # Category probabilities (n x K) from the linear predictors.
 .suest_vglm_probabilities <- function(eta, info) {
+  if (identical(info$family, "multinomial")) {
+    odds <- matrix(1, nrow(eta), info$M + 1L)
+    odds[, -info$reference] <- exp(eta)
+    probabilities <- odds/rowSums(odds)
+    colnames(probabilities) <- info$levels
+    return(probabilities)
+  }
   cdf <- .suest_vglm_cdf(info$link)
   upper <- if (info$reverse) cdf$F(eta) else 1 - cdf$F(eta)
   above <- cbind(1, upper, 0)
@@ -109,14 +141,33 @@
   info <- .suest_vglm_info(wrapper)
   parameters <- .suest_vglm_parameters(wrapper)
   X <- stats::model.matrix(wrapper$terms, wrapper$frame, contrasts.arg = wrapper$contrasts)
-  y <- as.integer(stats::model.response(wrapper$frame))
+  response <- stats::model.response(wrapper$frame)
+  y <- if (identical(info$family, "negbinomial")) as.numeric(response) else as.integer(response)
   n <- nrow(X)
-  cdf <- .suest_vglm_cdf(info$link)
-  sign <- if (info$reverse) 1 else -1
+  w <- if (is.null(wrapper$weights)) rep(1, n) else wrapper$weights
 
-  # d log P(Y = y_i)/d eta_ij for the two cutpoints bordering y_i.
+  # d log f(y_i)/d eta_ij: the two cutpoints bordering y_i for ordered models.
   score_eta <- function(theta) {
     eta <- .suest_vglm_eta(wrapper, theta, X)
+    if (identical(info$family, "multinomial")) {
+      probabilities <- .suest_vglm_probabilities(eta, info)
+      out <- -probabilities[, -info$reference, drop = FALSE]
+      chosen <- match(y, setdiff(seq_len(info$M + 1L), info$reference))
+      hit <- cbind(which(!is.na(chosen)), chosen[!is.na(chosen)])
+      out[hit] <- out[hit] + 1
+      return(list(d = out, loglik = sum(w*log(probabilities[cbind(seq_len(n), y)]))))
+    }
+    if (identical(info$family, "negbinomial")) {
+      mu <- exp(eta[, 1L])
+      size <- exp(eta[, 2L])
+      d_mu <- size*(y - mu)/(size + mu)
+      d_size <- size*(digamma(y + size) - digamma(size) + log(size/(size + mu)) +
+        (mu - y)/(size + mu))
+      return(list(d = cbind(d_mu, d_size),
+        loglik = sum(w*stats::dnbinom(y, size = size, mu = mu, log = TRUE))))
+    }
+    cdf <- .suest_vglm_cdf(info$link)
+    sign <- if (info$reverse) 1 else -1
     probabilities <- .suest_vglm_probabilities(eta, info)
     p <- probabilities[cbind(seq_len(n), y)]
     density <- sign*cdf$f(eta)
@@ -126,7 +177,7 @@
     out[cbind(which(has_lower), lower[has_lower])] <- density[cbind(which(has_lower), lower[has_lower])]/p[has_lower]
     has_upper <- y <= info$M
     out[cbind(which(has_upper), y[has_upper])] <- -density[cbind(which(has_upper), y[has_upper])]/p[has_upper]
-    list(d = out, loglik = sum(log(p)))
+    list(d = out, loglik = sum(w*log(p)))
   }
   # Chain rule through the constraints: each parameter's derivative of eta.
   design <- lapply(seq_along(parameters), function(k) {
@@ -135,7 +186,7 @@
   })
   scores <- function(theta) {
     d <- score_eta(theta)$d
-    vapply(design, function(D) rowSums(d*D), numeric(n))
+    w*vapply(design, function(D) rowSums(d*D), numeric(n))
   }
 
   total <- score_eta(parameters)$loglik
@@ -164,6 +215,16 @@
   X <- stats::model.matrix(terms, frame, contrasts.arg = wrapper$contrasts)
   .suest_vglm_probabilities(
     .suest_vglm_eta(wrapper, .suest_vglm_parameters(wrapper), X), info)
+}
+
+# Negative-binomial mean (or its log) from a survey vglm fit.
+.suest_vglm_mean <- function(wrapper, newdata, type) {
+  terms <- stats::delete.response(wrapper$terms)
+  frame <- stats::model.frame(terms, newdata, na.action = stats::na.pass,
+    xlev = wrapper$xlevels)
+  X <- stats::model.matrix(terms, frame, contrasts.arg = wrapper$contrasts)
+  eta <- .suest_vglm_eta(wrapper, .suest_vglm_parameters(wrapper), X)[, 1L]
+  if (identical(type, "link")) eta else exp(eta)
 }
 
 .suest_vglm_frame <- function(wrapper) {

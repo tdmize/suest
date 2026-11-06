@@ -1610,17 +1610,21 @@
   (inverse + t(inverse)) / 2
 }
 
-.suest_polr_components <- function(model) {
-  mf <- stats::model.frame(model)
-  X <- stats::model.matrix(model)[, -1L, drop = FALSE]
-  y <- as.integer(stats::model.response(mf))
-  weights <- stats::model.weights(mf)
+# Survey svyolr() fits supply their own X, y, weights, and offset.
+.suest_polr_components <- function(model, X = NULL, y = NULL, weights = NULL,
+    offset = NULL) {
+  if (is.null(X)) {
+    mf <- stats::model.frame(model)
+    X <- stats::model.matrix(model)[, -1L, drop = FALSE]
+    y <- as.integer(stats::model.response(mf))
+    weights <- stats::model.weights(mf)
+    offset <- stats::model.offset(mf)
+  }
   if (is.null(weights))
     weights <- rep.int(1, nrow(X))
 
   beta <- model$coefficients
   zeta <- model$zeta
-  offset <- stats::model.offset(mf)
   if (is.null(offset))
     offset <- 0
   eta <- as.vector(X %*% beta + offset)
@@ -2005,6 +2009,10 @@
   parameters <- .suest_extract_parameters(model, "survreg", "survival::survreg")
   U <- sandwich::estfun(model)
   B <- sandwich::bread(model)
+  # sandwich leaves the log-scale score of a weighted fit unweighted.
+  fit_weights <- stats::model.weights(stats::model.frame(model))
+  if (!is.null(fit_weights) && "Log(scale)" %in% colnames(U))
+    U[, "Log(scale)"] <- U[, "Log(scale)"]*fit_weights
   response <- model$y
   if (is.null(response))
     response <- stats::model.response(stats::model.frame(model))
@@ -2037,8 +2045,7 @@
       # interval-scale residual supplied by a particular survival version.
       scale_score <- (z_lower*density_lower[, 3L] -
         z_upper*density_upper[, 3L])/probability
-      weights <- stats::model.weights(stats::model.frame(model))
-      if (!is.null(weights)) scale_score <- scale_score*weights[rows]
+      if (!is.null(fit_weights)) scale_score <- scale_score*fit_weights[rows]
       if (any(!is.finite(scale_score)))
         stop("Unable to construct finite interval-censored scale scores.", call. = FALSE)
       U[rows, "Log(scale)"] <- scale_score

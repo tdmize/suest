@@ -1,5 +1,30 @@
 # suest 0.1.6.9000 (development)
 
+* Survey systems now include ordered logit and probit models from
+  `survey::svyolr()`; multinomial logit, negative-binomial, and generalized
+  ordered logit models from `svyVGAM::svy_vglm()` (`multinomial()`,
+  `negbinomial()`, and `cumulative()` families); tobit, interval, and
+  parametric survival models from `survey::svysurvreg()`; and two-stage least
+  squares models from `survey::svyivreg()`, combined with each other and with
+  `svyglm()` models under one design. These are the R counterparts of Stata's
+  `svy:` with `ologit`, `oprobit`, `mlogit`, `nbreg`, `gologit2`, `tobit`,
+  `intreg`, `streg`, and `ivregress 2sls`. Each model's own design-based
+  covariance is reproduced from its scores as a check; the ordered, VGAM, and
+  survival models then use exact observed information, as Stata does
+  (`svyolr()` uses a numerical Hessian, VGAM expected information, and
+  survival's scale residuals are wrong for interval-censored outcomes).
+  Blocks match a numerical-derivative sandwich and the survey package's own
+  variance algebra.
+
+* Fixed: weighted `survreg()` fits used an unweighted score for
+  `Log(scale)` (sandwich's `estfun()` does not weight it). Only weighted fits
+  were affected, and `suest()` accepted them only in the new survey route.
+
+* Documentation: "Notes on specific models" lists, for Stata models without an
+  R version (such as `xtlogit, fe`, `xtmlogit`, and `xtnbreg`), the supported
+  model to use instead and the same model in Stata, and adds notes on the
+  survey models.
+
 * The group-comparisons article cites Mize and Han's chapter under its final
   title, "Marginal effects: a flexible method for substantively meaningful
   interpretations across linear and nonlinear models," in *Understanding Data

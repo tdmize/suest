@@ -34,9 +34,11 @@
 #'   0.1.4, pweights are supported for linear, binary logit/probit, Poisson,
 #'   negative-binomial, ordered logit/probit, and multinomial logit models.
 #' @param survey_design Full common one-stage `survey::svydesign()` object for
-#'   supported `survey::svyglm()` models: Gaussian identity, binary
-#'   `quasibinomial()` logit/probit/cloglog, or `quasipoisson()` log.
-#'   Requires `observation_id` column names.
+#'   supported survey models: `survey::svyglm()` (Gaussian identity, binary
+#'   `quasibinomial()` logit/probit/cloglog, or `quasipoisson()` log),
+#'   `survey::svyolr()`, `survey::svysurvreg()`, `survey::svyivreg()`, and
+#'   `svyVGAM::svy_vglm()` with the `multinomial()`, `negbinomial()`, or
+#'   `cumulative()` family. Requires `observation_id` column names.
 #'   Retain the design before model-specific domain subsetting. Specify weights
 #'   and clusters in this design, without `weight_type` or `cluster`. Ordinary
 #'   models leave this argument `NULL`.
@@ -94,15 +96,22 @@
 #' the joint sandwich covariance.
 #'
 #' @section Survey models:
-#' Survey support combines coefficients from Gaussian identity-link, binary
-#' `quasibinomial()` logit/probit/cloglog, and `quasipoisson()` log
-#' `svyglm()` fits under one common one-stage design, in any combination.
-#' Strata and first-stage finite-population corrections are supported.
-#' Model-specific subsets and missing outcomes are aligned using observation
-#' IDs, with zero influence outside each model's estimation sample. The full
-#' design retains PSUs outside all model samples. Each native coefficient
-#' covariance must be reproduced before the joint matrix is returned. Survey
-#' fits contain coefficients only and do not add ancillary parameters.
+#' Survey support combines linear, binary, and Poisson `svyglm()` fits,
+#' ordered logit and probit `svyolr()` fits, multinomial logit,
+#' negative-binomial, and generalized ordered `svy_vglm()` fits, tobit,
+#' interval, and parametric survival `svysurvreg()` fits, and two-stage least
+#' squares `svyivreg()` fits under one common one-stage design, in any
+#' combination. Strata and first-stage finite-population corrections are
+#' supported. Model-specific subsets and missing outcomes are aligned using
+#' observation IDs, with zero influence outside each model's estimation sample.
+#' The full design retains PSUs outside all model samples. Each model's native
+#' design-based covariance must be reproduced from its scores before the joint
+#' matrix is returned. `svyolr()`, `svy_vglm()`, and `svysurvreg()` models then
+#' use exact observed information, as Stata does: `svyolr()` uses a numerical
+#' Hessian, VGAM uses expected information, and survival's scale residuals are
+#' wrong for interval-censored outcomes, so their own standard errors can
+#' differ slightly. `svyglm()` fits contain coefficients only; `svysurvreg()`
+#' fits add `Log(scale)`, and negative-binomial fits the log size parameter.
 #'
 #' Replicate-weight, multistage, two-phase, calibrated, raked, post-stratified,
 #' and PPS designs are unsupported. Lonely-PSU options are restricted to
@@ -292,9 +301,15 @@
 #' type.
 #'
 #' ## Survey models
-#' * restricted survey-weighted Gaussian identity, binary `quasibinomial()`
+#' * survey-weighted Gaussian identity, binary `quasibinomial()`
 #'   logit/probit/cloglog, and `quasipoisson()` log models from
-#'   `survey::svyglm()`, in any combination
+#'   `survey::svyglm()`
+#' * ordered logit and probit models from `survey::svyolr()`
+#' * multinomial logit, negative-binomial (log size intercept only), and
+#'   generalized ordered models from `svyVGAM::svy_vglm()`
+#' * tobit, interval, and parametric survival models from
+#'   `survey::svysurvreg()` with a common scale
+#' * two-stage least squares models from `survey::svyivreg()`
 #'
 #' @examples
 #' dat <- mtcars
@@ -359,10 +374,10 @@ suest <- function(
   model_names <- make.unique(as.character(model_names))
   names(models) <- model_names
 
-  survey_models <- vapply(models, inherits, logical(1), "svyglm")
+  survey_models <- vapply(models, .suest_is_survey_model, logical(1))
   if (any(survey_models) || !is.null(survey_design))
     return(.suest_survey_system(models, model_names, observation_id,
-      survey_design, cluster, weight_type, match.call()))
+      survey_design, cluster, weight_type, match.call(), parent.frame()))
 
   adapters <- lapply(models, .suest_model_adapter)
   model_types <- vapply(adapters, `[[`, character(1), "type")

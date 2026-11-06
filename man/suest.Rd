@@ -59,9 +59,11 @@ Use \code{"pweight"} to treat model weights as sampling weights. In version
 negative-binomial, ordered logit/probit, and multinomial logit models.}
 
 \item{survey_design}{Full common one-stage \code{survey::svydesign()} object for
-supported \code{survey::svyglm()} models: Gaussian identity, binary
-\code{quasibinomial()} logit/probit/cloglog, or \code{quasipoisson()} log.
-Requires \code{observation_id} column names.
+supported survey models: \code{survey::svyglm()} (Gaussian identity, binary
+\code{quasibinomial()} logit/probit/cloglog, or \code{quasipoisson()} log),
+\code{survey::svyolr()}, \code{survey::svysurvreg()}, \code{survey::svyivreg()}, and
+\code{svyVGAM::svy_vglm()} with the \code{multinomial()}, \code{negbinomial()}, or
+\code{cumulative()} family. Requires \code{observation_id} column names.
 Retain the design before model-specific domain subsetting. Specify weights
 and clusters in this design, without \code{weight_type} or \code{cluster}. Ordinary
 models leave this argument \code{NULL}.}
@@ -129,15 +131,22 @@ the joint sandwich covariance.
 }
 \section{Survey models}{
 
-Survey support combines coefficients from Gaussian identity-link, binary
-\code{quasibinomial()} logit/probit/cloglog, and \code{quasipoisson()} log
-\code{svyglm()} fits under one common one-stage design, in any combination.
-Strata and first-stage finite-population corrections are supported.
-Model-specific subsets and missing outcomes are aligned using observation
-IDs, with zero influence outside each model's estimation sample. The full
-design retains PSUs outside all model samples. Each native coefficient
-covariance must be reproduced before the joint matrix is returned. Survey
-fits contain coefficients only and do not add ancillary parameters.
+Survey support combines linear, binary, and Poisson \code{svyglm()} fits,
+ordered logit and probit \code{svyolr()} fits, multinomial logit,
+negative-binomial, and generalized ordered \code{svy_vglm()} fits, tobit,
+interval, and parametric survival \code{svysurvreg()} fits, and two-stage least
+squares \code{svyivreg()} fits under one common one-stage design, in any
+combination. Strata and first-stage finite-population corrections are
+supported. Model-specific subsets and missing outcomes are aligned using
+observation IDs, with zero influence outside each model's estimation sample.
+The full design retains PSUs outside all model samples. Each model's native
+design-based covariance must be reproduced from its scores before the joint
+matrix is returned. \code{svyolr()}, \code{svy_vglm()}, and \code{svysurvreg()} models then
+use exact observed information, as Stata does: \code{svyolr()} uses a numerical
+Hessian, VGAM uses expected information, and survival's scale residuals are
+wrong for interval-censored outcomes, so their own standard errors can
+differ slightly. \code{svyglm()} fits contain coefficients only; \code{svysurvreg()}
+fits add \code{Log(scale)}, and negative-binomial fits the log size parameter.
 
 Replicate-weight, multistage, two-phase, calibrated, raked, post-stratified,
 and PPS designs are unsupported. Lonely-PSU options are restricted to
@@ -344,9 +353,15 @@ type.
 
 \subsection{Survey models}{
 \itemize{
-\item restricted survey-weighted Gaussian identity, binary \code{quasibinomial()}
+\item survey-weighted Gaussian identity, binary \code{quasibinomial()}
 logit/probit/cloglog, and \code{quasipoisson()} log models from
-\code{survey::svyglm()}, in any combination
+\code{survey::svyglm()}
+\item ordered logit and probit models from \code{survey::svyolr()}
+\item multinomial logit, negative-binomial (log size intercept only), and
+generalized ordered models from \code{svyVGAM::svy_vglm()}
+\item tobit, interval, and parametric survival models from
+\code{survey::svysurvreg()} with a common scale
+\item two-stage least squares models from \code{survey::svyivreg()}
 }
 }
 }

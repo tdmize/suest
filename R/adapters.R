@@ -1045,7 +1045,7 @@
     .suest_vglm_info(model)$levels
   } else if (identical(engine, "ordinal::clmm")) {
     model$y.levels
-  } else if (engine %in% c("MASS::polr", "nnet::multinom")) {
+  } else if (engine %in% c("MASS::polr", "nnet::multinom", "survey::svyolr")) {
     model$lev
   } else {
     NULL
@@ -1054,7 +1054,7 @@
 
 .suest_set_parameters <- function(model, parameters, type, engine) {
   engine <- .suest_engine_name(engine)
-  if (.suest_is_glmm(type)) {
+  if (.suest_is_glmm(type) || inherits(model, "suest_vglm")) {
     model$suest_parameters <- parameters
     return(model)
   }
@@ -1218,7 +1218,7 @@
 
 .suest_predict_probabilities <- function(model, newdata, engine) {
   engine <- .suest_engine_name(engine)
-  if (identical(engine, "VGAM::vglm"))
+  if (inherits(model, "suest_vglm"))
     return(.suest_vglm_predict(model, newdata))
   if (identical(engine, "ordinal::clmm"))
     return(.suest_clmm_predict(model, newdata))
@@ -1265,6 +1265,8 @@
     if (identical(type, "link") || identical(model_type, "survey_lm")) return(eta)
     return(model$family$linkinv(eta))
   }
+  if (inherits(model, "suest_vglm"))
+    return(.suest_vglm_mean(model, newdata, type))
   engine <- .suest_engine_name(engine)
 
   if (.suest_is_glmm(model_type)) {

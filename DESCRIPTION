@@ -23,6 +23,7 @@ Imports:
     sandwich (>= 3.1-1),
     stats
 Suggests:
+    AER,
     betareg,
     brglm2,
     censReg,
@@ -44,6 +45,7 @@ Suggests:
     mvProbit,
     mvtnorm,
     nnet,
+    numDeriv,
     pglm,
     plm,
     pscl,
@@ -52,6 +54,7 @@ Suggests:
     sampleSelection,
     survival,
     survey (>= 4.2),
+    svyVGAM,
     testthat (>= 3.0.0),
     TMB,
     truncreg,
