@@ -11,8 +11,8 @@
 <script src="../deps/bootstrap-5.3.8/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><meta property="og:title" content="Notes on specific models">
-<meta name="description" content="Settings and limits for a few of the supported models.">
-<meta property="og:description" content="Settings and limits for a few of the supported models.">
+<meta name="description" content="Settings and limits for a few of the supported models, and what to use for Stata models without an R version.">
+<meta property="og:description" content="Settings and limits for a few of the supported models, and what to use for Stata models without an R version.">
 </head>
 <body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
@@ -118,6 +118,119 @@ use <code>numderiv = list("fdcenter", eps = 1e-4)</code> in
 that nearby step sizes (such as <code>5e-5</code> and <code>2e-4</code>)
 give similar answers.</li>
 </ul>
+</div>
+<div class="section level2">
+<h2 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a>
+</h2>
+<ul>
+<li>Ordered (<code>svyolr()</code>), multinomial, negative-binomial, and
+generalized ordered (<code>svy_vglm()</code>), and survival
+(<code>svysurvreg()</code>) models use exact observed information, as
+Stata does. Their standard errors can differ slightly from the fitted
+model’s own: <code>svyolr()</code> uses a numerical Hessian, VGAM uses
+expected information, and for interval-censored outcomes survival’s
+scale residuals are incorrect.</li>
+<li>These fits stop at fairly loose tolerances. For results that agree
+closely with Stata, tighten them:
+<code>control = list(reltol = 1e-12)</code> in <code>svyolr()</code> and
+<code>control = VGAM::vglm.control(criterion = "coefficients", epsilon = 1e-9)</code>
+in <code>svy_vglm()</code>.</li>
+<li>
+<code>svy_vglm()</code> multinomial models use the last category as
+the reference unless <code>multinomial(refLevel = )</code> says
+otherwise.</li>
+<li>
+<code><a href="../reference/suest.html">suest()</a></code> finds an <code>svyivreg()</code> model’s design
+from its call, so keep that design object available.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="stata-models-without-an-r-version">Stata models without an R version<a class="anchor" aria-label="anchor" href="#stata-models-without-an-r-version"></a>
+</h2>
+<p>For these Stata models, <code>suest</code> supports a model that
+answers the same question. The last column fits the same model in
+Stata.</p>
+<table class="table">
+<colgroup>
+<col width="33%">
+<col width="33%">
+<col width="33%">
+</colgroup>
+<thead><tr class="header">
+<th>Stata model</th>
+<th>Use in R</th>
+<th>Same model in Stata</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><code>xtlogit, fe</code></td>
+<td>Random-intercept logit with each time-varying predictor’s person
+mean added (<code>glmer()</code>, <code>glmmTMB()</code>, or
+<code>pglm()</code>); see <a href="within-person.html">Within-person
+effects</a>
+</td>
+<td>
+<code>xtlogit, re</code> or <code>melogit</code> with the person
+means</td>
+</tr>
+<tr class="even">
+<td><code>xtmlogit, fe</code></td>
+<td>
+<code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code> with the person means, clustered on
+person</td>
+<td>
+<code>mlogit</code> with the person means,
+<code>vce(cluster id)</code>
+</td>
+</tr>
+<tr class="odd">
+<td><code>xtmlogit, re</code></td>
+<td>
+<code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code> clustered on person</td>
+<td><code>mlogit, vce(cluster id)</code></td>
+</tr>
+<tr class="even">
+<td><code>xtnbreg, fe</code></td>
+<td>Fixed-effects Poisson, <code><a href="https://lrberge.github.io/fixest/reference/feglm.html" class="external-link">fixest::fepois()</a></code>
+</td>
+<td><code>xtpoisson, fe</code></td>
+</tr>
+<tr class="odd">
+<td><code>xtnbreg, re</code></td>
+<td>Random-intercept negative binomial, <code>glmmTMB()</code>
+</td>
+<td><code>menbreg</code></td>
+</tr>
+<tr class="even">
+<td><code>xtnbreg, pa</code></td>
+<td>Population-averaged Poisson, <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>
+</td>
+<td><code>xtpoisson, pa vce(robust)</code></td>
+</tr>
+<tr class="odd">
+<td><code>mestreg</code></td>
+<td>
+<code>survreg()</code> clustered on the group</td>
+<td><code>streg, vce(cluster group)</code></td>
+</tr>
+<tr class="even">
+<td>
+<code>biprobit</code> with different predictors</td>
+<td>Two probit models</td>
+<td>Two <code>probit</code> models</td>
+</tr>
+</tbody>
+</table>
+<p>Fixed-effects Poisson with robust standard errors is valid for
+overdispersed counts, and <code>xtnbreg, fe</code> is not a true
+fixed-effects model (Allison and Waterman 2002). The multinomial and
+survival stand-ins have no random effects, so they estimate effects
+averaged over people rather than for a given person. Two probit models
+estimate the same effects on each outcome as a bivariate probit, without
+the correlation between their errors.</p>
+<p>Allison, P. D., &amp; Waterman, R. P. (2002). Fixed-effects negative
+binomial regression models. <em>Sociological Methodology</em>, 32,
+247-265.</p>
 </div>
 <div class="section level2">
 <h2 id="models-fitted-with-different-packages">Models fitted with different packages<a class="anchor" aria-label="anchor" href="#models-fitted-with-different-packages"></a>

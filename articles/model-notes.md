@@ -31,6 +31,52 @@ are not: their standard errors can be missing or near zero.
   for more stable standard errors, and check that nearby step sizes
   (such as `5e-5` and `2e-4`) give similar answers.
 
+## Survey models
+
+- Ordered (`svyolr()`), multinomial, negative-binomial, and generalized
+  ordered (`svy_vglm()`), and survival (`svysurvreg()`) models use exact
+  observed information, as Stata does. Their standard errors can differ
+  slightly from the fitted model’s own: `svyolr()` uses a numerical
+  Hessian, VGAM uses expected information, and for interval-censored
+  outcomes survival’s scale residuals are incorrect.
+- These fits stop at fairly loose tolerances. For results that agree
+  closely with Stata, tighten them: `control = list(reltol = 1e-12)` in
+  `svyolr()` and
+  `control = VGAM::vglm.control(criterion = "coefficients", epsilon = 1e-9)`
+  in `svy_vglm()`.
+- `svy_vglm()` multinomial models use the last category as the reference
+  unless `multinomial(refLevel = )` says otherwise.
+- [`suest()`](https://tdmize.github.io/suest/reference/suest.md) finds
+  an `svyivreg()` model’s design from its call, so keep that design
+  object available.
+
+## Stata models without an R version
+
+For these Stata models, `suest` supports a model that answers the same
+question. The last column fits the same model in Stata.
+
+| Stata model | Use in R | Same model in Stata |
+|----|----|----|
+| `xtlogit, fe` | Random-intercept logit with each time-varying predictor’s person mean added (`glmer()`, `glmmTMB()`, or `pglm()`); see [Within-person effects](https://tdmize.github.io/suest/articles/within-person.md) | `xtlogit, re` or `melogit` with the person means |
+| `xtmlogit, fe` | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) with the person means, clustered on person | `mlogit` with the person means, `vce(cluster id)` |
+| `xtmlogit, re` | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) clustered on person | `mlogit, vce(cluster id)` |
+| `xtnbreg, fe` | Fixed-effects Poisson, [`fixest::fepois()`](https://lrberge.github.io/fixest/reference/feglm.html) | `xtpoisson, fe` |
+| `xtnbreg, re` | Random-intercept negative binomial, `glmmTMB()` | `menbreg` |
+| `xtnbreg, pa` | Population-averaged Poisson, [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html) | `xtpoisson, pa vce(robust)` |
+| `mestreg` | `survreg()` clustered on the group | `streg, vce(cluster group)` |
+| `biprobit` with different predictors | Two probit models | Two `probit` models |
+
+Fixed-effects Poisson with robust standard errors is valid for
+overdispersed counts, and `xtnbreg, fe` is not a true fixed-effects
+model (Allison and Waterman 2002). The multinomial and survival
+stand-ins have no random effects, so they estimate effects averaged over
+people rather than for a given person. Two probit models estimate the
+same effects on each outcome as a bivariate probit, without the
+correlation between their errors.
+
+Allison, P. D., & Waterman, R. P. (2002). Fixed-effects negative
+binomial regression models. *Sociological Methodology*, 32, 247-265.
+
 ## Models fitted with different packages
 
 Models fitted by different packages can be combined, as long as they are

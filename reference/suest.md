@@ -84,15 +84,21 @@ print(x, ...)
 
   Full common one-stage
   [`survey::svydesign()`](https://rdrr.io/pkg/survey/man/svydesign.html)
-  object for supported
+  object for supported survey models:
   [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
-  models: Gaussian identity, binary
+  (Gaussian identity, binary
   [`quasibinomial()`](https://rdrr.io/r/stats/family.html)
   logit/probit/cloglog, or
-  [`quasipoisson()`](https://rdrr.io/r/stats/family.html) log. Requires
-  `observation_id` column names. Retain the design before model-specific
-  domain subsetting. Specify weights and clusters in this design,
-  without `weight_type` or `cluster`. Ordinary models leave this
+  [`quasipoisson()`](https://rdrr.io/r/stats/family.html) log),
+  [`survey::svyolr()`](https://rdrr.io/pkg/survey/man/svyolr.html),
+  [`survey::svysurvreg()`](https://rdrr.io/pkg/survey/man/svysurvreg.html),
+  [`survey::svyivreg()`](https://rdrr.io/pkg/survey/man/svyivreg.html),
+  and
+  [`svyVGAM::svy_vglm()`](https://rdrr.io/pkg/svyVGAM/man/svy_vglm.html)
+  with the `multinomial()`, `negbinomial()`, or `cumulative()` family.
+  Requires `observation_id` column names. Retain the design before
+  model-specific domain subsetting. Specify weights and clusters in this
+  design, without `weight_type` or `cluster`. Ordinary models leave this
   argument `NULL`.
 
 - object, x:
@@ -158,18 +164,23 @@ covariance.
 
 ## Survey models
 
-Survey support combines coefficients from Gaussian identity-link, binary
-[`quasibinomial()`](https://rdrr.io/r/stats/family.html)
-logit/probit/cloglog, and
-[`quasipoisson()`](https://rdrr.io/r/stats/family.html) log `svyglm()`
-fits under one common one-stage design, in any combination. Strata and
-first-stage finite-population corrections are supported. Model-specific
-subsets and missing outcomes are aligned using observation IDs, with
-zero influence outside each model's estimation sample. The full design
-retains PSUs outside all model samples. Each native coefficient
-covariance must be reproduced before the joint matrix is returned.
-Survey fits contain coefficients only and do not add ancillary
-parameters.
+Survey support combines linear, binary, and Poisson `svyglm()` fits,
+ordered logit and probit `svyolr()` fits, multinomial logit,
+negative-binomial, and generalized ordered `svy_vglm()` fits, tobit,
+interval, and parametric survival `svysurvreg()` fits, and two-stage
+least squares `svyivreg()` fits under one common one-stage design, in
+any combination. Strata and first-stage finite-population corrections
+are supported. Model-specific subsets and missing outcomes are aligned
+using observation IDs, with zero influence outside each model's
+estimation sample. The full design retains PSUs outside all model
+samples. Each model's native design-based covariance must be reproduced
+from its scores before the joint matrix is returned. `svyolr()`,
+`svy_vglm()`, and `svysurvreg()` models then use exact observed
+information, as Stata does: `svyolr()` uses a numerical Hessian, VGAM
+uses expected information, and survival's scale residuals are wrong for
+interval-censored outcomes, so their own standard errors can differ
+slightly. `svyglm()` fits contain coefficients only; `svysurvreg()` fits
+add `Log(scale)`, and negative-binomial fits the log size parameter.
 
 Replicate-weight, multistage, two-phase, calibrated, raked,
 post-stratified, and PPS designs are unsupported. Lonely-PSU options are
@@ -434,12 +445,25 @@ same type.
 
 ### Survey models
 
-- restricted survey-weighted Gaussian identity, binary
+- survey-weighted Gaussian identity, binary
   [`quasibinomial()`](https://rdrr.io/r/stats/family.html)
   logit/probit/cloglog, and
   [`quasipoisson()`](https://rdrr.io/r/stats/family.html) log models
-  from [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html),
-  in any combination
+  from [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)
+
+- ordered logit and probit models from
+  [`survey::svyolr()`](https://rdrr.io/pkg/survey/man/svyolr.html)
+
+- multinomial logit, negative-binomial (log size intercept only), and
+  generalized ordered models from
+  [`svyVGAM::svy_vglm()`](https://rdrr.io/pkg/svyVGAM/man/svy_vglm.html)
+
+- tobit, interval, and parametric survival models from
+  [`survey::svysurvreg()`](https://rdrr.io/pkg/survey/man/svysurvreg.html)
+  with a common scale
+
+- two-stage least squares models from
+  [`survey::svyivreg()`](https://rdrr.io/pkg/survey/man/svyivreg.html)
 
 ## Examples
 

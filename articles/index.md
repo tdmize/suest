@@ -76,4 +76,5 @@
 - [Notes on specific
   models](https://tdmize.github.io/suest/articles/model-notes.md):
 
-  Settings and limits for a few of the supported models.
+  Settings and limits for a few of the supported models, and what to use
+  for Stata models without an R version.

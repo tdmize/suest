@@ -172,6 +172,12 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Linear regression | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) |
 | Binary logit, probit, and cloglog | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) with [`quasibinomial()`](https://rdrr.io/r/stats/family.html) |
 | Poisson | [`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) with [`quasipoisson()`](https://rdrr.io/r/stats/family.html) |
+| Ordered logit and probit | [`survey::svyolr()`](https://rdrr.io/pkg/survey/man/svyolr.html) |
+| Multinomial logit | [`svyVGAM::svy_vglm()`](https://rdrr.io/pkg/svyVGAM/man/svy_vglm.html) with `multinomial()` |
+| Negative binomial regression | [`svyVGAM::svy_vglm()`](https://rdrr.io/pkg/svyVGAM/man/svy_vglm.html) with `negbinomial()` |
+| Generalized ordered logit (gologit2), including partial proportional odds | [`svyVGAM::svy_vglm()`](https://rdrr.io/pkg/svyVGAM/man/svy_vglm.html) with `cumulative(reverse = TRUE)` |
+| Tobit, interval, and parametric survival regression | [`survey::svysurvreg()`](https://rdrr.io/pkg/survey/man/svysurvreg.html) with a common scale |
+| Instrumental-variable regression (two-stage least squares) | [`survey::svyivreg()`](https://rdrr.io/pkg/survey/man/svyivreg.html) |
 
 See [Survey data](#survey-data) below.
 
@@ -314,10 +320,8 @@ avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
 
 ## Survey data
 
-`suest` supports linear, binary (logit, probit, cloglog), and Poisson
-models fitted with
-[`survey::svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) from
-one common one-stage survey design, in any combination:
+`suest` supports the survey models in the table above, fitted from one
+common one-stage survey design, in any combination:
 
 ``` r
 
