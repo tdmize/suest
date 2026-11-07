@@ -16,6 +16,10 @@ articles:
   navbar: ~
   contents:
   - predictions
+- title: Regression tables
+  navbar: ~
+  contents:
+  - tables
 - title: "Examples: Mize, Doan & Long (2019)"
   navbar: Examples
   contents:
@@ -33,6 +37,7 @@ articles:
   - panel
   - within-person
   - instrumental-variables
+  - two-part
 - title: More
   navbar: ~
   contents:
@@ -45,6 +50,11 @@ reference:
   - suest
   - suest_mi
   - suest_newdata
+  - suest_twopart
+- title: Tables
+  desc: Methods for modelsummary tables
+  contents:
+  - tidy.suest_model
 
 navbar:
   structure:

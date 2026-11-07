@@ -1,5 +1,29 @@
 # suest 0.1.6.9000 (development)
 
+* New: `suest_twopart()` combines the two parts of a two-part model
+  (Stata's `twopm`): a binary model for whether the outcome is positive and a
+  model for the outcome among those with a positive outcome, such as a Gamma
+  or Poisson pseudo-likelihood GLM. `marginaleffects` predictions, slopes, and
+  comparisons are then on the overall expected outcome, with standard errors
+  from the joint covariance matrix of the two parts (clustered, weighted, or
+  survey-based when requested). `type = "prob"` and `type = "conditional"`
+  give each part's own predictions. New article: Two-part models.
+
+* New: `tidy()` and `glance()` methods, so
+  `modelsummary::modelsummary(fit, shape = term ~ group)` makes a table with
+  one column per model. New article: Regression tables. `generics` and
+  `modelsummary` added to Suggests.
+
+* Fixed: `avg_slopes()`, `avg_comparisons()`, and `slopes()` without
+  `variables` also returned rows for the models' outcome variables (estimates
+  of 0 with missing standard errors), and warned that names such as the data
+  object and the family were not found in `newdata`. suest now tells
+  `marginaleffects` which variables are outcomes (an `insight::find_response()`
+  method) and which are predictors; an outcome that is a predictor in another
+  model, such as a mediator, is still included. Random-effect grouping
+  variables, instruments, survey design variables, and fixed-effect ids are
+  no longer default variables either.
+
 * Survey probit and cloglog `svyglm()` models now use observed information,
   as Stata does, so their covariance matches `svy: probit` and `svy: cloglog`
   with suest2 (probit: within 5e-8 in the returned Stata comparison). Before,

@@ -29,6 +29,8 @@
     get_predict.suest_model,
     envir = namespace
   )
+  registerS3method("get_predict", "suest_twopart", get_predict.suest_twopart,
+                   envir = namespace)
   registerS3method("get_coef", "suest_mi", get_coef.suest_mi,
                    envir = namespace)
   registerS3method("get_vcov", "suest_mi", get_vcov.suest_mi,
@@ -40,6 +42,11 @@
                      envir = asNamespace("insight"))
     registerS3method("find_predictors", "suest_model",
                      find_predictors.suest_model,
+                     envir = asNamespace("insight"))
+    registerS3method("get_data", "suest_twopart", get_data.suest_twopart,
+                     envir = asNamespace("insight"))
+    registerS3method("find_response", "suest_model",
+                     find_response.suest_model,
                      envir = asNamespace("insight"))
   }
 }

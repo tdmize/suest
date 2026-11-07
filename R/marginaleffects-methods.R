@@ -50,16 +50,49 @@ get_vcov.suest_model <- function(model, vcov = NULL, ...) {
 # Data used when newdata is omitted and by datagrid().
 get_data.suest_model <- function(x, ...) .suest_default_data(x)
 
-# Variables of all models, so counterfactual grids (e.g. predictions(variables = ))
-# keep only these columns and get a fresh rowid; NULL if any model's are unknown.
-find_predictors.suest_model <- function(x, flatten = FALSE, ...) {
-  vars <- lapply(x$models, function(m) {
-    f <- tryCatch(stats::formula(m), error = function(e) m$formula)
-    unique(c(if (inherits(f, "formula")) all.vars(f), all.vars(m$call)))
-  })
-  if (any(lengths(vars) == 0L)) return(NULL)
-  out <- unique(c(unlist(vars), ".suest_model", ".suest_rowid", ".suest_weight"))
-  if (isTRUE(flatten)) out else list(conditional = out)
+# Each model's outcomes, fixed-effect predictors, and every variable it uses.
+.suest_variable_roles <- function(m) {
+  fit <- if (inherits(m, c("suest_lme4", "suest_vglm"))) m$fit else m
+  f <- tryCatch(stats::formula(m), error = function(e) m$formula)
+  two_sided <- inherits(f, "formula") && length(f) == 3L
+  response <- tryCatch(insight::find_response(fit, combine = FALSE), error = function(e) NULL)
+  predictors <- tryCatch(insight::find_predictors(fit, effects = "fixed", component = "all"),
+    error = function(e) NULL)
+  # Instruments, survey design variables, and fixed-effect ids are not predictors.
+  predictors <- unique(unlist(predictors[setdiff(names(predictors),
+    c("instruments", "endogenous", "design", "cluster"))], use.names = FALSE))
+  if (is.null(response) && two_sided) response <- all.vars(f[[2L]])
+  if (is.null(predictors) && two_sided) predictors <- all.vars(f[[3L]])
+  list(response = response, predictors = predictors,
+       all = unique(c(if (inherits(f, "formula")) all.vars(f), all.vars(m$call))))
+}
+
+# Predictors (default variables for slopes and comparisons) plus, as auxiliary,
+# every other variable the models use, so counterfactual grids (e.g.
+# predictions(variables = )) keep these columns and get a fresh rowid. NULL if
+# any model's variables are unknown.
+find_predictors.suest_model <- function(x, component = "all", flatten = FALSE, ...) {
+  roles <- lapply(x$models, .suest_variable_roles)
+  if (any(lengths(lapply(roles, `[[`, "all")) == 0L)) return(NULL)
+  predictors <- unique(unlist(lapply(roles, `[[`, "predictors")))
+  auxiliary <- setdiff(
+    unique(c(unlist(lapply(roles, `[[`, "all")), ".suest_model", ".suest_rowid", ".suest_weight")),
+    predictors
+  )
+  out <- list(conditional = predictors, auxiliary = auxiliary)
+  if (!"all" %in% component) out <- out[intersect(names(out), component)]
+  if (isTRUE(flatten)) unique(unlist(out, use.names = FALSE)) else out
+}
+
+# Outcomes that are not a predictor in another model (a mediator stays a
+# predictor), so default slopes and comparisons skip them.
+find_response.suest_model <- function(x, ...) {
+  roles <- lapply(x$models, .suest_variable_roles)
+  out <- setdiff(
+    unique(unlist(lapply(roles, `[[`, "response"))),
+    unlist(lapply(roles, `[[`, "predictors"))
+  )
+  if (length(out)) out else NULL
 }
 
 get_coef.suest_mi <- function(model, ...) model$coefficients

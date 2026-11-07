@@ -1,0 +1,61 @@
+---
+title: "Regression tables"
+description: "Tables of coefficients and marginal effects across models with modelsummary."
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Regression tables}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include=FALSE}
+site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
+knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
+                      message = FALSE, warning = FALSE)
+options(width = 100)
+```
+
+[`modelsummary`](https://modelsummary.com/) makes tables from a combined
+object and from the `marginaleffects` results computed with it. Add
+`shape = term ~ group` to put each model in its own column.
+
+The models are the two logits of union membership from Getting started:
+
+```{r models}
+library(suest)
+library(marginaleffects)
+library(modelsummary)
+library(haven)
+
+nlsw <- zap_labels(read_dta("https://tdmize.github.io/data/data/nlsw88.dta"))
+nlsw <- nlsw[!is.na(nlsw$union), ]
+nlsw[c("collgrad", "south")] <- lapply(nlsw[c("collgrad", "south")], factor)
+
+base <- glm(union ~ collgrad + age + south, family = binomial("logit"),
+            data = nlsw)
+adjusted <- glm(union ~ collgrad + age + south + wage + ttl_exp,
+                family = binomial("logit"), data = nlsw)
+combined <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
+```
+
+## Coefficients
+
+The standard errors are each model's robust standard errors from the joint
+covariance matrix.
+
+```{r coefficients}
+modelsummary(combined, shape = term ~ group)
+```
+
+## Marginal effects and their differences
+
+```{r effects}
+effects <- avg_slopes(combined, variables = c("collgrad", "age", "south"))
+differences <- hypotheses(effects, hypothesis = difference ~ revpairwise | term)
+differences$group <- "Base - Adjusted"
+
+modelsummary(
+  list("Average marginal effects" = effects, "Difference" = differences),
+  shape = term ~ group
+)
+```

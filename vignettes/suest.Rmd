@@ -28,9 +28,11 @@ leaves calculating and presenting the quantities themselves to
 - `suest_newdata()` stacks the models' estimation samples so each model's
   effects can be averaged over its own sample.
 - `suest_mi()` pools `suest()` results across multiply imputed datasets.
+- `suest_twopart()` combines the two parts of a two-part model.
 - The usual `marginaleffects` functions, including `predictions()`,
   `avg_comparisons()`, `avg_slopes()`, `hypotheses()`, and the plotting
-  functions, work with the combined object.
+  functions, work with the combined object, and `modelsummary()` makes
+  tables from it.
 
 ## Installation and setup
 
