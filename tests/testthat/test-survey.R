@@ -249,6 +249,26 @@ survey_binary_influence <- function(model) {
     stats::coef(model), offset)
 }
 
+# Independent observed-information influences for svyglm probit/cloglog models:
+# numerical derivatives of the weighted Bernoulli log likelihood. suest uses
+# observed information for these links, as Stata does.
+survey_with_observed <- function(m) {
+  skip_if_not_installed("numDeriv")
+  X <- model.matrix(m)
+  y <- m$y
+  w <- m$prior.weights
+  off <- model.offset(m$model)
+  if (is.null(off)) off <- 0
+  ll <- function(b) {
+    p <- m$family$linkinv(drop(X %*% b) + off)
+    y * log(p) + (1 - y) * log(1 - p)
+  }
+  J <- numDeriv::jacobian(ll, coef(m))
+  H <- numDeriv::hessian(function(b) sum(w * ll(b)), coef(m))
+  attr(m, "influence") <- (w * J) %*% solve(-H)
+  m
+}
+
 test_that("survey logit/probit influences reproduce survey's native linearization", {
   withr::local_options(survey.lonely.psu = "fail", survey.adjust.domain.lonely = FALSE)
   d <- survey_binary_fixture()$design
@@ -274,9 +294,10 @@ test_that("survey binary covariance reproduces native blocks and independent PSU
     a <- survey::svyglm(yb ~ x, d, family = quasibinomial("logit"), influence = TRUE)
     b <- survey::svyglm(yb2 ~ x + z, d, family = quasibinomial("probit"), influence = TRUE)
     s <- suest(a, b, model_names = c("A", "B"), survey_design = d, observation_id = "id")
-    expect_equal(unname(vcov(s)), survey_manual_joint(list(a, b), d), tolerance = 2e-10)
+    expect_equal(unname(vcov(s)), survey_manual_joint(list(a, survey_with_observed(b)), d),
+      tolerance = 1e-6)
     expect_equal(unname(vcov(s)[s$index[[1]], s$index[[1]]]), unname(vcov(a)), tolerance = 2e-10)
-    expect_equal(unname(vcov(s)[s$index[[2]], s$index[[2]]]), unname(vcov(b)), tolerance = 2e-10)
+    expect_gt(s$survey$native_vcov_max_abs_error[["B"]], 1e-8)
     expect_equal(unname(coef(s)), c(unname(coef(a)), unname(coef(b))))
     expect_equal(unname(s$model_types), c("logit", "probit"))
     expect_equal(s$comparison_scale, "predicted probabilities")
@@ -296,7 +317,8 @@ test_that("survey binary partial overlap and disjoint domains align on the full 
     b <- survey::svyglm(yb2 ~ x + z, sub[[2]],
       family = quasibinomial("probit"), influence = TRUE)
     s <- suest(a, b, survey_design = d, observation_id = "id")
-    expect_equal(unname(vcov(s)), survey_manual_joint(list(a, b), d), tolerance = 2e-10)
+    expect_equal(unname(vcov(s)), survey_manual_joint(list(a, survey_with_observed(b)), d),
+      tolerance = 1e-6)
     expect_equal(s$nobs_overlap, length(intersect(a$survey.design$variables$id, b$survey.design$variables$id)))
     cross <- vcov(s)[s$index[[1]], s$index[[2]]]
     if (sub[[3]]) expect_equal(unname(cross), matrix(0, 2, 3), tolerance = 1e-12) else
@@ -361,8 +383,11 @@ test_that("survey binary restrictions remain narrow", {
   wrong <- logit
   wrong$cov.unscaled <- wrong$cov.unscaled * 1.01
   expect_error(suest(logit, wrong, survey_design = d, observation_id = "id"), "native design-based covariance")
-  cloglog <- survey::svyglm(yb ~ x, d, family = quasibinomial("cloglog"))
-  expect_no_error(suest(logit, cloglog, survey_design = d, observation_id = "id"))
+  cloglog <- survey::svyglm(yb ~ x, d, family = quasibinomial("cloglog"),
+    control = list(epsilon = 1e-12, maxit = 100))
+  s <- suest(logit, cloglog, survey_design = d, observation_id = "id")
+  expect_equal(unname(vcov(s)), survey_manual_joint(list(survey_with_observed(logit),
+    survey_with_observed(cloglog)), d), tolerance = 1e-6)
   binomial <- suppressWarnings(survey::svyglm(yb ~ x, d, family = binomial("logit")))
   expect_error(suest(logit, binomial, survey_design = d, observation_id = "id"), "quasibinomial logit/probit/cloglog")
   linear <- survey::svyglm(y ~ x, d)
@@ -387,8 +412,9 @@ test_that("survey systems combine linear, binary, and Poisson models", {
   fit <- suest(linear, binary, count, survey_design = d, observation_id = "id",
     model_names = c("linear", "probit", "poisson"))
   expect_identical(unname(fit$model_types), c("survey_lm", "probit", "poisson"))
-  expect_equal(unname(vcov(fit)), unname(survey_manual_joint(list(linear, binary, count), d)),
-    tolerance = 1e-8)
+  expect_equal(unname(vcov(fit)),
+    unname(survey_manual_joint(list(linear, survey_with_observed(binary), count), d)),
+    tolerance = 1e-6)
   expect_equal(unname(vcov(fit)[6:7, 6:7]), unname(vcov(count)), tolerance = 1e-10)
   effects <- marginaleffects::avg_slopes(fit, variables = "x", newdata = raw)
   expect_identical(nrow(effects), 3L)

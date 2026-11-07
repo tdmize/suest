@@ -141,11 +141,11 @@ supported. Model-specific subsets and missing outcomes are aligned using
 observation IDs, with zero influence outside each model's estimation sample.
 The full design retains PSUs outside all model samples. Each model's native
 design-based covariance must be reproduced from its scores before the joint
-matrix is returned. \code{svyolr()}, \code{svy_vglm()}, and \code{svysurvreg()} models then
-use exact observed information, as Stata does: \code{svyolr()} uses a numerical
-Hessian, VGAM uses expected information, and survival's scale residuals are
-wrong for interval-censored outcomes, so their own standard errors can
-differ slightly. \code{svyglm()} fits contain coefficients only; \code{svysurvreg()}
+matrix is returned. Probit and cloglog \code{svyglm()} fits and \code{svyolr()},
+\code{svy_vglm()}, and \code{svysurvreg()} models then use exact observed information,
+as Stata does: \code{svyglm()} and VGAM use expected information, \code{svyolr()} a
+numerical Hessian, and survival's scale residuals are wrong for
+interval-censored outcomes, so their own standard errors can differ. \code{svyglm()} fits contain coefficients only; \code{svysurvreg()}
 fits add \code{Log(scale)}, and negative-binomial fits the log size parameter.
 
 Replicate-weight, multistage, two-phase, calibrated, raked, post-stratified,

@@ -106,11 +106,11 @@
 #' observation IDs, with zero influence outside each model's estimation sample.
 #' The full design retains PSUs outside all model samples. Each model's native
 #' design-based covariance must be reproduced from its scores before the joint
-#' matrix is returned. `svyolr()`, `svy_vglm()`, and `svysurvreg()` models then
-#' use exact observed information, as Stata does: `svyolr()` uses a numerical
-#' Hessian, VGAM uses expected information, and survival's scale residuals are
-#' wrong for interval-censored outcomes, so their own standard errors can
-#' differ slightly. `svyglm()` fits contain coefficients only; `svysurvreg()`
+#' matrix is returned. Probit and cloglog `svyglm()` fits and `svyolr()`,
+#' `svy_vglm()`, and `svysurvreg()` models then use exact observed information,
+#' as Stata does: `svyglm()` and VGAM use expected information, `svyolr()` a
+#' numerical Hessian, and survival's scale residuals are wrong for
+#' interval-censored outcomes, so their own standard errors can differ. `svyglm()` fits contain coefficients only; `svysurvreg()`
 #' fits add `Log(scale)`, and negative-binomial fits the log size parameter.
 #'
 #' Replicate-weight, multistage, two-phase, calibrated, raked, post-stratified,

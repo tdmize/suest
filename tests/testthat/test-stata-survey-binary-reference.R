@@ -1,10 +1,7 @@
-# Returned Stata 19.5 survey-binary gate.
-# Logit covariance is numerically comparable to survey::svyglm().
-# The returned Stata probit covariance is reproduced by an observed-information
-# bread, unlike survey::svyglm() (expected/Fisher information), so only coefficients are
-# cross-language comparable for probit; native R covariance blocks remain the
-# governing contract.
-test_that("survey binary systems match returned Stata gate within the native-R contract", {
+# Returned Stata 19.5 survey-binary gate. suest uses observed information for
+# probit, as Stata does; survey::svyglm()'s own probit covariance uses expected
+# information, so only logit blocks equal svyglm()'s vcov().
+test_that("survey binary systems match the returned Stata gate", {
   skip_if_not_installed("survey")
   dat <- read.csv(test_path("fixtures", "survey-binary-stata-data.csv"))
   dat$f <- factor(dat$f)
@@ -61,12 +58,13 @@ test_that("survey binary systems match returned Stata gate within the native-R c
 
     expect_lt(max(abs(unname(coef(fit)) - get_b(case))),
       if (link == "logit") 5e-8 else 2e-6)
-    expect_equal(unname(vcov(fit)[fit$index[[1]], fit$index[[1]]]),
-      unname(vcov(a)), tolerance = 2e-10)
-    expect_equal(unname(vcov(fit)[fit$index[[2]], fit$index[[2]]]),
-      unname(vcov(b)), tolerance = 2e-10)
-    if (link == "logit")
-      expect_lt(max(abs(unname(vcov(fit)) - get_V(case))), 5e-7)
+    if (link == "logit") {
+      expect_equal(unname(vcov(fit)[fit$index[[1]], fit$index[[1]]]),
+        unname(vcov(a)), tolerance = 2e-10)
+      expect_equal(unname(vcov(fit)[fit$index[[2]], fit$index[[2]]]),
+        unname(vcov(b)), tolerance = 2e-10)
+    }
+    expect_lt(max(abs(unname(vcov(fit)) - get_V(case))), 5e-7)
   }
 
   rc <- ref$value[ref$kind == "suest2_rc"]

@@ -46,12 +46,12 @@ zero.
 
 ## Survey models
 
-- Ordered (`svyolr()`), multinomial, negative-binomial, and generalized
-  ordered (`svy_vglm()`), and survival (`svysurvreg()`) models use exact
-  observed information, as Stata does. Their standard errors can differ
-  slightly from the fitted model's own: `svyolr()` uses a numerical Hessian,
-  VGAM uses expected information, and for interval-censored outcomes
-  survival's scale residuals are incorrect.
+- Binary probit and cloglog (`svyglm()`), ordered (`svyolr()`), multinomial,
+  negative-binomial, and generalized ordered (`svy_vglm()`), and survival
+  (`svysurvreg()`) models use exact observed information, as Stata does. Their
+  standard errors can differ from the fitted model's own: `svyglm()` and VGAM
+  use expected information, `svyolr()` uses a numerical Hessian, and for
+  interval-censored outcomes survival's scale residuals are incorrect.
 - These fits stop at fairly loose tolerances. For results that agree closely
   with Stata, tighten them: `control = list(reltol = 1e-12)` in `svyolr()` and
   `control = VGAM::vglm.control(criterion = "coefficients", epsilon = 1e-9)`

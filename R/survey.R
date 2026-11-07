@@ -53,6 +53,23 @@
   (X * (working_residual * working_weight)) %*% bread
 }
 
+# Probit and cloglog influences with observed information, as Stata uses;
+# svyglm()'s own covariance uses expected information.
+.suest_survey_binary_observed <- function(X, y, w, eta, link) {
+  if (link == "probit") {
+    F <- stats::pnorm(eta); f <- stats::dnorm(eta); f_prime <- -eta*f
+  } else {
+    F <- -expm1(-exp(eta)); f <- exp(eta - exp(eta)); f_prime <- f*(1 - exp(eta))
+  }
+  V <- F*(1 - F)
+  ratio <- f/V
+  ratio_prime <- (f_prime*V - f^2*(1 - 2*F))/V^2
+  A <- crossprod(X, X*(w*(f*ratio - (y - F)*ratio_prime)))
+  if (any(!is.finite(A)) || any(V <= 0))
+    stop("Survey binary-model observed information is numerically undefined at the fitted values.", call. = FALSE)
+  (X*(w*(y - F)*ratio)) %*% .suest_information_inverse(A)
+}
+
 # Survey fits suest combines under one design.
 .suest_survey_classes <- c("svyglm", "svyolr", "svy_vglm", "svysurvreg", "svyivreg")
 
@@ -103,14 +120,18 @@
   }
   offset <- stats::model.offset(mf)
   if (is.null(offset)) offset <- rep(0, nrow(X))
-  influence <- if (type == "survey_lm") {
+  native <- if (type == "survey_lm") {
     residual <- y - as.numeric(X %*% beta) - offset
     (X * (w * residual)) %*% solve(crossprod(X, X * w))
   } else {
     .suest_survey_binary_influence(model, X, y, w, beta, offset)
   }
+  influence <- if (type %in% c("probit", "cloglog")) {
+    .suest_survey_binary_observed(X, y, w, as.numeric(X %*% beta) + offset, type)
+  } else native
   list(type = type, engine = "survey::svyglm", design = model$survey.design, frame = mf,
-    weights = w, parameters = beta, influence = influence, model = model)
+    weights = w, parameters = beta, influence = influence, native_influence = native,
+    model = model)
 }
 
 .suest_survey_olr <- function(model) {
