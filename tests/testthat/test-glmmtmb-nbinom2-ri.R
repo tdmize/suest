@@ -323,6 +323,8 @@ test_that("NB2 excludes unvalidated dispersion and random-effect specifications"
   expect_error(suest(offset, base), "Offsets are not supported", fixed = TRUE)
   expect_error(suest(zero_offset, base), "Offsets are not supported", fixed = TRUE)
   expect_error(suest(zero_call_offset, base), "Offsets are not supported", fixed = TRUE)
-  expect_error(suest(slope, base), "one conditional random intercept", fixed = TRUE)
+  # Several slopes use the general random-effects engine.
+  expect_identical(unname(suest(slope, base, observation_id = c("id", "time"))$model_types[1]),
+    "glmm_nbinom2_re")
   expect_s3_class(suest(base, poisson, observation_id = c("id", "time")), "suest_model")
 })

@@ -1,5 +1,23 @@
 # suest 0.1.6.9000 (development)
 
+* Multilevel models can now have several random slopes for one grouping
+  variable and a level nested in it (three-level models), in `lmer()`,
+  `glmer()`, `glmmTMB()`, and `clmm()`; this also adds random slopes to
+  ordered logit and probit models. Independent terms (`(1 + x || g)`),
+  slopes without an intercept, and glmmTMB's `diag()` work too. These match
+  Stata's `mixed` and `me` commands with
+  `|| school: x1 x2, covariance(unstructured) || class:`. Each top-level
+  group's likelihood is the Laplace approximation over all its random effects
+  (exact for linear models), so nonlinear models match Stata's
+  `intmethod(laplace)`. Random-intercept and one-slope models are unchanged.
+  Checks: linear models against an exact multivariate normal likelihood,
+  nonlinear models against an independent Laplace likelihood and each
+  package's own log likelihood, glmmTMB systems against glmmTMB's own group
+  scores for every family, and predictions against direct integration. Fits
+  near a variance or correlation boundary are refused. Combined models whose
+  grouping variables differ but are nested can be clustered on the higher
+  level with `cluster`.
+
 * New: `suest_twopart()` combines the two parts of a two-part model
   (Stata's `twopm`): a binary model for whether the outcome is positive and a
   model for the outcome among those with a positive outcome, such as a Gamma

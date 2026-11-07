@@ -212,18 +212,20 @@ test_that("logit random-slope support stays restricted to regular Bernoulli fits
   fit_model <- function(formula, ...) suppressWarnings(glmmtmb_logit_rs_fit(formula, d, ...))
   base <- fit_model(y1~x+z+(1+x|id))
   cases <- list(
-    list(fit_model(y1~x+z+(1+x||id)), "Structured"),
     list(fit_model(y1~x+z+(1+I(x^2)|id)), "untransformed numeric"),
     list(fit_model(y1~x+z+(1+woman|id)), "untransformed numeric"),
-    list(fit_model(y1~x+z+(1+x+z|id)), "one conditional random intercept"),
-    list(fit_model(y1~x+z+(0+x|id)), "one conditional random intercept"),
-    list(fit_model(y1~x+z+(1+x|id)+(1|higher)), "one conditional random intercept"),
+    list(fit_model(y1~x+z+(1+x+z|id)), "positive-definite Hessian"),
+    list(fit_model(y1~x+z+(1+x|id)+(1|higher)), "nearly singular"),
     list(fit_model(y1~x+z+(1+x|id), map = list(theta = factor(c(1, 2, NA))), start = list(theta = c(0, 0, 0))), "Mapped or constrained"),
     list(fit_model(y1~x+z+(1+x|id), weights = rep(1, nrow(d))), "Weighted"),
     list(fit_model(y1~x+z+offset(zero)+(1+x|id)), "Offsets"),
     list(fit_model(cbind(y1, 2-y1)~x+z+(1+x|id)), "Grouped-binomial"),
     list(fit_model(y1~x+z+(1+x|id), ziformula = ~1), "Zero-inflation"))
   for (case in cases) expect_error(suest(case[[1]], base), case[[2]], fixed = TRUE)
+  # Independent terms and a slope without an intercept use the general engine.
+  for (f in list(y1~x+z+(1+x||id), y1~x+z+(0+x|id)))
+    expect_identical(unname(suest(fit_model(f), base, observation_id = c("id", "time"))$model_types[1]),
+      "glmm_logit_re")
   bad <- base; bad$fit$convergence <- 1L
   expect_error(suest(bad, base), "must converge")
   bad <- base; bad$fit$par[names(bad$fit$par) == "theta"] <- c(0, -30, 0)

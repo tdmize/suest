@@ -32,20 +32,17 @@
   cnms <- lme4::getME(fit, "cnms")
   columns <- if (length(cnms) == 1L) unname(cnms[[1L]]) else character()
   slope <- length(columns) == 2L && identical(columns[1L], "(Intercept)")
-  if (length(flist) != 1L || length(cnms) != 1L ||
-      (!identical(columns, "(Intercept)") && !slope))
-    stop(
-      paste0(
-        "lme4 support is currently limited to one grouping variable with a ",
-        "random intercept, or a random intercept and one correlated numeric slope."
-      ),
-      call. = FALSE
-    )
   frame <- wrapper$frame
-  if (slope && (!identical(make.names(columns[2L]), columns[2L]) ||
-      !columns[2L] %in% names(frame) || !is.numeric(frame[[columns[2L]]]) ||
-      is.matrix(frame[[columns[2L]]])))
-    stop("The random slope must be one untransformed numeric data column.", call. = FALSE)
+  simple <- length(flist) == 1L && length(cnms) == 1L &&
+    (identical(columns, "(Intercept)") || slope) &&
+    (!slope || (identical(make.names(columns[2L]), columns[2L]) &&
+      columns[2L] %in% names(frame) && is.numeric(frame[[columns[2L]]]) &&
+      !is.matrix(frame[[columns[2L]]])))
+  if (!simple) {
+    structure <- if (!is.null(wrapper$suest_structure)) wrapper$suest_structure else
+      .suest_re_structure_lme4(wrapper)
+    return(list(name = structure$name, id = structure$id, slope = NULL, structure = structure))
+  }
   list(
     name = names(flist)[1L],
     id = droplevels(flist[[1L]]),
@@ -73,7 +70,8 @@
     stop("lmer models must be fit by maximum likelihood (REML = FALSE), as Stata's mixed does.",
       call. = FALSE)
   random <- .suest_lme4_random_info(wrapper)
-  type <- paste0("glmm_", key, if (is.null(random$slope)) "_ri" else "_rs")
+  type <- paste0("glmm_", key,
+    if (!is.null(random$structure)) "_re" else if (is.null(random$slope)) "_ri" else "_rs")
 
   weights <- stats::weights(fit)
   if (!is.null(wrapper$call$weights) || any(weights != 1))
@@ -85,9 +83,9 @@
   if (.suest_glmm_binary(type) && !all(y %in% c(0, 1)))
     stop("Grouped-binomial glmer responses are not supported; use Bernoulli 0/1 outcomes.",
       call. = FALSE)
-  if (any(names(lme4::fixef(fit)) %in%
-      c("log_sigma", "log_sigma_e", "log_sd_intercept", "log_sd_slope", "atanh_rho")))
-    stop("lme4 models reserve the coefficient names log_sigma, log_sigma_e, log_sd_intercept, log_sd_slope, and atanh_rho.",
+  if (any(names(lme4::fixef(fit)) %in% c("log_sigma", "log_sigma_e", "log_sd_intercept",
+      "log_sd_slope", "atanh_rho", random$structure$names)))
+    stop("lme4 models reserve the coefficient names log_sigma, log_sigma_e, and the log_sd_ and atanh_rho names of the random effects.",
       call. = FALSE)
   if (any(!is.finite(lme4::getME(fit, "theta"))) || lme4::isSingular(fit))
     stop(
@@ -97,6 +95,7 @@
       ),
       call. = FALSE
     )
+  if (!is.null(random$structure)) .suest_re_check_covariances(random$structure)
   list(engine = wrapper$engine, type = type)
 }
 
@@ -112,6 +111,10 @@
   random <- correlation[correlation$grp != "Residual", , drop = FALSE]
   residual <- if (identical(wrapper$engine, "lme4::lmer"))
     c(log_sigma_e = log(stats::sigma(fit))) else numeric(0)
+  if (endsWith(type, "_re")) {
+    structure <- .suest_lme4_random_info(wrapper)$structure
+    return(c(beta, residual, stats::setNames(structure$values, structure$names)))
+  }
   if (.suest_glmm_slope(type)) {
     sd <- random$sdcor[is.na(random$var2)]
     rho <- random$sdcor[!is.na(random$var2)]
@@ -185,10 +188,13 @@
   X <- as.matrix(lme4::getME(fit, "X"))
   y <- as.numeric(lme4::getME(fit, "y"))
   random <- .suest_lme4_random_info(wrapper)
-  slope <- if (is.null(random$slope)) NULL else wrapper$frame[[random$slope]]
   p <- ncol(X)
   gaussian <- identical(wrapper$engine, "lme4::lmer")
   family <- .suest_glmm_family(type)
+  if (!is.null(random$structure))
+    return(.suest_re_general_loglik(random$structure, wrapper$frame, X, y,
+      if (gaussian) "gaussian" else family, p + gaussian))
+  slope <- if (is.null(random$slope)) NULL else wrapper$frame[[random$slope]]
   nagq <- unname(fit@devcomp$dims["nAGQ"])
   rule <- if (!gaussian && nagq > 1L) {
     hermite <- lme4::GHrule(nagq)

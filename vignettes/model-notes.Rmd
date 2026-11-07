@@ -44,6 +44,32 @@ zero.
   standard errors, and check that nearby step sizes (such as `5e-5` and
   `2e-4`) give similar answers.
 
+## Several random slopes and three-level models
+
+- `lmer()`, `glmer()`, `glmmTMB()`, and `clmm()` models can have several
+  random slopes for the grouping variable, `(1 + x1 + x2 | school)`, and one
+  level nested in it, `(1 + x1 | school) + (1 | school:class)` or
+  `(1 | school/class)`. In Stata, these are
+  `|| school: x1 x2, covariance(unstructured) || class:`. Independent terms,
+  `(1 + x1 || school)`, and glmmTMB's `diag()` are Stata's
+  `covariance(independent)`. Crossed random effects and a third grouping
+  level are not supported.
+- Slopes must be numeric data columns. Make a numeric 0/1 version of a
+  factor, and create transformed variables (such as squares) before fitting.
+- The variance parameters are each term's log standard deviations,
+  `log_sd_school_x1`, and Fisher z correlations,
+  `atanh_rho_school_intercept_x1`, as in Stata's `lns` and `atr`. A nested
+  level is named with a dot: `log_sd_school.class_intercept`.
+- Nonlinear models with these structures use the Laplace approximation (lme4
+  allows adaptive quadrature only for a single random intercept). suest2
+  requires adaptive quadrature, so to check results in Stata, fit each model
+  with `intmethod(laplace) vce(cluster school)`; its standard errors equal
+  that model's block of the `suest()` covariance. Linear models agree with
+  `mixed` exactly.
+- Fits near a boundary, with a variance near zero or correlations near -1 or
+  1, are refused even when lme4 does not flag them as singular. Simplify the
+  random-effects structure.
+
 ## Survey models
 
 - Binary probit and cloglog (`svyglm()`), ordered (`svyolr()`), multinomial,

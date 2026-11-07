@@ -4,11 +4,33 @@
 # from suest's own per-group likelihood (Laplace, or adaptive Gauss-Hermite
 # with the fit's nAGQ), which reproduces clmm's log likelihood.
 
+# A random intercept on one grouping variable is the simple route; anything
+# else (random slopes, a nested level) uses the general Laplace engine.
+.suest_clmm_simple <- function(model)
+  length(model$gfList) == 1L && length(model$ST) == 1L && identical(dim(model$ST[[1L]]), c(1L, 1L))
+
+.suest_clmm_structure <- function(model) {
+  if (!is.null(model$suest_structure)) return(model$suest_structure)
+  covariances <- ordinal::VarCorr(model)
+  if (!all(names(covariances) %in% names(model$gfList)))
+    stop("Each clmm() random-effects term needs its own grouping variable.", call. = FALSE)
+  terms <- lapply(seq_along(covariances), function(i)
+    list(group = names(covariances)[i], columns = colnames(covariances[[i]]),
+      covariance = covariances[[i]], diagonal = FALSE))
+  .suest_re_structure(terms, model$gfList, model$model)
+}
+
 .suest_clmm_adapter <- function(model) {
-  if (length(model$gfList) != 1L || length(model$ST) != 1L ||
-      !identical(dim(model$ST[[1L]]), c(1L, 1L)))
-    stop("ordinal::clmm() support is limited to one grouping variable with a random intercept.",
-      call. = FALSE)
+  simple <- .suest_clmm_simple(model)
+  if (!simple) {
+    structure <- .suest_clmm_structure(model)
+    if (model$nAGQ != 1L)
+      stop("clmm() models with random slopes or nested levels must use the Laplace approximation (nAGQ = 1).",
+        call. = FALSE)
+    if (any(c(names(model$beta), names(model$alpha)) %in% structure$names))
+      stop("clmm() models reserve the log_sd_ and atanh_rho names of the random effects.", call. = FALSE)
+    .suest_re_check_covariances(structure)
+  }
   if (!model$link %in% c("logit", "probit"))
     stop("Random-effects ordered models must use a logit or probit link.", call. = FALSE)
   if (!identical(model$threshold, "flexible"))
@@ -20,19 +42,24 @@
       !is.null(model$call$nominal) || !is.null(model$call$scale))
     stop("Weights, offsets, and nominal or scale effects are not supported for clmm() models.",
       call. = FALSE)
-  if ("log_sigma" %in% names(model$beta))
+  if (simple && "log_sigma" %in% names(model$beta))
     stop("clmm() models reserve the coefficient name log_sigma.", call. = FALSE)
-  if (model$ST[[1L]][1L, 1L] <= sqrt(.Machine$double.eps))
+  if (simple && model$ST[[1L]][1L, 1L] <= sqrt(.Machine$double.eps))
     stop("The clmm() random-intercept standard deviation must be away from zero.", call. = FALSE)
   list(engine = "ordinal::clmm", type = if (model$link == "logit") "re_ologit" else "re_oprobit")
 }
 
 .suest_clmm_parameters <- function(model) {
   if (!is.null(model$suest_parameters)) return(model$suest_parameters)
+  if (!.suest_clmm_simple(model)) {
+    structure <- .suest_clmm_structure(model)
+    return(c(model$alpha, model$beta, stats::setNames(structure$values, structure$names)))
+  }
   c(model$alpha, model$beta, log_sigma = log(model$ST[[1L]][1L, 1L]))
 }
 
-.suest_clmm_id <- function(model) droplevels(factor(model$gfList[[1L]]))
+.suest_clmm_id <- function(model)
+  if (.suest_clmm_simple(model)) droplevels(factor(model$gfList[[1L]])) else .suest_clmm_structure(model)$id
 
 .suest_clmm_design <- function(model, data) {
   terms <- stats::delete.response(stats::terms(model))
@@ -68,7 +95,9 @@
     hermite <- .suest_normal_quadrature(model$nAGQ)
     list(z = hermite$nodes, w = hermite$weights)
   }
-  engine <- .suest_re_engine(id, X, rule = rule)
+  engine <- if (.suest_clmm_simple(model)) .suest_re_engine(id, X, rule = rule)
+  structure <- if (!.suest_clmm_simple(model)) .suest_clmm_structure(model)
+  laplace <- if (!is.null(structure)) .suest_re_laplace(structure, model$model)
   n <- length(y)
   upper <- which(y <= K)
   lower <- which(y >= 2L)
@@ -105,6 +134,9 @@
             -f2c/P + g1_over*fc + 2*g0*f1c/P^2 - 2*g0^2*fc/P^3)
         })
     }
+    if (!is.null(structure))
+      return(laplace(eta, .suest_re_level_covariances(structure, parameters[structure$names]),
+        density, start))
     engine$intercept(eta, exp(2*parameters[["log_sigma"]]), density, start, scores)
   }
 }
@@ -142,11 +174,14 @@
   X <- .suest_clmm_design(model, newdata)
   beta <- parameters[K + seq_len(ncol(X))]
   eta <- drop(X %*% beta)
-  sigma <- exp(parameters[["log_sigma"]])
+  sigma <- if (.suest_clmm_simple(model)) rep(exp(parameters[["log_sigma"]]), length(eta)) else {
+    structure <- .suest_clmm_structure(model)
+    sqrt(.suest_re_prediction_variance(structure, parameters[structure$names], newdata))
+  }
   cumulative <- vapply(seq_len(K), function(j) {
     t <- parameters[j] - eta
     if (model$link == "probit") stats::pnorm(t/sqrt(1 + sigma^2))
-    else .suest_logit_normal_mean(t, rep(sigma, length(t)))
+    else .suest_logit_normal_mean(t, sigma)
   }, numeric(length(eta)))
   cumulative <- matrix(cumulative, nrow = length(eta))
   probabilities <- cbind(cumulative, 1) - cbind(0, cumulative)

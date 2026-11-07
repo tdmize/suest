@@ -98,8 +98,13 @@ test_that("unsupported lme4 models are refused with a reason", {
   reml <- lme4::lmer(yc ~ x + (1 | id), data = d)
   expect_error(suest(reml, reml), "REML = FALSE")
   d$school <- factor((as.integer(d$id) - 1L) %/% 5L)
-  nested <- suppressMessages(lme4::lmer(yc ~ x + (1 | school/id), data = d, REML = FALSE))
-  expect_error(suest(nested, nested), "one grouping variable")
+  set.seed(31)
+  d$yc3 <- d$yc + rnorm(nlevels(d$school), sd = 0.8)[d$school]
+  nested <- lme4::lmer(yc3 ~ x + (1 | school/id), data = d, REML = FALSE)
+  expect_identical(unname(suest(nested, nested)$model_types), rep("glmm_gaussian_re", 2))
+  d$area <- factor((as.integer(d$school) - 1L) %/% 3L)
+  deeper <- suppressMessages(lme4::lmer(yc3 ~ x + (1 | area/school/id), data = d, REML = FALSE))
+  expect_error(suest(deeper, deeper), "at most one grouping variable nested")
   d$positive <- exp(d$z)
   gamma <- suppressWarnings(lme4::glmer(positive ~ x + (1 | id),
     family = Gamma("log"), data = d))

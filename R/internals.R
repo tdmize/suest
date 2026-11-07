@@ -38,7 +38,7 @@
     "expected counts"
   } else if (all(types %in% c(
                "lm", "panel_fe", "panel_be", "panel_re", "panel_ml", "heckman"
-             ) | types == "glmm_gaussian_ri" | types == "glmm_gaussian_rs")) {
+             ) | types %in% c("glmm_gaussian_ri", "glmm_gaussian_rs", "glmm_gaussian_re"))) {
     "fitted values"
   } else {
     "model-specific response values"
@@ -522,7 +522,7 @@
   } else if (inherits(model, "suest_lme4")) {
     .suest_lme4_random_info(model)$name
   } else if (inherits(model, "clmm")) {
-    names(model$gfList)[1L]
+    if (.suest_clmm_simple(model)) names(model$gfList)[1L] else .suest_clmm_structure(model)$name
   } else {
     NULL
   }
@@ -552,7 +552,8 @@
   if (length(unique(names)) > 1L)
     stop(
       sprintf(
-        "Combined random-effects models must use the same grouping variable; these use %s.",
+        paste0("Combined random-effects models must use the same grouping variable; these use %s. ",
+          "If one is nested in the other, cluster on the higher level with 'cluster'."),
         paste(sprintf("'%s'", unique(names)), collapse = " and ")
       ),
       call. = FALSE
@@ -664,6 +665,10 @@
     dispersion <- if (!is.na(dispersion_name)) {
       stats::setNames(unname(glmmTMB::fixef(model)$disp), dispersion_name)
     } else numeric(0)
+    if (endsWith(type, "_re")) {
+      structure <- .suest_glmmtmb_random_info(model)$structure
+      return(c(beta, dispersion, stats::setNames(structure$values, structure$names)))
+    }
     if (.suest_glmm_slope(type))
       return(c(beta, dispersion, log_sd_intercept = unname(theta[1L]),
         log_sd_slope = unname(theta[2L]), atanh_rho = asinh(unname(theta[3L]))))
@@ -2096,7 +2101,8 @@
       out$bread <- .suest_mixed_bread(out$bread, length(lme4::fixef(model$fit)))
     out
   } else if (.suest_is_glmm(type)) {
-    out <- .suest_glmmtmb_ri_components(model, type)
+    out <- if (endsWith(type, "_re")) .suest_glmmtmb_re_components(model, type) else
+      .suest_glmmtmb_ri_components(model, type)
     if (.suest_glmm_family(type) == "gaussian")
       out$bread <- .suest_mixed_bread(out$bread, length(glmmTMB::fixef(model)$cond))
     out

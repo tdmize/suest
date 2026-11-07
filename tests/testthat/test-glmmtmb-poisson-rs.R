@@ -184,11 +184,14 @@ test_that("Random-slope support rejects unvalidated structures and boundary fits
   weighted <- fit_model(y1 ~ x + z + (1 + x | id), weights = rep(1, nrow(dat)))
   dat$zero <- 0
   offset <- fit_model(y1 ~ x + z + offset(zero) + (1 + x | id))
-  expect_error(suest(independent, base), "Structured", fixed = TRUE)
   for (m in list(transformed, factor_slope))
     expect_error(suest(m, base), "untransformed numeric", fixed = TRUE)
-  for (m in list(multiple, crossed, no_intercept))
-    expect_error(suest(m, base), "one conditional random intercept", fixed = TRUE)
+  # Independent terms, several slopes, and a slope without an intercept use the
+  # general engine; the nested level here has a variance near zero.
+  for (m in list(independent, multiple, no_intercept))
+    expect_identical(unname(suest(m, base, observation_id = c("id", "time"))$model_types[1]),
+      "glmm_poisson_re")
+  expect_error(suest(crossed, base), "nearly singular", fixed = TRUE)
   expect_error(suest(mapped, base), "Mapped or constrained", fixed = TRUE)
   expect_error(suest(weighted, base), "Weighted", fixed = TRUE)
   expect_error(suest(offset, base), "Offsets", fixed = TRUE)

@@ -189,8 +189,9 @@ test_that("glmmTMB validation is deliberately narrow", {
 
   expect_error(suest(tweedie, tweedie), "glmmTMB support is currently limited", fixed = TRUE)
   expect_s3_class(suest(poisson, poisson), "suest_model")
-  expect_error(suest(random_slope, random_slope),
-    "one conditional random intercept", fixed = TRUE)
+  # Several slopes are supported (test-random-structures.R), but this fit has
+  # no positive-definite Hessian.
+  expect_error(suest(random_slope, random_slope), "positive-definite Hessian", fixed = TRUE)
   expect_error(suest(weighted, weighted), "Weighted glmmTMB", fixed = TRUE)
   expect_error(suest(offset, offset), "Offsets are not supported", fixed = TRUE)
 })

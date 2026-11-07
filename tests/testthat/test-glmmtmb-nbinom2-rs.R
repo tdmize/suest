@@ -187,12 +187,19 @@ test_that("NB2 random slopes enforce the dispersion and random-effect support co
   expect_error(suest(fit_model(ziformula = ~1), base), "Zero-inflation", fixed = TRUE)
   expect_error(suest(fit_model(weights = rep(1, nrow(dat))), base), "Weighted", fixed = TRUE)
   expect_error(suest(fit_model(y1 ~ x + z + offset(zero) + (1 + x | id)), base), "Offsets", fixed = TRUE)
-  expect_error(suest(fit_model(y1 ~ x + z + (1 + x || id)), base), "Structured", fixed = TRUE)
+  # Independent terms and a slope without an intercept use the general engine.
+  for (formula in list(y1 ~ x + z + (1 + x || id), y1 ~ x + z + (0 + x | id)))
+    expect_identical(unname(suest(fit_model(formula), base,
+      observation_id = c("id", "time"))$model_types[1]), "glmm_nbinom2_re")
   for (formula in list(y1 ~ x + z + (1 + I(x^2) | id), y1 ~ x + z + (1 + woman | id)))
     expect_error(suest(fit_model(formula), base), "untransformed numeric", fixed = TRUE)
-  for (formula in list(y1 ~ x + z + (1 + x + z | id), y1 ~ x + z + (0 + x | id),
-      y1 ~ x + z + (1 + x | id) + (1 | higher)))
-    expect_error(suest(fit_model(formula), base), "one conditional random intercept", fixed = TRUE)
+  expect_error(suest(fit_model(y1 ~ x + z + (1 + x + z | id)), base), "positive-definite Hessian",
+    fixed = TRUE)
+  nested <- fit_model(y1 ~ x + z + (1 + x | id) + (1 | higher))
+  expect_error(suest(nested, base, observation_id = c("id", "time")), "cluster on the higher level",
+    fixed = TRUE)
+  expect_identical(unname(suest(nested, base, cluster = "higher",
+    observation_id = c("id", "time"))$model_types[1]), "glmm_nbinom2_re")
   dat$constant_y <- 1
   expect_error(suest(fit_model(constant_y ~ x + z + (1 + x | id)), base),
     "boundaries|positive-definite Hessian|zero boundary")

@@ -248,8 +248,9 @@
 #'   responses must be Bernoulli.
 #'   Link predictions are `X beta`. Near-singular random
 #'   covariance is rejected in a centered, standardized predictor basis.
-#'   Weights, offsets, zero inflation, constraints, diagonal covariance,
-#'   multiple slopes, and slope-only terms are unsupported. The slope variable must be supplied for response predictions even when
+#'   Weights, offsets, zero inflation, and constraints are unsupported;
+#'   diagonal covariance, several slopes, slope-only terms, and a nested level
+#'   use the general structures below. The slope variable must be supplied for response predictions even when
 #'   it is absent from the fixed-effects formula. Native model covariance is
 #'   used as supplied. Poorly scaled predictors can produce inaccurate native
 #'   numerical curvature even with convergence and a positive-definite Hessian;
@@ -264,7 +265,7 @@
 #' * unweighted `lme4::lmer()` models fit with `REML = FALSE`, and
 #'   `lme4::glmer()` binomial (logit, probit, cloglog) and Poisson-log models,
 #'   with one grouping variable and a random intercept or one correlated
-#'   numeric slope. They use the same parameters and predictions as the
+#'   numeric slope (other structures: see below). They use the same parameters and predictions as the
 #'   matching `glmmTMB` models. suest computes their group scores and observed
 #'   information from its own per-group likelihood: exact for `lmer`, Laplace
 #'   or adaptive Gauss-Hermite with the fit's `nAGQ` for `glmer`.
@@ -285,16 +286,48 @@
 #'   thresholds, the coefficients, and `log_sigma`. suest computes scores and
 #'   observed information from its own per-group likelihood, which
 #'   reproduces clmm's. Predictions are category probabilities integrated
-#'   over the random intercept
+#'   over the random intercept. Random slopes and a nested level use the
+#'   general structures below
+#'
+#' * general random-effects structures in `lmer()`, `glmer()` (the families
+#'   above), `glmmTMB()` (the families above), and `clmm()`: several random
+#'   slopes for one grouping variable, `(1 + x1 + x2 | school)`; independent
+#'   terms, `(1 + x1 || school)`; slopes without an intercept; glmmTMB's
+#'   `diag()`; and one level nested in the grouping variable,
+#'   `(1 + x1 | school) + (1 | school:class)` or `(1 | school/class)`.
+#'   These are Stata's `|| school: x1 x2, covariance(unstructured)
+#'   || class:` (`covariance(independent)` for `diag()`). Each term is an
+#'   unstructured (or diagonal) covariance block, and different terms are
+#'   independent. Slopes must be untransformed numeric data columns. Crossed
+#'   random effects, a third grouping level, and other glmmTMB covariance
+#'   structures are unsupported. After the thresholds, fixed effects, and any
+#'   `log_sigma_e`, `log_phi`, or `log_shape` come each term's log standard
+#'   deviations, `log_sd_<group>_<column>`, then the Fisher z of its
+#'   correlations, `atanh_rho_<group>_<column1>_<column2>` (Stata's `lns` and
+#'   `atr`), top level first. `<column>` is `intercept` for the intercept,
+#'   and nested group names replace `:` with `.`: `log_sd_school.class_intercept`
+#'   (`(1 | school/class)` gives `class.school`). Each top-level group's log
+#'   likelihood is the Laplace approximation over all of its random effects at
+#'   both levels (exact for Gaussian models), so nonlinear models match
+#'   Stata's `intmethod(laplace)`; `clmm()` fits must use `nAGQ = 1`. suest
+#'   differentiates these group log likelihoods numerically for the scores
+#'   and observed information, and the system is clustered on the top-level
+#'   group or a coarser `cluster`. Response predictions use the formulas
+#'   above with `v` summed over the levels, `z' G z` at each. Fits near a
+#'   boundary are refused: a variance near zero in a centered, standardized
+#'   predictor basis, or a correlation matrix with an eigenvalue at or below
+#'   `1e-4`
 #'
 #' ## Combining random-effects and ordinary models
 #' Random-effects models from `nlme::lme()`, `pglm::pglm()`,
 #' `glmmTMB::glmmTMB()`, lme4, and `ordinal::clmm()` can be combined with each other, including different
 #' families, and with linear, binary logit, probit, and cloglog, Poisson,
 #' negative binomial, and ordered logit and probit models, as in Stata's
-#' suest2. Every random-effects model must use the same grouping variable,
-#' and the ordinary models' data must contain it. The system is clustered on
-#' that group, or on `cluster`, which must contain whole groups. Each model's
+#' suest2. Every random-effects model must use the same grouping variable
+#' (the top level of a nested model), and the ordinary models' data must
+#' contain it. The system is clustered on that group, or on `cluster`, which
+#' must contain whole groups; a `cluster` above every model's top level also
+#' combines models whose grouping variables differ but are nested. Each model's
 #' block of the covariance then equals that model's own covariance clustered
 #' on the group, including the `(N - 1)/(N - k)` adjustment for linear
 #' models. `plm` and `geeglm` models combine only with models of the same

@@ -215,9 +215,9 @@
   stringsAsFactors = FALSE
 )
 
-.suest_is_glmm <- function(type) grepl("^glmm_[a-z0-9]+_r[is]$", type)
+.suest_is_glmm <- function(type) grepl("^glmm_[a-z0-9]+_r[ise]$", type)
 
-.suest_glmm_family <- function(type) sub("^glmm_([a-z0-9]+)_r[is]$", "\\1", type)
+.suest_glmm_family <- function(type) sub("^glmm_([a-z0-9]+)_r[ise]$", "\\1", type)
 
 .suest_glmm_slope <- function(type) .suest_is_glmm(type) & endsWith(type, "_rs")
 
@@ -239,36 +239,26 @@
 }
 
 .suest_glmmtmb_random_info <- function(model) {
+  if (!is.null(model$suest_structure))
+    return(list(name = model$suest_structure$name, id = model$suest_structure$id,
+      slope = NULL, structure = model$suest_structure))
   random <- model$modelInfo$reTrms$cond
   columns <- if (length(random$cnms) == 1L) unname(random$cnms[[1L]]) else character()
   slope <- length(columns) == 2L && identical(columns[1L], "(Intercept)") &&
     !is.na(.suest_glmm_key(model$modelInfo$family))
-  if (!is.list(random) || length(random$cnms) != 1L ||
-        length(random$flist) != 1L ||
-      (!identical(columns, "(Intercept)") && !slope))
-    stop(
-      paste0(
-        "glmmTMB support is currently limited to one grouping variable ",
-        "with one conditional random intercept, or one ",
-        "intercept and one numeric random slope."
-      ),
-      call. = FALSE
-    )
-
   structure <- model$modelInfo$reStruc$condReStruc
-  if (length(structure) != 1L || structure[[1L]]$blockSize != (if (slope) 2L else 1L) ||
-      structure[[1L]]$blockNumTheta != (if (slope) 3L else 1L) ||
-      (slope && !identical(names(structure[[1L]]$blockCode), "us")))
-    stop(
-      "Structured glmmTMB random effects are not supported.",
-      call. = FALSE
-    )
-
-  if (slope && (!identical(make.names(columns[2L]), columns[2L]) ||
-      !columns[2L] %in% names(model$frame) ||
-      !is.numeric(model$frame[[columns[2L]]]) || is.matrix(model$frame[[columns[2L]]]) ||
-      any(!is.finite(model$frame[[columns[2L]]]))))
-    stop("The random slope must be one untransformed numeric data column.", call. = FALSE)
+  simple <- is.list(random) && length(random$cnms) == 1L && length(random$flist) == 1L &&
+    (identical(columns, "(Intercept)") || slope) && length(structure) == 1L &&
+    structure[[1L]]$blockSize == (if (slope) 2L else 1L) &&
+    structure[[1L]]$blockNumTheta == (if (slope) 3L else 1L) &&
+    (!slope || identical(names(structure[[1L]]$blockCode), "us")) &&
+    (!slope || (identical(make.names(columns[2L]), columns[2L]) &&
+      columns[2L] %in% names(model$frame) && is.numeric(model$frame[[columns[2L]]]) &&
+      !is.matrix(model$frame[[columns[2L]]]) && all(is.finite(model$frame[[columns[2L]]]))))
+  if (!simple) {
+    structure <- .suest_re_structure_glmmtmb(model)
+    return(list(name = structure$name, id = structure$id, slope = NULL, structure = structure))
+  }
 
   list(
     name = names(random$flist)[1L],
@@ -300,8 +290,7 @@
         paste0(
           "glmmTMB support is currently limited to binomial (logit, probit, ",
           "cloglog), Poisson-log, nbinom2-log, Gaussian-identity, and Gamma-log ",
-          "models with one conditional random intercept or one correlated ",
-          "intercept and numeric slope; received family '", family$family,
+          "models; received family '", family$family,
           "' with link '", family$link, "'."
         ),
         call. = FALSE
@@ -311,6 +300,10 @@
 
     random <- .suest_glmmtmb_random_info(model)
     if (!is.null(random$slope)) model_type <- sub("_ri$", "_rs", model_type)
+    general <- !is.null(random$structure)
+    if (general) model_type <- sub("_ri$", "_re", model_type)
+    n_theta <- if (general) sum(vapply(model$modelInfo$reStruc$condReStruc,
+      function(b) b$blockNumTheta, numeric(1))) else if (is.null(random$slope)) 1L else 3L
     if (length(model$modelInfo$reStruc$ziReStruc) ||
         length(model$modelInfo$reStruc$dispReStruc) ||
         length(glmmTMB::fixef(model)$zi) ||
@@ -332,9 +325,10 @@
           call. = FALSE
         )
       if (length(model$obj$env$map) ||
-          !identical(names(model$fit$par), c(rep("beta", length(beta)), "betadisp", rep("theta", if (is.null(random$slope)) 1L else 3L))))
+          !identical(names(model$fit$par), c(rep("beta", length(beta)), "betadisp", rep("theta", n_theta))))
         stop(sprintf("Mapped or constrained glmmTMB %s parameters are not supported.", key), call. = FALSE)
-      reserved <- if (is.null(random$slope)) c(dispersion_name, "log_sigma") else dispersion_name
+      reserved <- if (general) c(dispersion_name, random$structure$names) else
+        if (is.null(random$slope)) c(dispersion_name, "log_sigma") else dispersion_name
       if (any(names(beta) %in% reserved))
         stop(sprintf("glmmTMB %s reserves coefficient names %s", key, paste(reserved, collapse = " and ")), call. = FALSE)
     }
@@ -345,6 +339,13 @@
         stop("Mapped or constrained glmmTMB random-slope parameters are not supported.", call. = FALSE)
       if (any(names(beta) %in% c("log_sd_intercept", "log_sd_slope", "atanh_rho")))
         stop("Random-slope models reserve names log_sd_intercept, log_sd_slope, and atanh_rho.", call. = FALSE)
+    } else if (general) {
+      beta <- glmmTMB::fixef(model)$cond
+      if (length(model$obj$env$map) || !identical(names(model$fit$par),
+          c(rep("beta", length(beta)), if (!is.na(dispersion_name)) "betadisp", rep("theta", n_theta))))
+        stop("Mapped or constrained glmmTMB random-effects parameters are not supported.", call. = FALSE)
+      if (any(names(beta) %in% random$structure$names))
+        stop("glmmTMB models reserve the log_sd_ and atanh_rho names of the random effects.", call. = FALSE)
     } else if (is.na(dispersion_name) && "log_sigma" %in% names(glmmTMB::fixef(model)$cond)) {
       stop("glmmTMB random-intercept models reserve the coefficient name log_sigma.", call. = FALSE)
     }
@@ -381,7 +382,9 @@
       )
 
     theta <- model$fit$par[names(model$fit$par) == "theta"]
-    if (.suest_glmm_slope(model_type)) {
+    if (general) {
+      .suest_re_check_covariances(random$structure)
+    } else if (.suest_glmm_slope(model_type)) {
       sd <- exp(theta[1:2]); rho <- tanh(asinh(theta[3L]))
       x <- model$frame[[random$slope]]
       center <- mean(x); spread <- stats::sd(x)
@@ -404,7 +407,7 @@
         call. = FALSE
       )
 
-    if (model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs")) {
+    if (model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs", "glmm_nbinom2_re")) {
       # Numerical support check, not a likelihood-ratio significance test.
       # At zero random-effect variance the NB2 likelihood is available exactly.
       X <- stats::model.matrix(model, component = "cond")
@@ -1055,6 +1058,9 @@
 .suest_set_parameters <- function(model, parameters, type, engine) {
   engine <- .suest_engine_name(engine)
   if (.suest_is_glmm(type) || inherits(model, "suest_vglm")) {
+    if (endsWith(type, "_re") && is.null(model$suest_structure))
+      model$suest_structure <- if (inherits(model, "suest_lme4"))
+        .suest_lme4_random_info(model)$structure else .suest_glmmtmb_random_info(model)$structure
     model$suest_parameters <- parameters
     return(model)
   }
@@ -1074,6 +1080,9 @@
     return(model)
   }
 
+  if (type %in% c("re_ologit", "re_oprobit") && !.suest_clmm_simple(model) &&
+      is.null(model$suest_structure))
+    model$suest_structure <- .suest_clmm_structure(model)
   if (type %in% c("gologit", "heckman", "re_ologit", "re_oprobit")) {
     model$suest_parameters <- parameters
     return(model)
@@ -1304,7 +1313,11 @@
 
     # Population-averaged response: integrate over the Gaussian random effects,
     # whose variance on the linear-predictor scale is `variance`.
-    if (.suest_glmm_slope(model_type)) {
+    if (endsWith(model_type, "_re")) {
+      structure <- if (lme4_model) .suest_lme4_random_info(model)$structure else
+        .suest_glmmtmb_random_info(model)$structure
+      variance <- .suest_re_prediction_variance(structure, parameters[structure$names], newdata)
+    } else if (.suest_glmm_slope(model_type)) {
       variable <- if (lme4_model) {
         .suest_lme4_random_info(model)$slope
       } else {
@@ -1329,7 +1342,7 @@
       return(stats::pnorm(eta/sqrt(1 + variance)))
     if (family == "cloglog")
       return(.suest_cloglog_normal_mean(eta, sqrt(variance)))
-    if (.suest_glmm_slope(model_type))
+    if (.suest_glmm_slope(model_type) || endsWith(model_type, "_re"))
       return(.suest_logit_normal_mean(eta, sqrt(variance)))
 
     sigma <- sqrt(variance)
