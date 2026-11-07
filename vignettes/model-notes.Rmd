@@ -61,11 +61,12 @@ zero.
   `atanh_rho_school_intercept_x1`, as in Stata's `lns` and `atr`. A nested
   level is named with a dot: `log_sd_school.class_intercept`.
 - Nonlinear models with these structures use the Laplace approximation (lme4
-  allows adaptive quadrature only for a single random intercept). suest2
-  requires adaptive quadrature, so to check results in Stata, fit each model
-  with `intmethod(laplace) vce(cluster school)`; its standard errors equal
-  that model's block of the `suest()` covariance. Linear models agree with
-  `mixed` exactly.
+  allows adaptive quadrature only for a single random intercept), while
+  suest2 requires adaptive quadrature. Stata's `me` commands with
+  `intmethod(laplace)` give the same estimates and log likelihood, but the
+  standard errors they report for these fits can differ from the exact
+  Laplace standard errors by a few percent. Linear models agree with `mixed`
+  exactly.
 - Fits near a boundary, with a variance near zero or correlations near -1 or
   1, are refused even when lme4 does not flag them as singular. Simplify the
   random-effects structure.
