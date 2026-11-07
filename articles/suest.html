@@ -36,6 +36,7 @@
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
 <li><a class="dropdown-item" href="../articles/predictions.html">Predictions and graphs</a></li>
+    <li><a class="dropdown-item" href="../articles/tables.html">Regression tables</a></li>
     <li><hr class="dropdown-divider"></li>
     <li><h6 class="dropdown-header" data-toc-skip>Examples</h6></li>
     <li><a class="dropdown-item" href="../articles/mediation.html">Curvilinear effects and mediation/attenuation</a></li>
@@ -51,6 +52,7 @@
     <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
     <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
     <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
+    <li><a class="dropdown-item" href="../articles/two-part.html">Two-part models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul>
 </li>
@@ -101,10 +103,14 @@ so each model’s effects can be averaged over its own sample.</li>
 <li>
 <code><a href="../reference/suest_mi.html">suest_mi()</a></code> pools <code><a href="../reference/suest.html">suest()</a></code> results across
 multiply imputed datasets.</li>
+<li>
+<code><a href="../reference/suest_twopart.html">suest_twopart()</a></code> combines the two parts of a two-part
+model.</li>
 <li>The usual <code>marginaleffects</code> functions, including
 <code><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">predictions()</a></code>, <code><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons()</a></code>,
 <code><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes()</a></code>, <code><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses()</a></code>, and the plotting
-functions, work with the combined object.</li>
+functions, work with the combined object, and
+<code>modelsummary()</code> makes tables from it.</li>
 </ul>
 </div>
 <div class="section level2">

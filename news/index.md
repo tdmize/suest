@@ -2,6 +2,39 @@
 
 ## suest 0.1.6.9000 (development)
 
+- New:
+  [`suest_twopart()`](https://tdmize.github.io/suest/reference/suest_twopart.md)
+  combines the two parts of a two-part model (Stata’s `twopm`): a binary
+  model for whether the outcome is positive and a model for the outcome
+  among those with a positive outcome, such as a Gamma or Poisson
+  pseudo-likelihood GLM. `marginaleffects` predictions, slopes, and
+  comparisons are then on the overall expected outcome, with standard
+  errors from the joint covariance matrix of the two parts (clustered,
+  weighted, or survey-based when requested). `type = "prob"` and
+  `type = "conditional"` give each part’s own predictions. New article:
+  Two-part models.
+
+- New: [`tidy()`](https://generics.r-lib.org/reference/tidy.html) and
+  [`glance()`](https://generics.r-lib.org/reference/glance.html)
+  methods, so `modelsummary::modelsummary(fit, shape = term ~ group)`
+  makes a table with one column per model. New article: Regression
+  tables. `generics` and `modelsummary` added to Suggests.
+
+- Fixed:
+  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),
+  [`avg_comparisons()`](https://rdrr.io/pkg/marginaleffects/man/comparisons.html),
+  and [`slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html)
+  without `variables` also returned rows for the models’ outcome
+  variables (estimates of 0 with missing standard errors), and warned
+  that names such as the data object and the family were not found in
+  `newdata`. suest now tells `marginaleffects` which variables are
+  outcomes (an
+  [`insight::find_response()`](https://easystats.github.io/insight/reference/find_response.html)
+  method) and which are predictors; an outcome that is a predictor in
+  another model, such as a mediator, is still included. Random-effect
+  grouping variables, instruments, survey design variables, and
+  fixed-effect ids are no longer default variables either.
+
 - Survey probit and cloglog
   [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) models now
   use observed information, as Stata does, so their covariance matches
@@ -849,8 +882,10 @@
 - Made the acceptance-test runners remove stale global
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md) and
   [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-  functions before `devtools::load_all()`. This prevents a previously
-  sourced standalone implementation from masking the package code.
+  functions before
+  [`devtools::load_all()`](https://devtools.r-lib.org/reference/load_all.html).
+  This prevents a previously sourced standalone implementation from
+  masking the package code.
 
 - Added a test-runner guard and log entry confirming that tests use the
   package namespace and model-adapter implementation.

@@ -94,11 +94,16 @@ models](https://www.trentonmize.com/software/suest_r/articles/suest.html#support
   models](https://www.trentonmize.com/software/suest_r/articles/panel.html),
   [within-person
   effects](https://www.trentonmize.com/software/suest_r/articles/within-person.html),
-  and [instrumental-variable
-  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html).
+  [instrumental-variable
+  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html),
+  and [two-part
+  models](https://www.trentonmize.com/software/suest_r/articles/two-part.html).
 - [Predictions and
   graphs](https://www.trentonmize.com/software/suest_r/articles/predictions.html):
   predictions from each model, and tests and graphs of their
   differences.
+- [Regression
+  tables](https://www.trentonmize.com/software/suest_r/articles/tables.html)
+  of coefficients and marginal effects with `modelsummary`.
 - [Notes on specific
   models](https://www.trentonmize.com/software/suest_r/articles/model-notes.html).

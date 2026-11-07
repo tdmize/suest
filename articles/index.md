@@ -8,6 +8,14 @@
   Predictions from each model and their differences: Figures 3 to 6 of
   Mize, Doan, and Long (2019).
 
+### Regression tables
+
+- [Regression
+  tables](https://tdmize.github.io/suest/articles/tables.md):
+
+  Tables of coefficients and marginal effects across models with
+  modelsummary.
+
 ### Examples: Mize, Doan & Long (2019)
 
 - [Curvilinear effects and
@@ -70,6 +78,12 @@
 
   Comparing effects across two-stage least squares models with different
   instruments.
+
+- [Two-part
+  models](https://tdmize.github.io/suest/articles/two-part.md):
+
+  Effects on an outcome with many zeros, such as medical expenditures,
+  from a two-part model.
 
 ### More
 

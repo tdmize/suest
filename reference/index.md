@@ -20,3 +20,16 @@ evaluation data
   : Pool SUEST systems across multiple imputations
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
   : Stack the estimation samples from a SUEST object
+- [`suest_twopart()`](https://tdmize.github.io/suest/reference/suest_twopart.md)
+  [`print(`*`<suest_twopart>`*`)`](https://tdmize.github.io/suest/reference/suest_twopart.md)
+  : Two-part models
+
+## Tables
+
+Methods for modelsummary tables
+
+- [`tidy(`*`<suest_model>`*`)`](https://tdmize.github.io/suest/reference/tidy.suest_model.md)
+  [`tidy(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/tidy.suest_model.md)
+  [`glance(`*`<suest_model>`*`)`](https://tdmize.github.io/suest/reference/tidy.suest_model.md)
+  [`glance(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/tidy.suest_model.md)
+  : Tidy and glance methods for regression tables

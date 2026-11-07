@@ -56,7 +56,7 @@ effects_school
 #> 
 #>               Term      Group           Contrast  Estimate Std. Error         z Pr(>|z|)     S
 #>  age               Ordinary   +1.7546893968729    0.072518    0.00754   9.62031   <0.001  70.4
-#>  age               Multilevel +1.7546893968729    0.065491    0.00802   8.16702   <0.001  51.5
+#>  age               Multilevel +1.7546893968729    0.065491    0.00802   8.16703   <0.001  51.5
 #>  male              Ordinary   1 - 0               0.010211    0.01167   0.87515    0.381   1.4
 #>  male              Multilevel 1 - 0               0.010223    0.01141   0.89575    0.370   1.4
 #>  momcollege        Ordinary   1 - 0              -0.060756    0.01001  -6.07128   <0.001  29.6
