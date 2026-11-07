@@ -19,9 +19,15 @@
   likelihood, nonlinear models against an independent Laplace likelihood
   and each package’s own log likelihood, glmmTMB systems against
   glmmTMB’s own group scores for every family, and predictions against
-  direct integration. Fits near a variance or correlation boundary are
-  refused. Combined models whose grouping variables differ but are
-  nested can be clustered on the higher level with `cluster`.
+  direct integration. In Stata 19, linear models match `mixed` through
+  suest2 exactly; for nine nonlinear models (logit, probit, cloglog,
+  Poisson, negative binomial, ordered logit and probit), Stata’s Laplace
+  fits have the same estimates and the same log likelihood at every
+  point checked, and standard errors built from Stata’s own log
+  likelihood equal suest’s within 0.02%. Fits near a variance or
+  correlation boundary are refused. Combined models whose grouping
+  variables differ but are nested can be clustered on the higher level
+  with `cluster`.
 
 - New: [`tidy()`](https://generics.r-lib.org/reference/tidy.html) and
   [`glance()`](https://generics.r-lib.org/reference/glance.html)

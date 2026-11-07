@@ -144,11 +144,12 @@ fitting.</li>
 <code>lns</code> and <code>atr</code>. A nested level is named with a
 dot: <code>log_sd_school.class_intercept</code>.</li>
 <li>Nonlinear models with these structures use the Laplace approximation
-(lme4 allows adaptive quadrature only for a single random intercept).
-suest2 requires adaptive quadrature, so to check results in Stata, fit
-each model with <code>intmethod(laplace) vce(cluster school)</code>; its
-standard errors equal that model’s block of the <code><a href="../reference/suest.html">suest()</a></code>
-covariance. Linear models agree with <code>mixed</code> exactly.</li>
+(lme4 allows adaptive quadrature only for a single random intercept),
+while suest2 requires adaptive quadrature. Stata’s <code>me</code>
+commands with <code>intmethod(laplace)</code> give the same estimates
+and log likelihood, but the standard errors they report for these fits
+can differ from the exact Laplace standard errors by a few percent.
+Linear models agree with <code>mixed</code> exactly.</li>
 <li>Fits near a boundary, with a variance near zero or correlations near
 -1 or 1, are refused even when lme4 does not flag them as singular.
 Simplify the random-effects structure.</li>
