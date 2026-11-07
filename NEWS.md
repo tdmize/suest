@@ -18,15 +18,6 @@
   grouping variables differ but are nested can be clustered on the higher
   level with `cluster`.
 
-* New: `suest_twopart()` combines the two parts of a two-part model
-  (Stata's `twopm`): a binary model for whether the outcome is positive and a
-  model for the outcome among those with a positive outcome, such as a Gamma
-  or Poisson pseudo-likelihood GLM. `marginaleffects` predictions, slopes, and
-  comparisons are then on the overall expected outcome, with standard errors
-  from the joint covariance matrix of the two parts (clustered, weighted, or
-  survey-based when requested). `type = "prob"` and `type = "conditional"`
-  give each part's own predictions. New article: Two-part models.
-
 * New: `tidy()` and `glance()` methods, so
   `modelsummary::modelsummary(fit, shape = term ~ group)` makes a table with
   one column per model. New article: Regression tables. `generics` and

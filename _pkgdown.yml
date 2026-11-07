@@ -37,7 +37,6 @@ articles:
   - panel
   - within-person
   - instrumental-variables
-  - two-part
 - title: More
   navbar: ~
   contents:
@@ -50,7 +49,6 @@ reference:
   - suest
   - suest_mi
   - suest_newdata
-  - suest_twopart
 - title: Tables
   desc: Methods for modelsummary tables
   contents:

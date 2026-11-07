@@ -73,9 +73,8 @@ different samples. See the
 - More examples: [group comparisons](https://www.trentonmize.com/software/suest_r/articles/chapter-groups.html),
   [multilevel models](https://www.trentonmize.com/software/suest_r/articles/multilevel.html),
   [panel models](https://www.trentonmize.com/software/suest_r/articles/panel.html),
-  [within-person effects](https://www.trentonmize.com/software/suest_r/articles/within-person.html),
-  [instrumental-variable models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html), and
-  [two-part models](https://www.trentonmize.com/software/suest_r/articles/two-part.html).
+  [within-person effects](https://www.trentonmize.com/software/suest_r/articles/within-person.html), and
+  [instrumental-variable models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html).
 - [Predictions and graphs](https://www.trentonmize.com/software/suest_r/articles/predictions.html): predictions from each
   model, and tests and graphs of their differences.
 - [Regression tables](https://www.trentonmize.com/software/suest_r/articles/tables.html) of coefficients and
