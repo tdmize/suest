@@ -94,10 +94,8 @@ models](https://www.trentonmize.com/software/suest_r/articles/suest.html#support
   models](https://www.trentonmize.com/software/suest_r/articles/panel.html),
   [within-person
   effects](https://www.trentonmize.com/software/suest_r/articles/within-person.html),
-  [instrumental-variable
-  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html),
-  and [two-part
-  models](https://www.trentonmize.com/software/suest_r/articles/two-part.html).
+  and [instrumental-variable
+  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html).
 - [Predictions and
   graphs](https://www.trentonmize.com/software/suest_r/articles/predictions.html):
   predictions from each model, and tests and graphs of their
@@ -130,9 +128,6 @@ evaluation data
   : Pool SUEST systems across multiple imputations
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
   : Stack the estimation samples from a SUEST object
-- [`suest_twopart()`](https://tdmize.github.io/suest/reference/suest_twopart.md)
-  [`print(`*`<suest_twopart>`*`)`](https://tdmize.github.io/suest/reference/suest_twopart.md)
-  : Two-part models
 
 ## Tables
 
@@ -224,12 +219,6 @@ Methods for modelsummary tables
 
   Comparing effects across two-stage least squares models with different
   instruments.
-
-- [Two-part
-  models](https://tdmize.github.io/suest/articles/two-part.md):
-
-  Effects on an outcome with many zeros, such as medical expenditures,
-  from a two-part model.
 
 ### More
 

@@ -52,7 +52,6 @@
     <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
     <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
     <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
-    <li><a class="dropdown-item" href="../articles/two-part.html">Two-part models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul>
 </li>
@@ -134,14 +133,14 @@ in the probability of each outcome; age is changed by ten years:</p>
 <span><span class="co">#&gt;  collegeB Poor health    1 - 0  -0.1636    0.00903 -18.11  &lt; 0.001 241.1 -0.18132 -0.14591</span></span>
 <span><span class="co">#&gt;  marstatB Depressed      1 - 0  -0.0956    0.00617 -15.50  &lt; 0.001 177.5 -0.10773 -0.08354</span></span>
 <span><span class="co">#&gt;  marstatB Poor health    1 - 0  -0.0689    0.00738  -9.35  &lt; 0.001  66.6 -0.08340 -0.05448</span></span>
-<span><span class="co">#&gt;  race4cat Depressed      1 - 0   0.0078    0.00779   1.00  0.31698   1.7 -0.00747  0.02307</span></span>
-<span><span class="co">#&gt;  race4cat Depressed      2 - 0   0.0674    0.00990   6.81  &lt; 0.001  36.6  0.04801  0.08681</span></span>
-<span><span class="co">#&gt;  race4cat Depressed      3 - 0   0.0541    0.01696   3.19  0.00143   9.4  0.02084  0.08734</span></span>
+<span><span class="co">#&gt;  race4cat Depressed      1 - 0   0.0078    0.00779   1.00  0.31696   1.7 -0.00747  0.02307</span></span>
+<span><span class="co">#&gt;  race4cat Depressed      2 - 0   0.0674    0.00990   6.81  &lt; 0.001  36.6  0.04801  0.08680</span></span>
+<span><span class="co">#&gt;  race4cat Depressed      3 - 0   0.0541    0.01697   3.19  0.00143   9.4  0.02084  0.08734</span></span>
 <span><span class="co">#&gt;  race4cat Poor health    1 - 0   0.0935    0.01113   8.40  &lt; 0.001  54.4  0.07169  0.11531</span></span>
 <span><span class="co">#&gt;  race4cat Poor health    2 - 0   0.1979    0.01297  15.26  &lt; 0.001 172.2  0.17248  0.22333</span></span>
-<span><span class="co">#&gt;  race4cat Poor health    3 - 0   0.0742    0.02094   3.54  &lt; 0.001  11.3  0.03312  0.11519</span></span>
+<span><span class="co">#&gt;  race4cat Poor health    3 - 0   0.0742    0.02094   3.54  &lt; 0.001  11.3  0.03313  0.11520</span></span>
 <span><span class="co">#&gt;  woman    Depressed      1 - 0   0.0383    0.00624   6.14  &lt; 0.001  30.1  0.02605  0.05051</span></span>
-<span><span class="co">#&gt;  woman    Poor health    1 - 0  -0.0110    0.00839  -1.31  0.18900   2.4 -0.02746  0.00542</span></span>
+<span><span class="co">#&gt;  woman    Poor health    1 - 0  -0.0110    0.00839  -1.31  0.18897   2.4 -0.02747  0.00542</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Type: response</span></span>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects_re</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span> <span class="op">|</span> <span class="va">term</span> <span class="op">+</span> <span class="va">contrast</span><span class="op">)</span></span>

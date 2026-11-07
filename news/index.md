@@ -23,18 +23,6 @@
   refused. Combined models whose grouping variables differ but are
   nested can be clustered on the higher level with `cluster`.
 
-- New:
-  [`suest_twopart()`](https://tdmize.github.io/suest/reference/suest_twopart.md)
-  combines the two parts of a two-part model (Stata’s `twopm`): a binary
-  model for whether the outcome is positive and a model for the outcome
-  among those with a positive outcome, such as a Gamma or Poisson
-  pseudo-likelihood GLM. `marginaleffects` predictions, slopes, and
-  comparisons are then on the overall expected outcome, with standard
-  errors from the joint covariance matrix of the two parts (clustered,
-  weighted, or survey-based when requested). `type = "prob"` and
-  `type = "conditional"` give each part’s own predictions. New article:
-  Two-part models.
-
 - New: [`tidy()`](https://generics.r-lib.org/reference/tidy.html) and
   [`glance()`](https://generics.r-lib.org/reference/glance.html)
   methods, so `modelsummary::modelsummary(fit, shape = term ~ group)`

@@ -18,8 +18,6 @@ and leaves calculating and presenting the quantities themselves to
 - [`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)
   pools [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
   results across multiply imputed datasets.
-- [`suest_twopart()`](https://tdmize.github.io/suest/reference/suest_twopart.md)
-  combines the two parts of a two-part model.
 - The usual `marginaleffects` functions, including
   [`predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
   [`avg_comparisons()`](https://rdrr.io/pkg/marginaleffects/man/comparisons.html),

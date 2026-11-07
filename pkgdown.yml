@@ -16,9 +16,8 @@ articles:
   predictions: predictions.html
   suest: suest.html
   tables: tables.html
-  two-part: two-part.html
   within-person: within-person.html
-last_built: 2026-11-07T17:56Z
+last_built: 2026-11-07T21:05Z
 urls:
   reference: https://tdmize.github.io/suest/reference
   article: https://tdmize.github.io/suest/articles

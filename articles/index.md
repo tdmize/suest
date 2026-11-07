@@ -79,12 +79,6 @@
   Comparing effects across two-stage least squares models with different
   instruments.
 
-- [Two-part
-  models](https://tdmize.github.io/suest/articles/two-part.md):
-
-  Effects on an outcome with many zeros, such as medical expenditures,
-  from a two-part model.
-
 ### More
 
 - [Notes on specific

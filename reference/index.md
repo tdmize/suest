@@ -20,9 +20,6 @@ evaluation data
   : Pool SUEST systems across multiple imputations
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
   : Stack the estimation samples from a SUEST object
-- [`suest_twopart()`](https://tdmize.github.io/suest/reference/suest_twopart.md)
-  [`print(`*`<suest_twopart>`*`)`](https://tdmize.github.io/suest/reference/suest_twopart.md)
-  : Two-part models
 
 ## Tables
 
