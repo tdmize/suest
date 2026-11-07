@@ -196,8 +196,10 @@ comparable. Random-effects models
 [`clmm()`](https://rdrr.io/pkg/ordinal/man/clmm.html)) can be combined
 with each other, including different families, and with linear, binary,
 count, and ordered models, such as a logit model with a random-intercept
-logit model. They must share one grouping variable, which the system is
-clustered on, and must be unweighted. Other panel models
+logit model. They must share one grouping variable (for three-level
+models, the top level), which the system is clustered on, and must be
+unweighted. Random-effects models can have several random slopes and a
+level nested in the grouping variable. Other panel models
 ([`plm()`](https://rdrr.io/pkg/plm/man/plm.html), `geeglm()`) can be
 combined only with models of the same kind. Offsets are supported,
 except in `pglm()` and `glmmTMB()` models.

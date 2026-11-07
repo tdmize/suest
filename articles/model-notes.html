@@ -122,6 +122,40 @@ give similar answers.</li>
 </ul>
 </div>
 <div class="section level2">
+<h2 id="several-random-slopes-and-three-level-models">Several random slopes and three-level models<a class="anchor" aria-label="anchor" href="#several-random-slopes-and-three-level-models"></a>
+</h2>
+<ul>
+<li>
+<code>lmer()</code>, <code>glmer()</code>, <code>glmmTMB()</code>,
+and <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">clmm()</a></code> models can have several random slopes for the
+grouping variable, <code>(1 + x1 + x2 | school)</code>, and one level
+nested in it, <code>(1 + x1 | school) + (1 | school:class)</code> or
+<code>(1 | school/class)</code>. In Stata, these are
+<code>|| school: x1 x2, covariance(unstructured) || class:</code>.
+Independent terms, <code>(1 + x1 || school)</code>, and glmmTMB’s
+<code><a href="https://rdrr.io/r/base/diag.html" class="external-link">diag()</a></code> are Stata’s <code>covariance(independent)</code>.
+Crossed random effects and a third grouping level are not
+supported.</li>
+<li>Slopes must be numeric data columns. Make a numeric 0/1 version of a
+factor, and create transformed variables (such as squares) before
+fitting.</li>
+<li>The variance parameters are each term’s log standard deviations,
+<code>log_sd_school_x1</code>, and Fisher z correlations,
+<code>atanh_rho_school_intercept_x1</code>, as in Stata’s
+<code>lns</code> and <code>atr</code>. A nested level is named with a
+dot: <code>log_sd_school.class_intercept</code>.</li>
+<li>Nonlinear models with these structures use the Laplace approximation
+(lme4 allows adaptive quadrature only for a single random intercept).
+suest2 requires adaptive quadrature, so to check results in Stata, fit
+each model with <code>intmethod(laplace) vce(cluster school)</code>; its
+standard errors equal that model’s block of the <code><a href="../reference/suest.html">suest()</a></code>
+covariance. Linear models agree with <code>mixed</code> exactly.</li>
+<li>Fits near a boundary, with a variance near zero or correlations near
+-1 or 1, are refused even when lme4 does not flag them as singular.
+Simplify the random-effects structure.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a>
 </h2>
 <ul>
