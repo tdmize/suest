@@ -2,6 +2,17 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Survey probit and cloglog
+  [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) models now
+  use observed information, as Stata does, so their covariance matches
+  `svy: probit` and `svy: cloglog` with suest2 (probit: within 5e-8 in
+  the returned Stata comparison). Before, suest kept
+  [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html)’s
+  expected-information covariance, whose standard errors differed from
+  Stata’s by 2-4% for probit and up to 10% for cloglog.
+  [`svyglm()`](https://rdrr.io/pkg/survey/man/svyglm.html) itself is
+  unchanged; logit, Poisson, and linear models are unaffected.
+
 - Survey systems now include ordered logit and probit models from
   [`survey::svyolr()`](https://rdrr.io/pkg/survey/man/svyolr.html);
   multinomial logit, negative-binomial, and generalized ordered logit

@@ -218,11 +218,11 @@ supported. Model-specific subsets and missing outcomes are aligned using
 observation IDs, with zero influence outside each model's estimation sample.
 The full design retains PSUs outside all model samples. Each model's native
 design-based covariance must be reproduced from its scores before the joint
-matrix is returned. <code>svyolr()</code>, <code>svy_vglm()</code>, and <code>svysurvreg()</code> models then
-use exact observed information, as Stata does: <code>svyolr()</code> uses a numerical
-Hessian, VGAM uses expected information, and survival's scale residuals are
-wrong for interval-censored outcomes, so their own standard errors can
-differ slightly. <code>svyglm()</code> fits contain coefficients only; <code>svysurvreg()</code>
+matrix is returned. Probit and cloglog <code>svyglm()</code> fits and <code>svyolr()</code>,
+<code>svy_vglm()</code>, and <code>svysurvreg()</code> models then use exact observed information,
+as Stata does: <code>svyglm()</code> and VGAM use expected information, <code>svyolr()</code> a
+numerical Hessian, and survival's scale residuals are wrong for
+interval-censored outcomes, so their own standard errors can differ. <code>svyglm()</code> fits contain coefficients only; <code>svysurvreg()</code>
 fits add <code>Log(scale)</code>, and negative-binomial fits the log size parameter.</p>
 <p>Replicate-weight, multistage, two-phase, calibrated, raked, post-stratified,
 and PPS designs are unsupported. Lonely-PSU options are restricted to

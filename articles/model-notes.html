@@ -123,13 +123,15 @@ give similar answers.</li>
 <h2 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a>
 </h2>
 <ul>
-<li>Ordered (<code>svyolr()</code>), multinomial, negative-binomial, and
-generalized ordered (<code>svy_vglm()</code>), and survival
+<li>Binary probit and cloglog (<code>svyglm()</code>), ordered
+(<code>svyolr()</code>), multinomial, negative-binomial, and generalized
+ordered (<code>svy_vglm()</code>), and survival
 (<code>svysurvreg()</code>) models use exact observed information, as
-Stata does. Their standard errors can differ slightly from the fitted
-model’s own: <code>svyolr()</code> uses a numerical Hessian, VGAM uses
-expected information, and for interval-censored outcomes survival’s
-scale residuals are incorrect.</li>
+Stata does. Their standard errors can differ from the fitted model’s
+own: <code>svyglm()</code> and VGAM use expected information,
+<code>svyolr()</code> uses a numerical Hessian, and for
+interval-censored outcomes survival’s scale residuals are
+incorrect.</li>
 <li>These fits stop at fairly loose tolerances. For results that agree
 closely with Stata, tighten them:
 <code>control = list(reltol = 1e-12)</code> in <code>svyolr()</code> and
