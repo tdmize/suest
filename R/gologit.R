@@ -63,9 +63,11 @@
       "Only VGAM::vglm() models with the cumulative() family (generalized ordered models) are supported.",
       call. = FALSE)
   links <- unique(unname(fit@misc$link))
-  link <- c(logitlink = "logit", probitlink = "probit", clogloglink = "cloglog")[links]
+  link <- c(logitlink = "logit", probitlink = "probit", clogloglink = "cloglog",
+    cauchitlink = "cauchit")[links]
   if (length(links) != 1L || is.na(link))
-    stop("Generalized ordered models must use a logit, probit, or cloglog link.", call. = FALSE)
+    stop("Generalized ordered models must use a logit, probit, cloglog, or cauchit link.",
+      call. = FALSE)
   y <- stats::model.response(wrapper$frame)
   levels <- if (is.factor(y)) levels(y) else as.character(sort(unique(y)))
   list(family = "cumulative", link = unname(link), reverse = isTRUE(fit@misc$reverse),
@@ -118,7 +120,8 @@
 .suest_vglm_cdf <- function(link) switch(link,
   logit = list(F = stats::plogis, f = stats::dlogis),
   probit = list(F = stats::pnorm, f = stats::dnorm),
-  cloglog = list(F = function(x) -expm1(-exp(x)), f = function(x) exp(x - exp(x))))
+  cloglog = list(F = function(x) -expm1(-exp(x)), f = function(x) exp(x - exp(x))),
+  cauchit = list(F = stats::pcauchy, f = stats::dcauchy))
 
 # Category probabilities (n x K) from the linear predictors.
 .suest_vglm_probabilities <- function(eta, info) {

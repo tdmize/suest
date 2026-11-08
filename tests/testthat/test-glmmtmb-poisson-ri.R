@@ -177,8 +177,8 @@ test_that("glmmTMB Poisson validation is deliberately narrow", {
   noninteger <- suppressWarnings(glmmtmb_poisson_ri_fit(
     y1 ~ x + z + (1 | id), noninteger_data))
 
-  expect_error(suest(negative_binomial, negative_binomial),
-    "Poisson-log", fixed = TRUE)
+  # Constant dispersion is supported (test-glmmtmb-nbinom1.R).
+  expect_identical(suest:::.suest_model_adapter(negative_binomial)$type, "glmm_nbinom1_ri")
   # Several slopes are supported (test-random-structures.R), but this fit has
   # no positive-definite Hessian.
   expect_error(suest(random_slope, random_slope), "positive-definite Hessian", fixed = TRUE)

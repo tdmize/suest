@@ -95,6 +95,7 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Multinomial logit | `nnet::multinom()` |
 | Poisson regression | `glm()`, `glm2::glm2()` |
 | Negative binomial regression | `MASS::glm.nb()` |
+| Constant-dispersion negative binomial (Stata's `nbreg, dispersion(constant)`) | `glmmTMB::glmmTMB()` with `family = nbinom1()` |
 | Zero-inflated Poisson and negative binomial | `pscl::zeroinfl()` |
 | Other GLMs with identity, log, logit, probit, complementary log-log, or log-log links | `glm()`, `glm2::glm2()` |
 | Tobit regression | `censReg::censReg()`; predictions are the latent mean |
@@ -106,7 +107,7 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Bivariate probit | `mvProbit::mvProbit()` with the same predictors in both equations |
 | Instrumental-variable regression (two-stage least squares) | `fixest::feols()`, unweighted and without absorbed fixed effects |
 | Instrumental-variable probit | `Rchoice::ivpml()`; predictions are average structural probabilities |
-| Generalized ordered logit (gologit2), including partial proportional odds | `VGAM::vglm()` with `cumulative(reverse = TRUE)` |
+| Generalized ordered logit (gologit2), including partial proportional odds, with logit, probit, cloglog, log-log, or cauchit links | `VGAM::vglm()` with `cumulative(reverse = TRUE)`; for log-log, see [Notes on specific models](model-notes.html#generalized-ordered-models) |
 | Heckman selection (maximum likelihood) | `sampleSelection::selection(method = "ml")` |
 
 ### Panel models
@@ -117,14 +118,14 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Random-effects logit and probit | `pglm::pglm(model = "random", effect = "individual")` |
 | Random-effects Poisson | `pglm::pglm(model = "random", effect = "individual", other = "sd")` |
 | Fixed-effects Poisson | `fixest::fepois(y ~ x | id)` |
-| Population-averaged (GEE) linear, logit, probit, complementary log-log, and Poisson | `geepack::geeglm()` with independence or exchangeable correlation |
+| Population-averaged (GEE) linear, logit, probit, complementary log-log, and Poisson | `geepack::geeglm()` with independence, exchangeable, ar1, or unstructured correlation |
 
 ### Multilevel models
 
 | Model | Fitted with |
 |---|---|
 | Linear random-intercept | `nlme::lme(method = "ML")` |
-| Random-intercept logit, probit, cloglog, Poisson, negative binomial, linear, and Gamma (log link) | `glmmTMB::glmmTMB()` |
+| Random-intercept logit, probit, cloglog, Poisson, negative binomial (mean or constant dispersion), linear, and Gamma (log link) | `glmmTMB::glmmTMB()` |
 | Random intercept and slope, `(1 + x | id)`, for the same families | `glmmTMB::glmmTMB()` |
 | Linear random intercept or slope (ML) | `lme4::lmer(REML = FALSE)` |
 | Random-intercept or slope logit, probit, cloglog, and Poisson | `lme4::glmer()`, any `nAGQ` |

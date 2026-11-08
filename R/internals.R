@@ -7,7 +7,7 @@
 
   same_type <- length(unique(types)) == 1L
   scalar <- types %in% c(
-    "lm", "logit", "probit", "cloglog", "poisson", "negbin", "glm",
+    "lm", "logit", "probit", "cloglog", "poisson", "negbin", "nb1", "glm",
     "fraclogit", "fracprobit", "fraccloglog", "fracloglog", "survreg", "betareg",
     "zip", "zinb", "truncreg", "censreg", "ivreg", "ivprobit", "hetprobit",
     "hetlogit", "biprobit", "panel_fe", "panel_be", "panel_re", "panel_ml",
@@ -18,7 +18,7 @@
 
   scale <- if (all(categorical)) {
     "category probabilities"
-  } else if (all(types %in% c("poisson", "negbin", "panel_poisson_re", "panel_poisson_fe") |
+  } else if (all(types %in% c("poisson", "negbin", "nb1", "panel_poisson_re", "panel_poisson_fe") |
                  .suest_glmm_count(types))) {
     "expected counts"
   } else if (all(types %in% c(
@@ -497,7 +497,7 @@
     plm::index(model)[[1L]]
   } else if (inherits(model, "lme")) {
     model$groups[[1L]]
-  } else if (inherits(model, "glmmTMB")) {
+  } else if (inherits(model, "glmmTMB") && .suest_glmmtmb_has_random(model)) {
     .suest_glmmtmb_random_info(model)$id
   } else if (inherits(model, "suest_lme4")) {
     .suest_lme4_random_info(model)$id
@@ -517,7 +517,7 @@
     names(attr(data, "index"))[1L]
   } else if (inherits(model, "lme")) {
     names(model$groups)[1L]
-  } else if (inherits(model, "glmmTMB")) {
+  } else if (inherits(model, "glmmTMB") && .suest_glmmtmb_has_random(model)) {
     .suest_glmmtmb_random_info(model)$name
   } else if (inherits(model, "suest_lme4")) {
     .suest_lme4_random_info(model)$name
@@ -654,6 +654,8 @@
     return(.suest_heckman_parameters(model))
   if (type %in% c("re_ologit", "re_oprobit"))
     return(.suest_clmm_parameters(model))
+  if (type == "nb1")
+    return(.suest_nb1_parameters(model))
   if (.suest_is_glmm(type)) {
     if (!is.null(model$suest_parameters))
       return(model$suest_parameters)
@@ -2095,6 +2097,8 @@
     .suest_heckman_components(model)
   } else if (type %in% c("re_ologit", "re_oprobit")) {
     .suest_clmm_components(model)
+  } else if (type == "nb1") {
+    .suest_nb1_components(model)
   } else if (.suest_is_glmm(type) && inherits(model, "suest_lme4")) {
     out <- .suest_lme4_components(model, type)
     if (.suest_glmm_family(type) == "gaussian")

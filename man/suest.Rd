@@ -176,6 +176,12 @@ thresholds, proportional effects, and no scale model
 \item multinomial logit models from \code{\link[nnet:multinom]{nnet::multinom()}}
 \item Poisson log-link models from \code{\link[stats:glm]{stats::glm()}} or \code{glm2::glm2()}
 \item negative-binomial log-link models from \code{\link[MASS:glm.nb]{MASS::glm.nb()}}
+\item constant-dispersion negative-binomial models (Stata's
+\verb{nbreg, dispersion(constant)}) from \code{glmmTMB::glmmTMB()} with
+\code{family = nbinom1()} and no random effects: conditional variance
+\code{mu*(1 + exp(log_phi))}, where \code{log_phi} is Stata's \code{lndelta}. The
+dispersion must be constant (\code{dispformula = ~1}); weights, offsets, and
+zero inflation are unsupported. Predictions are expected counts
 \item Poisson and negative-binomial zero-inflated models from
 \code{pscl::zeroinfl()}
 \item other GLMs using identity, log, logit, probit, complementary-log-log, or
@@ -213,11 +219,13 @@ outcome equation's linear prediction, Stata's default
 \subsection{Generalized ordered models}{
 \itemize{
 \item unweighted \code{VGAM::vglm()} models with the \code{cumulative()} family and a
-logit, probit, or cloglog link: generalized ordered logit (Stata's
+logit, probit, cloglog, or cauchit link: generalized ordered logit (Stata's
 \code{gologit2}), including the proportional (\code{parallel = TRUE}) and partial
 proportional odds forms (for example \code{parallel = FALSE ~ x}). Use
 \code{reverse = TRUE} for gologit2's \code{P(Y > j) = F(eta_j)} parameterization;
-both directions are supported. suest computes the scores analytically
+both directions are supported. gologit2's \code{link(loglog)} is
+\code{cumulative(link = "clogloglink", reverse = FALSE)}, with every
+coefficient the negative of gologit2's. suest computes the scores analytically
 and the observed information (as Stata does) by differentiating them;
 VGAM's own covariance uses expected information. Predictions are
 category probabilities
@@ -249,8 +257,13 @@ coefficients' uncertainty; newdata must contain the fixed-effect
 variable. Link-scale effects equal the coefficients, as in Stata. These
 models combine only with other fixed-effects Poisson models
 \item unweighted GEE from \code{geepack::geeglm()}: Gaussian identity,
-binary logit/probit/cloglog, and Poisson log, with independence or
-exchangeable correlation and numeric outcomes
+binary logit/probit/cloglog, and Poisson log, with independence,
+exchangeable, ar1, or unstructured working correlation and numeric
+outcomes. The fitted correlation is held fixed, as in Stata. ar1
+correlations depend on the distance between waves (geeglm's \code{waves}, or
+the position within the panel when \code{waves} is omitted); unstructured
+correlations need each panel's waves to run 1, 2, ... without gaps.
+A user-supplied \code{zcor} is unsupported
 }
 }
 
@@ -262,7 +275,7 @@ exchangeable correlation and numeric outcomes
 layout, fit the same model with \code{lme4::lmer(..., REML = FALSE)}; the
 standard errors differ only slightly
 \item unweighted binomial (logit, probit, cloglog), Poisson-log, negative-binomial
-NB2 log, Gaussian-identity, and Gamma-log models from
+NB2 and NB1 (constant dispersion) log, Gaussian-identity, and Gamma-log models from
 \code{glmmTMB::glmmTMB()} with one grouping variable and one conditional random
 intercept; the final parameter is the log random-intercept standard
 deviation, and response predictions integrate over the Gaussian random
@@ -277,10 +290,12 @@ effects' bread is \verb{(X'V^-1 X)^-1}, the variance parameters' bread is
 their block of the full observed-information inverse, and the two blocks
 are uncorrelated. NB2 models must use the default constant dispersion model
 (\code{dispformula = ~1}); its estimated log size parameter \code{log_phi} precedes
-\code{log_sigma}, with conditional variance \code{mu + mu^2/exp(log_phi)}.
+\code{log_sigma}, with conditional variance \code{mu + mu^2/exp(log_phi)}. NB1
+models (\code{family = nbinom1()}, Stata's \verb{menbreg, dispersion(constant)})
+have the same requirements and conditional variance \code{mu*(1 + exp(log_phi))}.
 Weights, offsets, and zero inflation are unsupported;
-NB2 additionally excludes mapped or constrained parameters. Its Laplace
-log likelihood must exceed the zero-random-effect NB2 log likelihood at
+NB2 and NB1 additionally exclude mapped or constrained parameters. Their Laplace
+log likelihood must exceed the zero-random-effect negative binomial log likelihood at
 the same fixed effects and dispersion by more than
 \code{sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))}.
 This numerical boundary check is not a significance test and does not
@@ -289,9 +304,9 @@ guarantee an interior global maximum
 intercept and numeric slope, \code{(1 + x | id)}, using an unstructured
 covariance matrix. The slope must be a single untransformed numeric
 column with a syntactically valid name. The nuisance parameters are
-\code{log_sd_intercept}, \code{log_sd_slope}, and \code{atanh_rho}. NB2 requires the
-default estimated constant dispersion (\code{dispformula = ~1}), includes
-\code{log_phi} before these three parameters, and uses the NB2 boundary check
+\code{log_sd_intercept}, \code{log_sd_slope}, and \code{atanh_rho}. NB2 and NB1 require the
+default estimated constant dispersion (\code{dispformula = ~1}), include
+\code{log_phi} before these three parameters, and use the boundary check
 above; Gaussian and Gamma models include \code{log_sigma_e} or \code{log_shape}
 there. Response predictions use the random-intercept formulas with
 \code{v = var_intercept + 2*x*cov_intercept_slope + x^2*var_slope}; binomial

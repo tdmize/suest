@@ -1,5 +1,38 @@
 # suest 0.1.6.9000 (development)
 
+* New models, each matching a Stata model:
+  - Constant-dispersion negative binomial (Stata's `nbreg` and `menbreg`
+    with `dispersion(constant)`) from `glmmTMB(family = nbinom1())`, with
+    or without random effects. The conditional variance is
+    `mu*(1 + exp(log_phi))`, and `log_phi` is Stata's `/lndelta`.
+  - Population-averaged (GEE) `geeglm()` models with ar1 and unstructured
+    working correlations (Stata's `xtgee` with `corr(ar1)` and
+    `corr(unstructured)`). ar1 correlations follow the distance between
+    waves (`waves = time`), or the position in the panel without `waves`;
+    unstructured correlations need waves without gaps. Unstructured
+    correlations match Stata's; ar1 correlations are estimated differently,
+    so ar1 results differ slightly, and Stata's `corr(fixed)` with
+    geepack's matrix reproduces R.
+  - Generalized ordered models with the cauchit link
+    (`cumulative(link = "cauchitlink")`, gologit2's `link(cauchit)`).
+    gologit2's `link(loglog)` was already supported as
+    `cumulative(link = "clogloglink", reverse = FALSE)` with every
+    coefficient's sign reversed; this is now documented.
+  Checks: constant-dispersion scores against numerical derivatives and
+  glmmTMB's own scores (with and without random effects, including random
+  slopes and nested levels); GEE breads and robust covariances against
+  geepack's own for every family, with gaps inside panels and panels that
+  end early; cauchit and log-log scores and information against an
+  independent likelihood. Stata check (Stata 19, suest2 1.1.2): two
+  constant-dispersion `nbreg` models, constant + mean dispersion + Poisson,
+  gologit2 pairs with `link(cauchit)` and `link(loglog)`, and gologit2 +
+  `nbreg` + logit in one system match through suest2 within 2.3e-6;
+  population-averaged pairs (`xtreg`, `xtlogit`, `xtpoisson` with `pa`) with
+  geepack's ar1 and unstructured correlations match through suest2 within
+  1.3e-11; Stata's own unstructured estimates equal geepack's; `menbreg,
+  dispersion(constant)` with `intmethod(laplace)` gives the same estimates
+  and log likelihood.
+
 * Multilevel models can now have several random slopes for one grouping
   variable and a level nested in it (three-level models), in `lmer()`,
   `glmer()`, `glmmTMB()`, and `clmm()`; this also adds random slopes to

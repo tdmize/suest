@@ -83,3 +83,62 @@ test_that("a parallel vglm equals MASS::polr in a joint system", {
   expect_equal(unname(vcov(a)[keep_a, keep_a]), unname(vcov(b)[keep_a, keep_a]),
     tolerance = 1e-4)
 })
+
+# Independent log likelihood for any link: P(Y > j) = upper(a_j + b_j x + c z).
+gologit_link_loglik <- function(theta, d, upper) {
+  a <- theta[1:3]; b <- theta[4:6]; c <- theta[7]
+  above <- matrix(sapply(1:3, function(j) upper(a[j] + b[j]*d$x + c*d$z)), nrow(d))
+  p <- cbind(1, above) - cbind(above, 0)
+  log(p[cbind(seq_len(nrow(d)), as.integer(d$y))])
+}
+
+test_that("cauchit and log-log generalized ordered models have exact scores", {
+  skip_if_not_installed("VGAM")
+  skip_if_not_installed("numDeriv")
+  set.seed(1010)
+  n <- 500L
+  base <- data.frame(x = rnorm(n), z = rnorm(n))
+  labels <- c("low", "mid", "high", "top")
+  cases <- list(
+    # Stata gologit2 link(cauchit): P(Y > j) = pcauchy(index).
+    cauchit = list(family = VGAM::cumulative(link = "cauchitlink",
+      parallel = FALSE ~ x, reverse = TRUE), upper = stats::pcauchy, sign = 1,
+      y = cut(0.8*base$x + 0.3*base$z + rcauchy(n), c(-Inf, -1, 0.5, 2, Inf))),
+    # Stata gologit2 link(loglog): P(Y > j) = exp(-exp(-index)), which is
+    # VGAM's cloglog with reverse = FALSE and every coefficient negated.
+    loglog = list(family = VGAM::cumulative(link = "clogloglink",
+      parallel = FALSE ~ x, reverse = FALSE), upper = function(x) exp(-exp(-x)), sign = -1,
+      y = cut(0.3*base$x + 0.2*base$z - log(-log(runif(n))), c(-Inf, -0.8, 0, 1, Inf))))
+  for (case in names(cases)) {
+    spec <- cases[[case]]
+    d <- base
+    d$y <- ordered(spec$y, labels = labels)
+    fit <- VGAM::vglm(y ~ x + z, spec$family, data = d)
+    wrapper <- suest:::.suest_wrap_vglm(fit)
+    component <- suest:::.suest_vglm_components(wrapper)
+    theta <- component$parameters
+    stata <- spec$sign*unname(theta)
+    expect_equal(sum(gologit_link_loglik(stata, d, spec$upper)),
+      as.numeric(VGAM::logLik(fit)), tolerance = 1e-10, label = case)
+    for (i in c(3L, 150L, 444L)) {
+      gradient <- numDeriv::grad(function(t) gologit_link_loglik(t, d[i, ], spec$upper), stata)
+      expect_equal(unname(component$score[i, ]), spec$sign*gradient, tolerance = 1e-7,
+        label = case)
+    }
+    information <- -numDeriv::hessian(function(t) sum(gologit_link_loglik(t, d, spec$upper)),
+      stata)
+    expect_equal(unname(component$bread/nrow(d)), unname(solve(information)),
+      tolerance = 1e-5, label = case)
+    predicted <- suest:::.suest_predict_probabilities(wrapper, d[1:4, ], "VGAM::vglm")
+    expect_equal(unname(predicted), unname(VGAM::fitted(fit)[1:4, ]), tolerance = 1e-10,
+      label = case)
+    partner <- glm(I(as.integer(y) > 2) ~ x, binomial, d)
+    joint <- suest(fit, partner, model_names = c(case, "logit"))
+    expect_identical(unname(joint$model_types), c("gologit", "logit"))
+  }
+  d <- base
+  d$y <- ordered(cases$cauchit$y, labels = labels)
+  other <- VGAM::vglm(y ~ x, VGAM::cumulative(parallel = TRUE), data = d)
+  other@misc$link[] <- "foldsqrtlink"
+  expect_error(suest(other, glm(I(as.integer(y) > 2) ~ x, binomial, d)), "cauchit link")
+})

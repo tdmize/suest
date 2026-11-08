@@ -22,10 +22,12 @@ test_that("glmmTMB group scores match glmmTMB's own scores for every family", {
     fit(yb ~ x + (1 | id), family = binomial("cloglog")),
     fit(count ~ x + (1 | id), family = poisson),
     fit(nb ~ x + (1 | id), family = glmmTMB::nbinom2),
+    fit(nb ~ x + (1 | id), family = glmmTMB::nbinom1),
     fit(yc ~ x + (1 | id)),
     fit(positive ~ x + (1 | id), family = Gamma("log")),
     fit(yb ~ x + (1 + x | id), family = binomial),
     fit(count ~ x + (1 + x | id), family = poisson),
+    fit(count ~ x + (1 + x | id), family = glmmTMB::nbinom1),
     fit(yc ~ x + (1 + x | id)))
   for (model in models) {
     type <- suest:::.suest_model_adapter(model)$type

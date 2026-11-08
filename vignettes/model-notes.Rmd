@@ -32,6 +32,47 @@ Confidence intervals and tests for average predicted levels at the
 estimation-sample means are not: their standard errors can be missing or near
 zero.
 
+## Constant-dispersion negative binomial
+
+- Stata's `nbreg, dispersion(constant)` is
+  `glmmTMB(y ~ x, family = nbinom1())`, and `menbreg, dispersion(constant)`
+  adds random effects, as in `glmmTMB(y ~ x + (1 | id), family = nbinom1())`.
+  The conditional variance is `mu*(1 + exp(log_phi))`, and `log_phi` is
+  Stata's `/lndelta`.
+- Stata's default `nbreg` (mean dispersion) is `MASS::glm.nb()`, or
+  `glmmTMB(family = nbinom2())` with random effects.
+
+## Population-averaged (GEE) models
+
+- `geeglm()` models can use independence, exchangeable, ar1, or unstructured
+  working correlations. As in Stata, `suest` holds the working correlation
+  at its estimate.
+- geepack and Stata estimate unstructured correlations the same way, so
+  their results match. They estimate ar1 correlations differently, so ar1
+  coefficients and standard errors differ slightly. To reproduce R's ar1
+  results in Stata, use `corr(fixed R)` (for example
+  `xtlogit y x, pa corr(fixed R)`), where `R` has entries `alpha^|j - k|`
+  and `alpha` is `model$geese$alpha`.
+- For ar1, give `geeglm()` the time variable, `waves = time`, so the
+  correlation depends on the time between observations; without it, geepack
+  uses each observation's position in its panel. Stata leaves out panels
+  whose times are unequally spaced unless you add `force`, which then uses
+  the order of the observations.
+- Unstructured correlations need each panel's waves to run 1, 2, ...; panels
+  can end early but cannot skip a wave. geepack cannot fit unstructured
+  correlations with skipped waves (R stops with a memory error), although
+  Stata can.
+
+## Generalized ordered models
+
+- `VGAM::vglm()` with `cumulative(link = ..., reverse = TRUE)` is
+  `gologit2` with the logit, probit, cloglog, or cauchit link
+  (`"logitlink"`, `"probitlink"`, `"clogloglink"`, `"cauchitlink"`).
+  `parallel = TRUE` is `gologit2, pl`, and `parallel = FALSE ~ x` frees `x`
+  only, as in `gologit2, npl(x)`.
+- gologit2's `link(loglog)` is `cumulative(link = "clogloglink",
+  reverse = FALSE)`: the same model, with every coefficient's sign reversed.
+
 ## Mixed models fitted with glmmTMB
 
 - Predictions and marginal effects average over the random intercept, and

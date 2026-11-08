@@ -208,10 +208,10 @@
 })
 
 .suest_glmm_family_table <- data.frame(
-  key = c("logit", "probit", "cloglog", "poisson", "nbinom2", "gaussian", "gamma"),
-  family = c("binomial", "binomial", "binomial", "poisson", "nbinom2", "gaussian", "Gamma"),
-  link = c("logit", "probit", "cloglog", "log", "log", "identity", "log"),
-  dispersion = c(NA, NA, NA, NA, "log_phi", "log_sigma_e", "log_shape"),
+  key = c("logit", "probit", "cloglog", "poisson", "nbinom1", "nbinom2", "gaussian", "gamma"),
+  family = c("binomial", "binomial", "binomial", "poisson", "nbinom1", "nbinom2", "gaussian", "Gamma"),
+  link = c("logit", "probit", "cloglog", "log", "log", "log", "identity", "log"),
+  dispersion = c(NA, NA, NA, NA, "log_phi", "log_phi", "log_sigma_e", "log_shape"),
   stringsAsFactors = FALSE
 )
 
@@ -230,7 +230,10 @@
   .suest_is_glmm(type) & .suest_glmm_family(type) %in% c("logit", "probit", "cloglog")
 
 .suest_glmm_count <- function(type)
-  .suest_is_glmm(type) & .suest_glmm_family(type) %in% c("poisson", "nbinom2")
+  .suest_is_glmm(type) & .suest_glmm_family(type) %in% c("poisson", "nbinom1", "nbinom2")
+
+.suest_glmmtmb_has_random <- function(model)
+  length(model$modelInfo$reTrms$cond$cnms) > 0L
 
 .suest_glmm_key <- function(family) {
   table <- .suest_glmm_family_table
@@ -289,12 +292,14 @@
       stop(
         paste0(
           "glmmTMB support is currently limited to binomial (logit, probit, ",
-          "cloglog), Poisson-log, nbinom2-log, Gaussian-identity, and Gamma-log ",
-          "models; received family '", family$family,
+          "cloglog), Poisson-log, nbinom1-log, nbinom2-log, Gaussian-identity, and ",
+          "Gamma-log models; received family '", family$family,
           "' with link '", family$link, "'."
         ),
         call. = FALSE
       )
+    if (!.suest_glmmtmb_has_random(model))
+      return(.suest_nb1_adapter(model, key))
     model_type <- paste0("glmm_", key, "_ri")
     dispersion_name <- .suest_glmm_dispersion_name(model_type)
 
@@ -407,18 +412,18 @@
         call. = FALSE
       )
 
-    if (model_type %in% c("glmm_nbinom2_ri", "glmm_nbinom2_rs", "glmm_nbinom2_re")) {
+    if (key %in% c("nbinom1", "nbinom2")) {
       # Numerical support check, not a likelihood-ratio significance test.
-      # At zero random-effect variance the NB2 likelihood is available exactly.
+      # At zero random-effect variance the likelihood is available exactly.
       X <- stats::model.matrix(model, component = "cond")
-      boundary_ll <- sum(stats::dnbinom(stats::model.response(model$frame),
-        size = exp(log_phi), mu = exp(drop(X %*% beta)), log = TRUE))
+      boundary_ll <- sum(.suest_glmm_density(key, stats::model.response(model$frame),
+        drop(X %*% beta), exp(log_phi))$l)
       fitted_ll <- as.numeric(stats::logLik(model))
       if (!is.finite(boundary_ll) || !is.finite(fitted_ll))
-        stop("Unable to evaluate finite glmmTMB nbinom2 boundary likelihoods.", call. = FALSE)
+        stop(sprintf("Unable to evaluate finite glmmTMB %s boundary likelihoods.", key), call. = FALSE)
       tolerance <- sqrt(.Machine$double.eps)*max(1, abs(fitted_ll))
       if (fitted_ll - boundary_ll <= tolerance)
-        stop(paste0("The glmmTMB nbinom2 random-effect variance is not numerically ",
+        stop(paste0("The glmmTMB ", key, " random-effect variance is not numerically ",
           "distinguishable from its zero boundary; joint variance-parameter inference ",
           "is unsupported for this fit."), call. = FALSE)
     }
@@ -441,8 +446,12 @@
     valid <- (family == "gaussian" && link == "identity") ||
       (family == "binomial" && link %in% c("logit", "probit", "cloglog")) ||
       (family == "poisson" && link == "log")
-    if (!valid || !model$corstr %in% c("independence", "exchangeable"))
-      stop("GEE currently supports Gaussian identity, binary logit/probit/cloglog, and Poisson log with independence or exchangeable correlation.", call. = FALSE)
+    if (!valid || !model$corstr %in% c("independence", "exchangeable", "ar1", "unstructured"))
+      stop(paste0("GEE currently supports Gaussian identity, binary logit/probit/cloglog, ",
+        "and Poisson log with independence, exchangeable, ar1, or unstructured ",
+        "correlation."), call. = FALSE)
+    if (!is.null(model$call$zcor))
+      stop("GEE models with a user-supplied zcor design are not supported.", call. = FALSE)
     if (!identical(model$geese$error, 0L))
       stop("The GEE fit did not converge.", call. = FALSE)
     if (any(model$prior.weights != 1) || any(model$geese$weights != 1))
@@ -453,6 +462,7 @@
     if (length(id) != nrow(model$model) || anyNA(id) ||
         anyDuplicated(rle(as.character(id))$values))
       stop("GEE IDs must identify contiguous panels in the retained model sample.", call. = FALSE)
+    if (model$corstr %in% c("ar1", "unstructured")) .suest_gee_correlations(model)
     y <- stats::model.response(model$model)
     if (!is.numeric(y) || is.matrix(y) || any(!is.finite(y)) ||
         (family == "binomial" && !all(y %in% c(0, 1))) ||
@@ -1083,7 +1093,7 @@
   if (type %in% c("re_ologit", "re_oprobit") && !.suest_clmm_simple(model) &&
       is.null(model$suest_structure))
     model$suest_structure <- .suest_clmm_structure(model)
-  if (type %in% c("gologit", "heckman", "re_ologit", "re_oprobit")) {
+  if (type %in% c("gologit", "heckman", "re_ologit", "re_oprobit", "nb1")) {
     model$suest_parameters <- parameters
     return(model)
   }
@@ -1262,6 +1272,25 @@
   probability
 }
 
+# Fixed-effects linear predictor of a glmmTMB model for newdata.
+.suest_glmmtmb_eta <- function(model, parameters, newdata) {
+  beta_names <- names(glmmTMB::fixef(model)$cond)
+  terms <- stats::delete.response(stats::terms(model))
+  prediction_frame <- stats::model.frame(
+    terms, newdata, na.action = stats::na.pass,
+    xlev = .suest_glmmtmb_xlevels(model)
+  )
+  X <- stats::model.matrix(
+    terms, prediction_frame,
+    contrasts.arg = model$modelInfo$contrasts$cond[
+      intersect(names(model$modelInfo$contrasts$cond), names(prediction_frame))
+    ]
+  )
+  if (length(setdiff(beta_names, colnames(X))))
+    stop("Unable to construct the glmmTMB prediction matrix.", call. = FALSE)
+  as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+}
+
 .suest_predict_values <- function(model, newdata, type, engine, model_type) {
   if (identical(engine, "survey::svyglm")) {
     terms <- stats::delete.response(stats::terms(model))
@@ -1278,6 +1307,11 @@
     return(.suest_vglm_mean(model, newdata, type))
   engine <- .suest_engine_name(engine)
 
+  if (model_type == "nb1") {
+    eta <- .suest_glmmtmb_eta(model, .suest_nb1_parameters(model), newdata)
+    return(if (identical(type, "link")) eta else exp(eta))
+  }
+
   if (.suest_is_glmm(model_type)) {
     parameters <- if (!is.null(model$suest_parameters)) {
       model$suest_parameters
@@ -1288,25 +1322,7 @@
     eta <- if (lme4_model) {
       .suest_lme4_eta(model, parameters, newdata)
     } else {
-      beta_names <- names(glmmTMB::fixef(model)$cond)
-      terms <- stats::delete.response(stats::terms(model))
-      prediction_frame <- stats::model.frame(
-        terms, newdata, na.action = stats::na.pass,
-        xlev = .suest_glmmtmb_xlevels(model)
-      )
-      X <- stats::model.matrix(
-        terms, prediction_frame,
-        contrasts.arg = model$modelInfo$contrasts$cond[
-          intersect(names(model$modelInfo$contrasts$cond), names(prediction_frame))
-        ]
-      )
-      missing <- setdiff(beta_names, colnames(X))
-      if (length(missing))
-        stop(
-          "Unable to construct the glmmTMB random-effects prediction matrix.",
-          call. = FALSE
-        )
-      as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
+      .suest_glmmtmb_eta(model, parameters, newdata)
     }
     if (identical(type, "link"))
       return(eta)
@@ -1334,7 +1350,7 @@
       variance <- rep(exp(2*unname(parameters["log_sigma"])), length(eta))
     }
     family <- .suest_glmm_family(model_type)
-    if (family %in% c("poisson", "nbinom2", "gamma"))
+    if (family %in% c("poisson", "nbinom1", "nbinom2", "gamma"))
       return(exp(eta + variance/2))
     if (family == "gaussian")
       return(eta)

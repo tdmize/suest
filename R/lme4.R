@@ -57,7 +57,7 @@
   } else {
     .suest_glmm_key(wrapper$family)
   }
-  if (is.na(key) || key %in% c("nbinom2", "gamma"))
+  if (is.na(key) || key %in% c("nbinom1", "nbinom2", "gamma"))
     stop(
       paste0(
         "glmer support is currently limited to binomial (logit, probit, ",
@@ -125,7 +125,8 @@
 }
 
 # Log density of each observation and its first three derivatives in eta.
-# dispersion: phi for nbinom2 (variance mu + mu^2/phi), the shape for Gamma.
+# dispersion: phi for nbinom1 (variance mu*(1 + phi)) and nbinom2 (variance
+# mu + mu^2/phi), the shape for Gamma.
 .suest_glmm_density <- function(family, y, eta, dispersion = NULL) {
   if (family == "logit") {
     p <- stats::plogis(eta)
@@ -157,6 +158,15 @@
   } else if (family == "poisson") {
     mu <- exp(eta)
     list(l = stats::dpois(y, mu, log = TRUE), d1 = y - mu, d2 = -mu, d3 = -mu)
+  } else if (family == "nbinom1") {
+    # Variance mu*(1 + phi): size mu/phi.
+    phi <- dispersion
+    k <- exp(eta)/phi
+    A <- digamma(y + k) - digamma(k) - log1p(phi)
+    B <- trigamma(y + k) - trigamma(k)
+    C <- psigamma(y + k, 2L) - psigamma(k, 2L)
+    list(l = stats::dnbinom(y, size = k, mu = exp(eta), log = TRUE),
+      d1 = k*A, d2 = k*A + k^2*B, d3 = k*A + 3*k^2*B + k^3*C)
   } else if (family == "nbinom2") {
     mu <- exp(eta)
     phi <- dispersion

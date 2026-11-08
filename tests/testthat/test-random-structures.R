@@ -132,6 +132,7 @@ test_that("general structures give glmmTMB's own group scores for every family",
     cloglog = fit(yb ~ x1 + x2 + diag(1 + x1 + x2 | school), family = binomial("cloglog")),
     poisson = fit(count ~ x1 + (1 + x1 | school) + (1 | school:class), family = poisson),
     nbinom2 = fit(nb ~ x1 + (1 + x1 | school) + (1 | school:class), family = glmmTMB::nbinom2),
+    nbinom1 = fit(nb ~ x1 + (1 + x1 | school) + (1 | school:class), family = glmmTMB::nbinom1),
     gaussian = fit(yc ~ x1 + x2 + (1 + x1 + x2 | school)),
     gamma = fit(positive ~ x1 + (1 + x1 | school) + (1 | school:class), family = Gamma("log")))
   for (family in names(models)) {
