@@ -1,5 +1,20 @@
 # suest 0.1.6.9000 (development)
 
+* Changed: response predictions from `survreg()` and `svysurvreg()` models of
+  survival time (Weibull, exponential, lognormal, log-logistic) are now
+  median survival times, Stata's default after `streg`, as for the new
+  Gompertz and generalized gamma models. They were
+  `predict(type = "response")`, which is exp(linear predictor): lognormal
+  and log-logistic predictions are unchanged, because that is their median,
+  but Weibull and exponential predictions change (exponential predictions
+  were mean survival times). `type = "link"` still gives the linear
+  predictor, and Gaussian models (interval regression, tobit) still predict
+  the linear predictor. Stata check (Stata 19, `streg, vce(robust)` then
+  `margins, predict(median time)` and `margins, dydx(x) predict(median time)`):
+  Weibull, exponential, and log-logistic average medians and effects match
+  within 2.2e-9 relative, lognormal within 6e-7 (Stata's lognormal fit stops
+  slightly short of the maximum), and standard errors within 4.2e-6.
+
 * New models, each matching a Stata model:
   - Gompertz and generalized gamma survival models (Stata's `streg` with
     `distribution(gompertz)` and `distribution(ggamma)`) from

@@ -137,6 +137,53 @@ test_that("parametric survival models work with marginaleffects", {
   expect_true(all(is.finite(effects$std.error)))
 })
 
+test_that("survival time predictions are median survival times, as after streg", {
+  skip_if_not_installed("survival")
+  dat <- survreg_test_data()
+  fits <- lapply(c(weibull = "weibull", exponential = "exponential", lognormal = "lognormal",
+    loglogistic = "loglogistic"), function(dist) survival::survreg(
+      survival::Surv(time) ~ x + z, data = dat, dist = dist))
+  for (dist in names(fits)) {
+    m <- fits[[dist]]
+    median <- suest:::.suest_predict_values(m, dat, "response", "survival::survreg", "survreg")
+    expect_equal(unname(median), unname(predict(m, newdata = dat, type = "quantile", p = 0.5)),
+      tolerance = 1e-12)
+    expect_equal(unname(suest:::.suest_predict_values(m, dat, "link", "survival::survreg",
+      "survreg")), unname(predict(m, newdata = dat, type = "lp")), tolerance = 1e-12)
+  }
+  # The median is exp(linear predictor) for lognormal and log-logistic models,
+  # exp(linear predictor) * log(2)^scale for Weibull models.
+  for (dist in c("lognormal", "loglogistic"))
+    expect_equal(unname(suest:::.suest_predict_values(fits[[dist]], dat, "response",
+      "survival::survreg", "survreg")), unname(exp(predict(fits[[dist]], type = "lp"))),
+      tolerance = 1e-12)
+  w <- fits$weibull
+  expect_equal(unname(suest:::.suest_predict_values(w, dat, "response", "survival::survreg",
+    "survreg")), unname(exp(predict(w, type = "lp"))*log(2)^w$scale), tolerance = 1e-12)
+
+  # Delta-method standard error of the average median, by hand.
+  fit <- suest(w, fits$exponential, model_names = c("A", "B"))
+  p <- as.data.frame(marginaleffects::avg_predictions(fit, newdata = dat))
+  X <- model.matrix(~ x + z, dat)
+  b <- coef(fit)[fit$index[[1]]]
+  scale <- exp(b[["A::Log(scale)"]])
+  med <- drop(exp(X %*% b[1:3]))*log(2)^scale
+  gradient <- c(colMeans(med*X), mean(med*log(log(2))*scale))
+  V <- vcov(fit)[fit$index[[1]], fit$index[[1]]]
+  expect_equal(p$estimate[p$group == "A"], mean(med), tolerance = 1e-10)
+  expect_equal(p$std.error[p$group == "A"], sqrt(drop(gradient %*% V %*% gradient)),
+    tolerance = 1e-5)
+})
+
+test_that("censored Gaussian predictions stay on the outcome's own scale", {
+  skip_if_not_installed("survival")
+  dat <- survreg_test_data()
+  m <- survival::survreg(survival::Surv(y, event, type = "left") ~ x, data = dat,
+    dist = "gaussian")
+  expect_equal(unname(suest:::.suest_predict_values(m, dat, "response", "survival::survreg",
+    "survreg")), unname(predict(m, newdata = dat, type = "lp")), tolerance = 1e-12)
+})
+
 test_that("fixed and estimated survreg scales can be combined", {
   skip_if_not_installed("survival")
   dat <- survreg_test_data()

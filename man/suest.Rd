@@ -190,7 +190,11 @@ log-log links
 \code{censReg::censReg()}; response-scale predictions are the latent mean
 \item parametric survival and censored-regression models from
 \code{survival::survreg()} with a common scale, including Gaussian interval
-regression
+regression. For distributions of log time (Weibull, exponential,
+lognormal, log-logistic), response predictions are median survival
+times, Stata's default after \code{streg}; \code{type = "link"} gives the linear
+predictor. Gaussian, logistic, and extreme-value models predict the
+linear predictor. The same holds for \code{survey::svysurvreg()}
 \item Gompertz and generalized gamma survival models from
 \code{flexsurv::flexsurvreg()} with \code{dist = "gompertz"} or \code{"gengamma"}
 (Stata's \code{streg} with \code{distribution(gompertz)} or

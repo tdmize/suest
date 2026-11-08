@@ -1312,6 +1312,14 @@
   as.numeric(X[, beta_names, drop = FALSE] %*% parameters[beta_names])
 }
 
+# TRUE for survreg distributions of log time (Weibull, exponential, lognormal,
+# log-logistic, ...), FALSE for Gaussian, logistic, extreme value, and t.
+.suest_survreg_log_time <- function(model) {
+  dist <- model$dist
+  if (is.character(dist)) dist <- survival::survreg.distributions[[dist]]
+  is.list(dist) && !is.null(dist$trans)
+}
+
 .suest_predict_values <- function(model, newdata, type, engine, model_type) {
   if (identical(engine, "survey::svyglm")) {
     terms <- stats::delete.response(stats::terms(model))
@@ -1588,6 +1596,11 @@
       ))
     }, numeric(1)))
   }
+
+  # Survival times: the median, Stata's default after streg (for lognormal and
+  # log-logistic models this equals exp(linear predictor)).
+  if (model_type == "survreg" && identical(type, "response") && .suest_survreg_log_time(model))
+    return(stats::predict(model, newdata = newdata, type = "quantile", p = 0.5))
 
   prediction_type <- if (model_type == "lm") {
     "response"

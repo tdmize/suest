@@ -152,7 +152,11 @@
 #'   `censReg::censReg()`; response-scale predictions are the latent mean
 #' * parametric survival and censored-regression models from
 #'   `survival::survreg()` with a common scale, including Gaussian interval
-#'   regression
+#'   regression. For distributions of log time (Weibull, exponential,
+#'   lognormal, log-logistic), response predictions are median survival
+#'   times, Stata's default after `streg`; `type = "link"` gives the linear
+#'   predictor. Gaussian, logistic, and extreme-value models predict the
+#'   linear predictor. The same holds for `survey::svysurvreg()`
 #' * Gompertz and generalized gamma survival models from
 #'   `flexsurv::flexsurvreg()` with `dist = "gompertz"` or `"gengamma"`
 #'   (Stata's `streg` with `distribution(gompertz)` or

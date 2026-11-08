@@ -122,6 +122,16 @@ test_that("survey survreg and instrumental-variable blocks equal the native fits
   expect_equal(unname(vcov(s)), unname(svy_manual_vcov(z, des)), tolerance = 1e-8)
 })
 
+test_that("survey survreg predictions are median survival times", {
+  withr::local_options(survey.lonely.psu = "fail", survey.adjust.domain.lonely = FALSE)
+  f <- svy_models_fixture()
+  sr <- survey::svysurvreg(survival::Surv(t, ev) ~ x + z, f$design, dist = "weibull")
+  d <- f$design$variables
+  expect_equal(unname(suest:::.suest_predict_values(sr, d, "response", "survey::svysurvreg",
+    "survreg")), unname(exp(drop(model.matrix(~ x + z, d) %*% coef(sr)))*log(2)^sr$scale),
+    tolerance = 1e-12)
+})
+
 test_that("survey models align domains, missing data, and the common design", {
   withr::local_options(survey.lonely.psu = "fail", survey.adjust.domain.lonely = FALSE)
   f <- svy_models_fixture()
@@ -160,7 +170,8 @@ test_that("survey model predictions follow perturbed coefficients", {
   E <- exp(model.matrix(~ x + g, nd) %*% B)
   expect_equal(p$estimate[p$group == "ml::q"], unname(E[, 2] / rowSums(E)), tolerance = 1e-10)
   expect_equal(p$estimate[p$group == "nb"], unname(exp(coef(nb)[1] + coef(nb)[3] * nd$x)), tolerance = 1e-10)
-  expect_equal(p$estimate[p$group == "sr"], unname(predict(sr, nd)), tolerance = 1e-10)
+  expect_equal(p$estimate[p$group == "sr"], unname(predict(sr, nd, type = "quantile", p = 0.5)),
+    tolerance = 1e-10)
   expect_equal(p$estimate[p$group == "iv"], unname(drop(cbind(1, nd$endo, nd$z) %*% coef(iv))), tolerance = 1e-10)
   b <- coef(s)
   b["nb::(Intercept):1"] <- b["nb::(Intercept):1"] + 1
