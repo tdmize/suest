@@ -52,6 +52,12 @@ get_data.suest_model <- function(x, ...) .suest_default_data(x)
 
 # Each model's outcomes, fixed-effect predictors, and every variable it uses.
 .suest_variable_roles <- function(m) {
+  if (inherits(m, "suest_gjrm")) {
+    variables <- lapply(m$formulas[1:2], all.vars)
+    return(list(response = m$responses,
+      predictors = unique(unlist(lapply(variables, `[`, -1L))),
+      all = unique(unlist(variables))))
+  }
   fit <- if (inherits(m, c("suest_lme4", "suest_vglm"))) m$fit else m
   f <- tryCatch(stats::formula(m), error = function(e) m$formula)
   two_sided <- inherits(f, "formula") && length(f) == 3L

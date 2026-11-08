@@ -100,11 +100,12 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Other GLMs with identity, log, logit, probit, complementary log-log, or log-log links | `glm()`, `glm2::glm2()` |
 | Tobit regression | `censReg::censReg()`; predictions are the latent mean |
 | Interval, censored, and parametric survival regression | `survival::survreg()` with a common scale |
+| Gompertz and generalized gamma survival | `flexsurv::flexsurvreg()` with `dist = "gompertz"` or `"gengamma"` |
 | Truncated regression | `truncreg::truncreg()` |
 | Fractional response | `glm()` with `quasibinomial()`: logit, probit, complementary log-log, or log-log link |
 | Beta regression | `betareg::betareg()` with a logit, probit, complementary log-log, or log-log link |
 | Heteroskedastic probit and logit | `Rchoice::hetprob()` |
-| Bivariate probit | `mvProbit::mvProbit()` with the same predictors in both equations |
+| Bivariate probit | `GJRM::gjrm()`, with the same or different predictors in each equation; `mvProbit::mvProbit()` with the same predictors |
 | Instrumental-variable regression (two-stage least squares) | `fixest::feols()`, unweighted and without absorbed fixed effects |
 | Instrumental-variable probit | `Rchoice::ivpml()`; predictions are average structural probabilities |
 | Generalized ordered logit (gologit2), including partial proportional odds, with logit, probit, cloglog, log-log, or cauchit links | `VGAM::vglm()` with `cumulative(reverse = TRUE)`; for log-log, see [Notes on specific models](model-notes.html#generalized-ordered-models) |

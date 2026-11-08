@@ -1,6 +1,40 @@
 # suest 0.1.6.9000 (development)
 
 * New models, each matching a Stata model:
+  - Gompertz and generalized gamma survival models (Stata's `streg` with
+    `distribution(gompertz)` and `distribution(ggamma)`) from
+    `flexsurv::flexsurvreg()`, with right censoring, delayed entry
+    (`Surv(entry, time, event)`), and covariates on the ancillary
+    parameters (`anc`, Stata's `ancillary()` and `anc2()`). Predictions are
+    median survival times, as after `streg`.
+  - Bivariate probit with different predictors in each equation (Stata's
+    `biprobit (y1 = ...) (y2 = ...)`) from
+    `GJRM::gjrm(margins = c("probit", "probit"), model = "B")`. The
+    correlation is Stata's `athrho`; predictions are the probability that
+    both outcomes equal 1. The model notes no longer suggest two probit
+    models in its place.
+  Checks: Gompertz scores are analytic and checked against numerical
+  derivatives, including near a zero shape; generalized gamma scores and
+  information are numerical (Richardson extrapolation), from a log density
+  that stays exact when `Q` is near 0 (flexsurv's loses accuracy there, by
+  1e-6 at `Q = 1e-4`, which made the scores noisy when `Q` depends on a
+  covariate that takes it across 0); both log likelihoods
+  equal flexsurv's own at the estimates and away from them, and the breads
+  equal flexsurv's covariance (Gompertz within 2e-10, generalized gamma
+  within 5e-6). Bivariate probit scores are analytic, its log likelihood is
+  checked against an independent bivariate normal, its bread equals
+  GJRM's covariance within 4e-7, and with the same predictors in both
+  equations it gives the same estimates and standard errors as
+  `mvProbit()`. Stata check (Stata 19, suest2 1.1.2): Gompertz pairs
+  (with `ancillary()`, and with delayed entry), generalized gamma pairs (with
+  `ancillary()` and `anc2()`), and each model's own `vce(robust)` fit match
+  within 2.1e-8; bivariate probit pairs with different predictors, and
+  Gompertz + `biprobit` + `probit` in one system, match within 1.6e-7 (GJRM's
+  approximate bivariate normal); average median survival times and
+  Pr(y1 = 1, y2 = 1) from `margins` match within 1.3e-7. `flexsurv` and
+  `GJRM` added to Suggests.
+
+* New models, each matching a Stata model:
   - Constant-dispersion negative binomial (Stata's `nbreg` and `menbreg`
     with `dispersion(constant)`) from `glmmTMB(family = nbinom1())`, with
     or without random effects. The conditional variance is

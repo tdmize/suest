@@ -191,6 +191,19 @@ log-log links
 \item parametric survival and censored-regression models from
 \code{survival::survreg()} with a common scale, including Gaussian interval
 regression
+\item Gompertz and generalized gamma survival models from
+\code{flexsurv::flexsurvreg()} with \code{dist = "gompertz"} or \code{"gengamma"}
+(Stata's \code{streg} with \code{distribution(gompertz)} or
+\code{distribution(ggamma)}), with right censoring, optional delayed entry
+(\code{Surv(entry, time, event)}), and covariates on ancillary parameters
+(\code{anc}). Parameters are flexsurv's coefficients. For Gompertz, \code{rate} and
+the covariate effects are Stata's log hazard-ratio coefficients (\code{rate} on
+the log scale) and \code{shape} is Stata's \code{gamma}; for the generalized gamma,
+\code{mu} and the covariate effects are Stata's \verb{_t} equation, \code{sigma} (on the
+log scale) is \code{lnsigma}, and \code{Q} is \code{kappa}. Response predictions are
+median survival times, Stata's default after \code{streg}; \code{type = "link"}
+gives the linear predictor of the location parameter. Weights, fixed
+parameters, and interval censoring are not supported
 \item truncated Gaussian regressions from \code{truncreg::truncreg()}
 \item fractional-response GLMs using \code{quasibinomial()} with logit, probit,
 complementary-log-log, or a user-supplied log-log link
@@ -199,6 +212,12 @@ complementary-log-log, or log-log mean links
 \item heteroskedastic binary probit and logit from \code{Rchoice::hetprob()}
 \item bivariate probit from \code{mvProbit::mvProbit()} when both equations use the
 same regressors; fit with \code{intGrad = TRUE} and \code{finalHessian = TRUE}
+\item bivariate probit from \code{GJRM::gjrm()} with \code{margins = c("probit", "probit")}, \code{model = "B"}, and the default Gaussian copula, where each
+equation can have its own predictors (Stata's
+\code{biprobit (y1 = ...) (y2 = ...)}). Parameters are named by outcome
+(\code{y1:x}, \code{y2:w}) and end with Stata's \code{athrho}. Smooth terms, weights,
+offsets, and covariates in the correlation are not supported. Response
+predictions are the probability that both outcomes equal 1
 \item unweighted two-stage least squares from \code{fixest::feols()} without
 absorbed fixed effects; the original data object must remain available
 \item maximum-likelihood instrumental-variable probit from \code{Rchoice::ivpml()};

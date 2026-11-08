@@ -63,6 +63,33 @@ zero.
   correlations with skipped waves (R stops with a memory error), although
   Stata can.
 
+## Gompertz and generalized gamma survival
+
+- Stata's `streg, distribution(gompertz)` is
+  `flexsurvreg(Surv(time, event) ~ x, dist = "gompertz")`, and
+  `streg, distribution(ggamma)` is `dist = "gengamma"`. Stata's
+  `ancillary()` and `anc2()` are flexsurv's `anc`, as in
+  `anc = list(shape = ~ z)` for the Gompertz `gamma` or
+  `anc = list(sigma = ~ z, Q = ~ z)` for the generalized gamma.
+- Delayed entry, `stset time, failure(event) enter(time entry)`, is
+  `Surv(entry, time, event)`.
+- Predictions are median survival times, as after `streg`.
+- Stata's log likelihood after `streg` leaves out the sum of log times over
+  the failures, so it is higher than flexsurv's by that amount. Estimates and
+  standard errors are the same.
+- flexsurv's optimizer can stop slightly short of the maximum, so estimates
+  can differ from Stata's in the fourth or fifth decimal place (up to about
+  1e-4 for a generalized gamma coefficient with flexsurv's default settings).
+
+## Bivariate probit
+
+- Stata's `biprobit (y1 = x z) (y2 = x w)` is
+  `gjrm(list(y1 ~ x + z, y2 ~ x + w), margins = c("probit", "probit"),
+  model = "B", data = d)`. Predictions are the probability that both
+  outcomes equal 1, as after `biprobit`.
+- GJRM approximates the bivariate normal probabilities closely but not
+  exactly, so its estimates can differ from Stata's by about 1e-7.
+
 ## Generalized ordered models
 
 - `VGAM::vglm()` with `cumulative(link = ..., reverse = TRUE)` is
@@ -143,14 +170,11 @@ question. The last column fits the same model in Stata.
 | `xtnbreg, re` | Random-intercept negative binomial, `glmmTMB()` | `menbreg` |
 | `xtnbreg, pa` | Population-averaged Poisson, `geepack::geeglm()` | `xtpoisson, pa vce(robust)` |
 | `mestreg` | `survreg()` clustered on the group | `streg, vce(cluster group)` |
-| `biprobit` with different predictors | Two probit models | Two `probit` models |
 
 Fixed-effects Poisson with robust standard errors is valid for overdispersed
 counts, and `xtnbreg, fe` is not a true fixed-effects model (Allison and
 Waterman 2002). The multinomial and survival stand-ins have no random effects,
 so they estimate effects averaged over people rather than for a given person.
-Two probit models estimate the same effects on each outcome as a bivariate
-probit, without the correlation between their errors.
 
 Allison, P. D., & Waterman, R. P. (2002). Fixed-effects negative binomial
 regression models. *Sociological Methodology*, 32, 247-265.

@@ -153,6 +153,19 @@
 #' * parametric survival and censored-regression models from
 #'   `survival::survreg()` with a common scale, including Gaussian interval
 #'   regression
+#' * Gompertz and generalized gamma survival models from
+#'   `flexsurv::flexsurvreg()` with `dist = "gompertz"` or `"gengamma"`
+#'   (Stata's `streg` with `distribution(gompertz)` or
+#'   `distribution(ggamma)`), with right censoring, optional delayed entry
+#'   (`Surv(entry, time, event)`), and covariates on ancillary parameters
+#'   (`anc`). Parameters are flexsurv's coefficients. For Gompertz, `rate` and
+#'   the covariate effects are Stata's log hazard-ratio coefficients (`rate` on
+#'   the log scale) and `shape` is Stata's `gamma`; for the generalized gamma,
+#'   `mu` and the covariate effects are Stata's `_t` equation, `sigma` (on the
+#'   log scale) is `lnsigma`, and `Q` is `kappa`. Response predictions are
+#'   median survival times, Stata's default after `streg`; `type = "link"`
+#'   gives the linear predictor of the location parameter. Weights, fixed
+#'   parameters, and interval censoring are not supported
 #' * truncated Gaussian regressions from `truncreg::truncreg()`
 #' * fractional-response GLMs using `quasibinomial()` with logit, probit,
 #'   complementary-log-log, or a user-supplied log-log link
@@ -161,6 +174,13 @@
 #' * heteroskedastic binary probit and logit from `Rchoice::hetprob()`
 #' * bivariate probit from `mvProbit::mvProbit()` when both equations use the
 #'   same regressors; fit with `intGrad = TRUE` and `finalHessian = TRUE`
+#' * bivariate probit from `GJRM::gjrm()` with `margins = c("probit",
+#'   "probit")`, `model = "B"`, and the default Gaussian copula, where each
+#'   equation can have its own predictors (Stata's
+#'   `biprobit (y1 = ...) (y2 = ...)`). Parameters are named by outcome
+#'   (`y1:x`, `y2:w`) and end with Stata's `athrho`. Smooth terms, weights,
+#'   offsets, and covariates in the correlation are not supported. Response
+#'   predictions are the probability that both outcomes equal 1
 #' * unweighted two-stage least squares from `fixest::feols()` without
 #'   absorbed fixed effects; the original data object must remain available
 #' * maximum-likelihood instrumental-variable probit from `Rchoice::ivpml()`;
@@ -401,7 +421,8 @@ suest <- function(
   if (n_models < 2L)
     stop("Supply at least two fitted models.", call. = FALSE)
   models <- lapply(models, function(model)
-    .suest_prepare_heckman(.suest_wrap_vglm(.suest_wrap_lme4(.suest_unexclude(model)))))
+    .suest_prepare_heckman(.suest_wrap_gjrm(.suest_wrap_vglm(.suest_wrap_lme4(
+      .suest_unexclude(model))))))
 
   if (is.null(model_names)) {
     model_names <- vapply(
@@ -438,7 +459,9 @@ suest <- function(
         "Each model must be a supported stats::lm, stats::glm, glm2::glm2, ",
         "MASS::glm.nb, survival::survreg, betareg::betareg, pscl::zeroinfl, ",
         "truncreg::truncreg, censReg::censReg, MASS::polr, ordinal::clm, ",
-        "nnet::multinom, mvProbit::mvProbit, Rchoice::hetprob/ivpml, a supported ",
+        "nnet::multinom, mvProbit::mvProbit, a GJRM::gjrm bivariate probit, ",
+        "a flexsurv::flexsurvreg Gompertz or generalized gamma model, ",
+        "Rchoice::hetprob/ivpml, a supported ",
         "plm::plm linear ",
         "panel model, an nlme::lme random-intercept ML model, a pglm::pglm ",
         "random-effects binary or Poisson model, a supported ",
@@ -686,7 +709,7 @@ suest <- function(
         )
     }
 
-    if (type == "biprobit") {
+    if (type %in% c("biprobit", "biprobit_gjrm")) {
       binary_pair <- is.matrix(y) && ncol(y) == 2L &&
         all(stats::na.omit(unique(as.numeric(y))) %in% c(0, 1))
       if (!binary_pair)

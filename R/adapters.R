@@ -275,6 +275,8 @@
     return(.suest_lme4_adapter(model))
   if (inherits(model, "suest_vglm"))
     return(.suest_vglm_adapter(model))
+  if (inherits(model, "suest_gjrm"))
+    return(.suest_gjrm_adapter(model))
   if (inherits(model, "selection"))
     return(.suest_heckman_adapter(model))
   if (inherits(model, "clmm"))
@@ -670,6 +672,9 @@
     return(list(engine = "MASS::glm.nb", type = type))
   }
 
+  if (inherits(model, "flexsurvreg"))
+    return(.suest_flexsurv_adapter(model))
+
   if (inherits(model, "survreg")) {
     if (inherits(model, "survreg.penal"))
       stop("Penalized survival::survreg fits are not supported.", call. = FALSE)
@@ -864,6 +869,8 @@
     return(.suest_fepois_frame(model))
   if (inherits(model, "suest_vglm"))
     return(.suest_vglm_frame(model))
+  if (inherits(model, "suest_gjrm"))
+    return(model$frame)
   if (identical(engine, "sampleSelection::selection"))
     return(.suest_heckman_frame(model))
   if (identical(engine, "ordinal::clmm"))
@@ -872,6 +879,19 @@
     return(model$mf)
   if (identical(engine, "Rchoice::ivpml"))
     return(model$mf)
+
+  if (identical(engine, "flexsurv::flexsurvreg")) {
+    frame <- model$data$m
+    original <- try(eval(model$call$data, envir = .suest_flexsurv_environment(model)),
+      silent = TRUE)
+    if (!inherits(original, "try-error") && is.data.frame(original)) {
+      index <- match(rownames(frame), rownames(original))
+      if (!anyNA(index))
+        for (variable in setdiff(names(original), names(frame)))
+          frame[[variable]] <- original[[variable]][index]
+    }
+    return(frame)
+  }
 
   if (identical(engine, "glmmTMB::glmmTMB")) {
     frame <- as.data.frame(stats::model.frame(model))
@@ -1093,7 +1113,8 @@
   if (type %in% c("re_ologit", "re_oprobit") && !.suest_clmm_simple(model) &&
       is.null(model$suest_structure))
     model$suest_structure <- .suest_clmm_structure(model)
-  if (type %in% c("gologit", "heckman", "re_ologit", "re_oprobit", "nb1")) {
+  if (type %in% c("gologit", "heckman", "re_ologit", "re_oprobit", "nb1", "flexsurv",
+                  "biprobit_gjrm")) {
     model$suest_parameters <- parameters
     return(model)
   }
@@ -1306,6 +1327,11 @@
   if (inherits(model, "suest_vglm"))
     return(.suest_vglm_mean(model, newdata, type))
   engine <- .suest_engine_name(engine)
+
+  if (model_type == "flexsurv")
+    return(.suest_flexsurv_predict(model, newdata, type))
+  if (model_type == "biprobit_gjrm")
+    return(.suest_gjrm_predict(model, newdata, type))
 
   if (model_type == "nb1") {
     eta <- .suest_glmmtmb_eta(model, .suest_nb1_parameters(model), newdata)

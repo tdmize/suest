@@ -8,9 +8,9 @@
   same_type <- length(unique(types)) == 1L
   scalar <- types %in% c(
     "lm", "logit", "probit", "cloglog", "poisson", "negbin", "nb1", "glm",
-    "fraclogit", "fracprobit", "fraccloglog", "fracloglog", "survreg", "betareg",
+    "fraclogit", "fracprobit", "fraccloglog", "fracloglog", "survreg", "flexsurv", "betareg",
     "zip", "zinb", "truncreg", "censreg", "ivreg", "ivprobit", "hetprobit",
-    "hetlogit", "biprobit", "panel_fe", "panel_be", "panel_re", "panel_ml",
+    "hetlogit", "biprobit", "biprobit_gjrm", "panel_fe", "panel_be", "panel_re", "panel_ml",
     "panel_gee", "panel_logit_re", "panel_probit_re", "panel_poisson_re",
     "panel_poisson_fe", "heckman"
   ) | .suest_is_glmm(types)
@@ -22,7 +22,7 @@
                  .suest_glmm_count(types))) {
     "expected counts"
   } else if (all(types %in% c(
-               "logit", "probit", "cloglog", "ivprobit", "biprobit",
+               "logit", "probit", "cloglog", "ivprobit", "biprobit", "biprobit_gjrm",
                "panel_logit_re", "panel_probit_re"
              ) | .suest_glmm_binary(types))) {
     "predicted probabilities"
@@ -121,6 +121,8 @@
   data_call <- model$call$data
   env <- if (.suest_is_pglm(model)) {
     environment(.suest_pglm_formula(model))
+  } else if (inherits(model, "flexsurvreg")) {
+    .suest_flexsurv_environment(model)
   } else if (inherits(model, "mvProbit")) {
     fit_environment <- environment(model$objectiveFn)
     source_formula <- if (is.environment(fit_environment) &&
@@ -656,6 +658,10 @@
     return(.suest_clmm_parameters(model))
   if (type == "nb1")
     return(.suest_nb1_parameters(model))
+  if (type == "flexsurv")
+    return(.suest_flexsurv_parameters(model))
+  if (type == "biprobit_gjrm")
+    return(.suest_gjrm_parameters(model))
   if (.suest_is_glmm(type)) {
     if (!is.null(model$suest_parameters))
       return(model$suest_parameters)
@@ -2099,6 +2105,10 @@
     .suest_clmm_components(model)
   } else if (type == "nb1") {
     .suest_nb1_components(model)
+  } else if (type == "flexsurv") {
+    .suest_flexsurv_components(model)
+  } else if (type == "biprobit_gjrm") {
+    .suest_gjrm_components(model)
   } else if (.suest_is_glmm(type) && inherits(model, "suest_lme4")) {
     out <- .suest_lme4_components(model, type)
     if (.suest_glmm_family(type) == "gaussian")
