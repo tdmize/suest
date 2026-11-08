@@ -247,7 +247,13 @@ survey t or F adjustment is applied.
 
 - parametric survival and censored-regression models from
   [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)
-  with a common scale, including Gaussian interval regression
+  with a common scale, including Gaussian interval regression. For
+  distributions of log time (Weibull, exponential, lognormal,
+  log-logistic), response predictions are median survival times, Stata's
+  default after `streg`; `type = "link"` gives the linear predictor.
+  Gaussian, logistic, and extreme-value models predict the linear
+  predictor. The same holds for
+  [`survey::svysurvreg()`](https://rdrr.io/pkg/survey/man/svysurvreg.html)
 
 - Gompertz and generalized gamma survival models from
   [`flexsurv::flexsurvreg()`](http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.md)

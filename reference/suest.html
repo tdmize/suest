@@ -268,7 +268,11 @@ log-log links</p></li>
 <code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code>; response-scale predictions are the latent mean</p></li>
 <li><p>parametric survival and censored-regression models from
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code> with a common scale, including Gaussian interval
-regression</p></li>
+regression. For distributions of log time (Weibull, exponential,
+lognormal, log-logistic), response predictions are median survival
+times, Stata's default after <code>streg</code>; <code>type = "link"</code> gives the linear
+predictor. Gaussian, logistic, and extreme-value models predict the
+linear predictor. The same holds for <code><a href="https://rdrr.io/pkg/survey/man/svysurvreg.html" class="external-link">survey::svysurvreg()</a></code></p></li>
 <li><p>Gompertz and generalized gamma survival models from
 <code><a href="http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with <code>dist = "gompertz"</code> or <code>"gengamma"</code>
 (Stata's <code>streg</code> with <code>distribution(gompertz)</code> or

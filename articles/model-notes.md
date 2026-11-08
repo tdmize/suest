@@ -50,6 +50,17 @@ are not: their standard errors can be missing or near zero.
   unstructured correlations with skipped waves (R stops with a memory
   error), although Stata can.
 
+## Parametric survival models
+
+- Predictions from `survreg()` and `svysurvreg()` models of survival
+  time (Weibull, exponential, lognormal, log-logistic) are median
+  survival times, as after `streg`. `predict(type = "response")` instead
+  gives exp(linear predictor), which is the median for lognormal and
+  log-logistic models but not for Weibull and exponential ones.
+- Stata’s log likelihood after `streg` leaves out the sum of log times
+  over the failures, so it is higher than survreg’s and flexsurv’s by
+  that amount. Estimates and standard errors are the same.
+
 ## Gompertz and generalized gamma survival
 
 - Stata’s `streg, distribution(gompertz)` is
@@ -61,9 +72,6 @@ are not: their standard errors can be missing or near zero.
 - Delayed entry, `stset time, failure(event) enter(time entry)`, is
   `Surv(entry, time, event)`.
 - Predictions are median survival times, as after `streg`.
-- Stata’s log likelihood after `streg` leaves out the sum of log times
-  over the failures, so it is higher than flexsurv’s by that amount.
-  Estimates and standard errors are the same.
 - flexsurv’s optimizer can stop slightly short of the maximum, so
   estimates can differ from Stata’s in the fourth or fifth decimal place
   (up to about 1e-4 for a generalized gamma coefficient with flexsurv’s

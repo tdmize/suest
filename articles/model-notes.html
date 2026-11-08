@@ -146,6 +146,22 @@ error), although Stata can.</li>
 </ul>
 </div>
 <div class="section level2">
+<h2 id="parametric-survival-models">Parametric survival models<a class="anchor" aria-label="anchor" href="#parametric-survival-models"></a>
+</h2>
+<ul>
+<li>Predictions from <code>survreg()</code> and
+<code>svysurvreg()</code> models of survival time (Weibull, exponential,
+lognormal, log-logistic) are median survival times, as after
+<code>streg</code>. <code>predict(type = "response")</code> instead
+gives exp(linear predictor), which is the median for lognormal and
+log-logistic models but not for Weibull and exponential ones.</li>
+<li>Stata’s log likelihood after <code>streg</code> leaves out the sum
+of log times over the failures, so it is higher than survreg’s and
+flexsurv’s by that amount. Estimates and standard errors are the
+same.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="gompertz-and-generalized-gamma-survival">Gompertz and generalized gamma survival<a class="anchor" aria-label="anchor" href="#gompertz-and-generalized-gamma-survival"></a>
 </h2>
 <ul>
@@ -162,9 +178,6 @@ gamma.</li>
 <code>Surv(entry, time, event)</code>.</li>
 <li>Predictions are median survival times, as after
 <code>streg</code>.</li>
-<li>Stata’s log likelihood after <code>streg</code> leaves out the sum
-of log times over the failures, so it is higher than flexsurv’s by that
-amount. Estimates and standard errors are the same.</li>
 <li>flexsurv’s optimizer can stop slightly short of the maximum, so
 estimates can differ from Stata’s in the fourth or fifth decimal place
 (up to about 1e-4 for a generalized gamma coefficient with flexsurv’s
