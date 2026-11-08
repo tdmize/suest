@@ -254,6 +254,12 @@ thresholds, proportional effects, and no scale model</p></li>
 <li><p>multinomial logit models from <code><a href="https://rdrr.io/pkg/nnet/man/multinom.html" class="external-link">nnet::multinom()</a></code></p></li>
 <li><p>Poisson log-link models from <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">stats::glm()</a></code> or <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code></p></li>
 <li><p>negative-binomial log-link models from <code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code></p></li>
+<li><p>constant-dispersion negative-binomial models (Stata's
+<code>nbreg, dispersion(constant)</code>) from <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with
+<code>family = nbinom1()</code> and no random effects: conditional variance
+<code>mu*(1 + exp(log_phi))</code>, where <code>log_phi</code> is Stata's <code>lndelta</code>. The
+dispersion must be constant (<code>dispformula = ~1</code>); weights, offsets, and
+zero inflation are unsupported. Predictions are expected counts</p></li>
 <li><p>Poisson and negative-binomial zero-inflated models from
 <code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code></p></li>
 <li><p>other GLMs using identity, log, logit, probit, complementary-log-log, or
@@ -291,11 +297,13 @@ outcome equation's linear prediction, Stata's default</p></li>
 <h3 id="generalized-ordered-models">Generalized ordered models<a class="anchor" aria-label="anchor" href="#generalized-ordered-models"></a></h3>
 
 <ul><li><p>unweighted <code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm()</a></code> models with the <code>cumulative()</code> family and a
-logit, probit, or cloglog link: generalized ordered logit (Stata's
+logit, probit, cloglog, or cauchit link: generalized ordered logit (Stata's
 <code>gologit2</code>), including the proportional (<code>parallel = TRUE</code>) and partial
 proportional odds forms (for example <code>parallel = FALSE ~ x</code>). Use
 <code>reverse = TRUE</code> for gologit2's <code>P(Y &gt; j) = F(eta_j)</code> parameterization;
-both directions are supported. suest computes the scores analytically
+both directions are supported. gologit2's <code>link(loglog)</code> is
+<code>cumulative(link = "clogloglink", reverse = FALSE)</code>, with every
+coefficient the negative of gologit2's. suest computes the scores analytically
 and the observed information (as Stata does) by differentiating them;
 VGAM's own covariance uses expected information. Predictions are
 category probabilities</p></li>
@@ -327,8 +335,13 @@ coefficients' uncertainty; newdata must contain the fixed-effect
 variable. Link-scale effects equal the coefficients, as in Stata. These
 models combine only with other fixed-effects Poisson models</p></li>
 <li><p>unweighted GEE from <code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code>: Gaussian identity,
-binary logit/probit/cloglog, and Poisson log, with independence or
-exchangeable correlation and numeric outcomes</p></li>
+binary logit/probit/cloglog, and Poisson log, with independence,
+exchangeable, ar1, or unstructured working correlation and numeric
+outcomes. The fitted correlation is held fixed, as in Stata. ar1
+correlations depend on the distance between waves (geeglm's <code>waves</code>, or
+the position within the panel when <code>waves</code> is omitted); unstructured
+correlations need each panel's waves to run 1, 2, ... without gaps.
+A user-supplied <code>zcor</code> is unsupported</p></li>
 </ul></div>
 
 <div class="section">
@@ -340,7 +353,7 @@ exchangeable correlation and numeric outcomes</p></li>
 layout, fit the same model with <code>lme4::lmer(..., REML = FALSE)</code>; the
 standard errors differ only slightly</p></li>
 <li><p>unweighted binomial (logit, probit, cloglog), Poisson-log, negative-binomial
-NB2 log, Gaussian-identity, and Gamma-log models from
+NB2 and NB1 (constant dispersion) log, Gaussian-identity, and Gamma-log models from
 <code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with one grouping variable and one conditional random
 intercept; the final parameter is the log random-intercept standard
 deviation, and response predictions integrate over the Gaussian random
@@ -355,10 +368,12 @@ effects' bread is <code>(X'V^-1 X)^-1</code>, the variance parameters' bread is
 their block of the full observed-information inverse, and the two blocks
 are uncorrelated. NB2 models must use the default constant dispersion model
 (<code>dispformula = ~1</code>); its estimated log size parameter <code>log_phi</code> precedes
-<code>log_sigma</code>, with conditional variance <code>mu + mu^2/exp(log_phi)</code>.
+<code>log_sigma</code>, with conditional variance <code>mu + mu^2/exp(log_phi)</code>. NB1
+models (<code>family = nbinom1()</code>, Stata's <code>menbreg, dispersion(constant)</code>)
+have the same requirements and conditional variance <code>mu*(1 + exp(log_phi))</code>.
 Weights, offsets, and zero inflation are unsupported;
-NB2 additionally excludes mapped or constrained parameters. Its Laplace
-log likelihood must exceed the zero-random-effect NB2 log likelihood at
+NB2 and NB1 additionally exclude mapped or constrained parameters. Their Laplace
+log likelihood must exceed the zero-random-effect negative binomial log likelihood at
 the same fixed effects and dispersion by more than
 <code>sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))</code>.
 This numerical boundary check is not a significance test and does not
@@ -367,9 +382,9 @@ guarantee an interior global maximum</p></li>
 intercept and numeric slope, <code>(1 + x | id)</code>, using an unstructured
 covariance matrix. The slope must be a single untransformed numeric
 column with a syntactically valid name. The nuisance parameters are
-<code>log_sd_intercept</code>, <code>log_sd_slope</code>, and <code>atanh_rho</code>. NB2 requires the
-default estimated constant dispersion (<code>dispformula = ~1</code>), includes
-<code>log_phi</code> before these three parameters, and uses the NB2 boundary check
+<code>log_sd_intercept</code>, <code>log_sd_slope</code>, and <code>atanh_rho</code>. NB2 and NB1 require the
+default estimated constant dispersion (<code>dispformula = ~1</code>), include
+<code>log_phi</code> before these three parameters, and use the boundary check
 above; Gaussian and Gamma models include <code>log_sigma_e</code> or <code>log_shape</code>
 there. Response predictions use the random-intercept formulas with
 <code>v = var_intercept + 2*x*cov_intercept_slope + x^2*var_slope</code>; binomial

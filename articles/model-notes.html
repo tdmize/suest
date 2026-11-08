@@ -104,6 +104,66 @@ levels at the estimation-sample means are not: their standard errors can
 be missing or near zero.</p>
 </div>
 <div class="section level2">
+<h2 id="constant-dispersion-negative-binomial">Constant-dispersion negative binomial<a class="anchor" aria-label="anchor" href="#constant-dispersion-negative-binomial"></a>
+</h2>
+<ul>
+<li>Stata’s <code>nbreg, dispersion(constant)</code> is
+<code>glmmTMB(y ~ x, family = nbinom1())</code>, and
+<code>menbreg, dispersion(constant)</code> adds random effects, as in
+<code>glmmTMB(y ~ x + (1 | id), family = nbinom1())</code>. The
+conditional variance is <code>mu*(1 + exp(log_phi))</code>, and
+<code>log_phi</code> is Stata’s <code>/lndelta</code>.</li>
+<li>Stata’s default <code>nbreg</code> (mean dispersion) is
+<code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code>, or <code>glmmTMB(family = nbinom2())</code>
+with random effects.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="population-averaged-gee-models">Population-averaged (GEE) models<a class="anchor" aria-label="anchor" href="#population-averaged-gee-models"></a>
+</h2>
+<ul>
+<li>
+<code>geeglm()</code> models can use independence, exchangeable,
+ar1, or unstructured working correlations. As in Stata,
+<code>suest</code> holds the working correlation at its estimate.</li>
+<li>geepack and Stata estimate unstructured correlations the same way,
+so their results match. They estimate ar1 correlations differently, so
+ar1 coefficients and standard errors differ slightly. To reproduce R’s
+ar1 results in Stata, use <code>corr(fixed R)</code> (for example
+<code>xtlogit y x, pa corr(fixed R)</code>), where <code>R</code> has
+entries <code>alpha^|j - k|</code> and <code>alpha</code> is
+<code>model$geese$alpha</code>.</li>
+<li>For ar1, give <code>geeglm()</code> the time variable,
+<code>waves = time</code>, so the correlation depends on the time
+between observations; without it, geepack uses each observation’s
+position in its panel. Stata leaves out panels whose times are unequally
+spaced unless you add <code>force</code>, which then uses the order of
+the observations.</li>
+<li>Unstructured correlations need each panel’s waves to run 1, 2, …;
+panels can end early but cannot skip a wave. geepack cannot fit
+unstructured correlations with skipped waves (R stops with a memory
+error), although Stata can.</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="generalized-ordered-models">Generalized ordered models<a class="anchor" aria-label="anchor" href="#generalized-ordered-models"></a>
+</h2>
+<ul>
+<li>
+<code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm()</a></code> with
+<code>cumulative(link = ..., reverse = TRUE)</code> is
+<code>gologit2</code> with the logit, probit, cloglog, or cauchit link
+(<code>"logitlink"</code>, <code>"probitlink"</code>,
+<code>"clogloglink"</code>, <code>"cauchitlink"</code>).
+<code>parallel = TRUE</code> is <code>gologit2, pl</code>, and
+<code>parallel = FALSE ~ x</code> frees <code>x</code> only, as in
+<code>gologit2, npl(x)</code>.</li>
+<li>gologit2’s <code>link(loglog)</code> is
+<code>cumulative(link = "clogloglink", reverse = FALSE)</code>: the same
+model, with every coefficient’s sign reversed.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="mixed-models-fitted-with-glmmtmb">Mixed models fitted with glmmTMB<a class="anchor" aria-label="anchor" href="#mixed-models-fitted-with-glmmtmb"></a>
 </h2>
 <ul>

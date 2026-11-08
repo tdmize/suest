@@ -227,6 +227,14 @@ survey t or F adjustment is applied.
 - negative-binomial log-link models from
   [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html)
 
+- constant-dispersion negative-binomial models (Stata's
+  `nbreg, dispersion(constant)`) from
+  [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
+  with `family = nbinom1()` and no random effects: conditional variance
+  `mu*(1 + exp(log_phi))`, where `log_phi` is Stata's `lndelta`. The
+  dispersion must be constant (`dispformula = ~1`); weights, offsets,
+  and zero inflation are unsupported. Predictions are expected counts
+
 - Poisson and negative-binomial zero-inflated models from
   [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html)
 
@@ -280,15 +288,17 @@ survey t or F adjustment is applied.
 ### Generalized ordered models
 
 - unweighted [`VGAM::vglm()`](https://rdrr.io/pkg/VGAM/man/vglm.html)
-  models with the `cumulative()` family and a logit, probit, or cloglog
-  link: generalized ordered logit (Stata's `gologit2`), including the
-  proportional (`parallel = TRUE`) and partial proportional odds forms
-  (for example `parallel = FALSE ~ x`). Use `reverse = TRUE` for
-  gologit2's `P(Y > j) = F(eta_j)` parameterization; both directions are
-  supported. suest computes the scores analytically and the observed
-  information (as Stata does) by differentiating them; VGAM's own
-  covariance uses expected information. Predictions are category
-  probabilities
+  models with the `cumulative()` family and a logit, probit, cloglog, or
+  cauchit link: generalized ordered logit (Stata's `gologit2`),
+  including the proportional (`parallel = TRUE`) and partial
+  proportional odds forms (for example `parallel = FALSE ~ x`). Use
+  `reverse = TRUE` for gologit2's `P(Y > j) = F(eta_j)`
+  parameterization; both directions are supported. gologit2's
+  `link(loglog)` is `cumulative(link = "clogloglink", reverse = FALSE)`,
+  with every coefficient the negative of gologit2's. suest computes the
+  scores analytically and the observed information (as Stata does) by
+  differentiating them; VGAM's own covariance uses expected information.
+  Predictions are category probabilities
 
 ### Panel models
 
@@ -328,7 +338,12 @@ survey t or F adjustment is applied.
 - unweighted GEE from
   [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html):
   Gaussian identity, binary logit/probit/cloglog, and Poisson log, with
-  independence or exchangeable correlation and numeric outcomes
+  independence, exchangeable, ar1, or unstructured working correlation
+  and numeric outcomes. The fitted correlation is held fixed, as in
+  Stata. ar1 correlations depend on the distance between waves (geeglm's
+  `waves`, or the position within the panel when `waves` is omitted);
+  unstructured correlations need each panel's waves to run 1, 2, ...
+  without gaps. A user-supplied `zcor` is unsupported
 
 ### Multilevel models
 
@@ -340,8 +355,8 @@ survey t or F adjustment is applied.
   only slightly
 
 - unweighted binomial (logit, probit, cloglog), Poisson-log,
-  negative-binomial NB2 log, Gaussian-identity, and Gamma-log models
-  from
+  negative-binomial NB2 and NB1 (constant dispersion) log,
+  Gaussian-identity, and Gamma-log models from
   [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html)
   with one grouping variable and one conditional random intercept; the
   final parameter is the log random-intercept standard deviation, and
@@ -358,11 +373,13 @@ survey t or F adjustment is applied.
   blocks are uncorrelated. NB2 models must use the default constant
   dispersion model (`dispformula = ~1`); its estimated log size
   parameter `log_phi` precedes `log_sigma`, with conditional variance
-  `mu + mu^2/exp(log_phi)`. Weights, offsets, and zero inflation are
-  unsupported; NB2 additionally excludes mapped or constrained
-  parameters. Its Laplace log likelihood must exceed the
-  zero-random-effect NB2 log likelihood at the same fixed effects and
-  dispersion by more than
+  `mu + mu^2/exp(log_phi)`. NB1 models (`family = nbinom1()`, Stata's
+  `menbreg, dispersion(constant)`) have the same requirements and
+  conditional variance `mu*(1 + exp(log_phi))`. Weights, offsets, and
+  zero inflation are unsupported; NB2 and NB1 additionally exclude
+  mapped or constrained parameters. Their Laplace log likelihood must
+  exceed the zero-random-effect negative binomial log likelihood at the
+  same fixed effects and dispersion by more than
   `sqrt(.Machine$double.eps) * max(1, abs(logLik(model)))`. This
   numerical boundary check is not a significance test and does not
   guarantee an interior global maximum
@@ -371,12 +388,12 @@ survey t or F adjustment is applied.
   numeric slope, `(1 + x | id)`, using an unstructured covariance
   matrix. The slope must be a single untransformed numeric column with a
   syntactically valid name. The nuisance parameters are
-  `log_sd_intercept`, `log_sd_slope`, and `atanh_rho`. NB2 requires the
-  default estimated constant dispersion (`dispformula = ~1`), includes
-  `log_phi` before these three parameters, and uses the NB2 boundary
-  check above; Gaussian and Gamma models include `log_sigma_e` or
-  `log_shape` there. Response predictions use the random-intercept
-  formulas with
+  `log_sd_intercept`, `log_sd_slope`, and `atanh_rho`. NB2 and NB1
+  require the default estimated constant dispersion
+  (`dispformula = ~1`), include `log_phi` before these three parameters,
+  and use the boundary check above; Gaussian and Gamma models include
+  `log_sigma_e` or `log_shape` there. Response predictions use the
+  random-intercept formulas with
   `v = var_intercept + 2*x*cov_intercept_slope + x^2*var_slope`;
   binomial responses must be Bernoulli. Link predictions are `X beta`.
   Near-singular random covariance is rejected in a centered,

@@ -240,74 +240,83 @@ across models:</p>
 <td><code><a href="https://rdrr.io/pkg/MASS/man/glm.nb.html" class="external-link">MASS::glm.nb()</a></code></td>
 </tr>
 <tr class="odd">
+<td>Constant-dispersion negative binomial (Stata’s
+<code>nbreg, dispersion(constant)</code>)</td>
+<td>
+<code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code> with
+<code>family = nbinom1()</code>
+</td>
+</tr>
+<tr class="even">
 <td>Zero-inflated Poisson and negative binomial</td>
 <td><code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Other GLMs with identity, log, logit, probit, complementary log-log,
 or log-log links</td>
 <td>
 <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code>, <code><a href="https://rdrr.io/pkg/glm2/man/glm2.html" class="external-link">glm2::glm2()</a></code>
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Tobit regression</td>
 <td>
 <code><a href="https://rdrr.io/pkg/censReg/man/censReg.html" class="external-link">censReg::censReg()</a></code>; predictions are the latent
 mean</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Interval, censored, and parametric survival regression</td>
 <td>
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code> with a common scale</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Truncated regression</td>
 <td><code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Fractional response</td>
 <td>
 <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code>: logit, probit,
 complementary log-log, or log-log link</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Beta regression</td>
 <td>
 <code><a href="https://rdrr.io/pkg/betareg/man/betareg.html" class="external-link">betareg::betareg()</a></code> with a logit, probit, complementary
 log-log, or log-log link</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Heteroskedastic probit and logit</td>
 <td><code><a href="https://rdrr.io/pkg/Rchoice/man/hetprob.html" class="external-link">Rchoice::hetprob()</a></code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Bivariate probit</td>
 <td>
 <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> with the same predictors in both
 equations</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Instrumental-variable regression (two-stage least squares)</td>
 <td>
 <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code>, unweighted and without absorbed fixed
 effects</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Instrumental-variable probit</td>
 <td>
 <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>; predictions are average structural
 probabilities</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Generalized ordered logit (gologit2), including partial proportional
-odds</td>
+odds, with logit, probit, cloglog, log-log, or cauchit links</td>
 <td>
 <code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm()</a></code> with
-<code>cumulative(reverse = TRUE)</code>
+<code>cumulative(reverse = TRUE)</code>; for log-log, see <a href="model-notes.html#generalized-ordered-models">Notes on specific
+models</a>
 </td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Heckman selection (maximum likelihood)</td>
 <td><code>sampleSelection::selection(method = "ml")</code></td>
 </tr>
@@ -348,8 +357,8 @@ odds</td>
 <td>Population-averaged (GEE) linear, logit, probit, complementary
 log-log, and Poisson</td>
 <td>
-<code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code> with independence or exchangeable
-correlation</td>
+<code><a href="https://rdrr.io/pkg/geepack/man/geeglm.html" class="external-link">geepack::geeglm()</a></code> with independence, exchangeable, ar1,
+or unstructured correlation</td>
 </tr>
 </tbody>
 </table>
@@ -372,8 +381,8 @@ correlation</td>
 <td><code>nlme::lme(method = "ML")</code></td>
 </tr>
 <tr class="even">
-<td>Random-intercept logit, probit, cloglog, Poisson, negative binomial,
-linear, and Gamma (log link)</td>
+<td>Random-intercept logit, probit, cloglog, Poisson, negative binomial
+(mean or constant dispersion), linear, and Gamma (log link)</td>
 <td><code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code></td>
 </tr>
 <tr class="odd">

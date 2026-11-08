@@ -131,6 +131,7 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Multinomial logit | [`nnet::multinom()`](https://rdrr.io/pkg/nnet/man/multinom.html) |
 | Poisson regression | [`glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
 | Negative binomial regression | [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html) |
+| Constant-dispersion negative binomial (Stata’s `nbreg, dispersion(constant)`) | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) with `family = nbinom1()` |
 | Zero-inflated Poisson and negative binomial | [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html) |
 | Other GLMs with identity, log, logit, probit, complementary log-log, or log-log links | [`glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
 | Tobit regression | [`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html); predictions are the latent mean |
@@ -142,7 +143,7 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Bivariate probit | [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html) with the same predictors in both equations |
 | Instrumental-variable regression (two-stage least squares) | [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html), unweighted and without absorbed fixed effects |
 | Instrumental-variable probit | [`Rchoice::ivpml()`](https://rdrr.io/pkg/Rchoice/man/ivpml.html); predictions are average structural probabilities |
-| Generalized ordered logit (gologit2), including partial proportional odds | [`VGAM::vglm()`](https://rdrr.io/pkg/VGAM/man/vglm.html) with `cumulative(reverse = TRUE)` |
+| Generalized ordered logit (gologit2), including partial proportional odds, with logit, probit, cloglog, log-log, or cauchit links | [`VGAM::vglm()`](https://rdrr.io/pkg/VGAM/man/vglm.html) with `cumulative(reverse = TRUE)`; for log-log, see [Notes on specific models](https://tdmize.github.io/suest/articles/model-notes.html#generalized-ordered-models) |
 | Heckman selection (maximum likelihood) | `sampleSelection::selection(method = "ml")` |
 
 ### Panel models
@@ -153,14 +154,14 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Random-effects logit and probit | `pglm::pglm(model = "random", effect = "individual")` |
 | Random-effects Poisson | `pglm::pglm(model = "random", effect = "individual", other = "sd")` |
 | Fixed-effects Poisson | `fixest::fepois(y ~ x | id)` |
-| Population-averaged (GEE) linear, logit, probit, complementary log-log, and Poisson | [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html) with independence or exchangeable correlation |
+| Population-averaged (GEE) linear, logit, probit, complementary log-log, and Poisson | [`geepack::geeglm()`](https://rdrr.io/pkg/geepack/man/geeglm.html) with independence, exchangeable, ar1, or unstructured correlation |
 
 ### Multilevel models
 
 | Model | Fitted with |
 |----|----|
 | Linear random-intercept | `nlme::lme(method = "ML")` |
-| Random-intercept logit, probit, cloglog, Poisson, negative binomial, linear, and Gamma (log link) | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
+| Random-intercept logit, probit, cloglog, Poisson, negative binomial (mean or constant dispersion), linear, and Gamma (log link) | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
 | Random intercept and slope, `(1 + x | id)`, for the same families | [`glmmTMB::glmmTMB()`](https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html) |
 | Linear random intercept or slope (ML) | `lme4::lmer(REML = FALSE)` |
 | Random-intercept or slope logit, probit, cloglog, and Poisson | [`lme4::glmer()`](https://rdrr.io/pkg/lme4/man/glmer.html), any `nAGQ` |
