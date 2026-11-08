@@ -164,8 +164,6 @@ test_that("glmmTMB Poisson validation is deliberately narrow", {
   skip_if_not_installed("glmmTMB", minimum_version = "1.1.14")
   dat <- glmmtmb_poisson_ri_data(groups = 45L)
   dat$constant_offset <- 0.1
-  negative_binomial <- glmmTMB::glmmTMB(
-    y1 ~ x + z + (1 | id), data = dat, family = glmmTMB::nbinom1())
   random_slope <- suppressWarnings(glmmTMB::glmmTMB(
     y1 ~ x + z + (1 + x + z | id), data = dat, family = poisson()))
   weighted <- glmmtmb_poisson_ri_fit(
@@ -177,8 +175,6 @@ test_that("glmmTMB Poisson validation is deliberately narrow", {
   noninteger <- suppressWarnings(glmmtmb_poisson_ri_fit(
     y1 ~ x + z + (1 | id), noninteger_data))
 
-  # Constant dispersion is supported (test-glmmtmb-nbinom1.R).
-  expect_identical(suest:::.suest_model_adapter(negative_binomial)$type, "glmm_nbinom1_ri")
   # Several slopes are supported (test-random-structures.R), but this fit has
   # no positive-definite Hessian.
   expect_error(suest(random_slope, random_slope), "positive-definite Hessian", fixed = TRUE)

@@ -9,6 +9,8 @@ re_engine_test_data <- function(groups = 80L, size = 6L) {
   d$nb <- rnbinom(nrow(d), size = 2, mu = exp(0.5 + 0.3*d$x + u))
   d$yc <- 1 + 0.5*d$x + u + u1*d$x + rnorm(nrow(d))
   d$positive <- rgamma(nrow(d), shape = 3, scale = exp(0.2 + 0.3*d$x + u)/3)
+  mu <- exp(0.3 + 0.3*d$x + 0.5*u + u1*d$x)
+  d$nb1 <- rnbinom(nrow(d), size = mu/1.5, mu = mu)
   d
 }
 
@@ -27,7 +29,7 @@ test_that("glmmTMB group scores match glmmTMB's own scores for every family", {
     fit(positive ~ x + (1 | id), family = Gamma("log")),
     fit(yb ~ x + (1 + x | id), family = binomial),
     fit(count ~ x + (1 + x | id), family = poisson),
-    fit(count ~ x + (1 + x | id), family = glmmTMB::nbinom1),
+    fit(nb1 ~ x + (1 + x | id), family = glmmTMB::nbinom1),
     fit(yc ~ x + (1 + x | id)))
   for (model in models) {
     type <- suest:::.suest_model_adapter(model)$type
