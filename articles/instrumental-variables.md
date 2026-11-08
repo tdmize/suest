@@ -40,7 +40,7 @@ urban <- avg_slopes(fit_iv, variables = "pcturban", newdata = hsng)
 urban
 #> 
 #>              Group Estimate Std. Error      z Pr(>|z|)   S 2.5 % 97.5 %
-#>  Income             -0.5064      0.543 -0.933    0.351 1.5 -1.57  0.557
+#>  Income             -0.5064      0.543 -0.933    0.351 1.5 -1.57  0.558
 #>  Income and region   0.0815      0.445  0.183    0.855 0.2 -0.79  0.953
 #> 
 #> Term: pcturban

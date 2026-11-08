@@ -269,6 +269,19 @@ log-log links</p></li>
 <li><p>parametric survival and censored-regression models from
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code> with a common scale, including Gaussian interval
 regression</p></li>
+<li><p>Gompertz and generalized gamma survival models from
+<code><a href="http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with <code>dist = "gompertz"</code> or <code>"gengamma"</code>
+(Stata's <code>streg</code> with <code>distribution(gompertz)</code> or
+<code>distribution(ggamma)</code>), with right censoring, optional delayed entry
+(<code>Surv(entry, time, event)</code>), and covariates on ancillary parameters
+(<code>anc</code>). Parameters are flexsurv's coefficients. For Gompertz, <code>rate</code> and
+the covariate effects are Stata's log hazard-ratio coefficients (<code>rate</code> on
+the log scale) and <code>shape</code> is Stata's <code>gamma</code>; for the generalized gamma,
+<code>mu</code> and the covariate effects are Stata's <code>_t</code> equation, <code>sigma</code> (on the
+log scale) is <code>lnsigma</code>, and <code>Q</code> is <code>kappa</code>. Response predictions are
+median survival times, Stata's default after <code>streg</code>; <code>type = "link"</code>
+gives the linear predictor of the location parameter. Weights, fixed
+parameters, and interval censoring are not supported</p></li>
 <li><p>truncated Gaussian regressions from <code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code></p></li>
 <li><p>fractional-response GLMs using <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code> with logit, probit,
 complementary-log-log, or a user-supplied log-log link</p></li>
@@ -277,6 +290,12 @@ complementary-log-log, or log-log mean links</p></li>
 <li><p>heteroskedastic binary probit and logit from <code><a href="https://rdrr.io/pkg/Rchoice/man/hetprob.html" class="external-link">Rchoice::hetprob()</a></code></p></li>
 <li><p>bivariate probit from <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> when both equations use the
 same regressors; fit with <code>intGrad = TRUE</code> and <code>finalHessian = TRUE</code></p></li>
+<li><p>bivariate probit from <code><a href="https://rdrr.io/pkg/GJRM/man/gjrm.html" class="external-link">GJRM::gjrm()</a></code> with <code>margins = c("probit", "probit")</code>, <code>model = "B"</code>, and the default Gaussian copula, where each
+equation can have its own predictors (Stata's
+<code>biprobit (y1 = ...) (y2 = ...)</code>). Parameters are named by outcome
+(<code>y1:x</code>, <code>y2:w</code>) and end with Stata's <code>athrho</code>. Smooth terms, weights,
+offsets, and covariates in the correlation are not supported. Response
+predictions are the probability that both outcomes equal 1</p></li>
 <li><p>unweighted two-stage least squares from <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code> without
 absorbed fixed effects; the original data object must remain available</p></li>
 <li><p>maximum-likelihood instrumental-variable probit from <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>;

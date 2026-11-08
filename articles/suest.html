@@ -270,44 +270,52 @@ mean</td>
 <code><a href="https://rdrr.io/pkg/survival/man/survreg.html" class="external-link">survival::survreg()</a></code> with a common scale</td>
 </tr>
 <tr class="even">
+<td>Gompertz and generalized gamma survival</td>
+<td>
+<code><a href="http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with
+<code>dist = "gompertz"</code> or <code>"gengamma"</code>
+</td>
+</tr>
+<tr class="odd">
 <td>Truncated regression</td>
 <td><code><a href="https://rdrr.io/pkg/truncreg/man/truncreg.html" class="external-link">truncreg::truncreg()</a></code></td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Fractional response</td>
 <td>
 <code><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm()</a></code> with <code><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial()</a></code>: logit, probit,
 complementary log-log, or log-log link</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Beta regression</td>
 <td>
 <code><a href="https://rdrr.io/pkg/betareg/man/betareg.html" class="external-link">betareg::betareg()</a></code> with a logit, probit, complementary
 log-log, or log-log link</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Heteroskedastic probit and logit</td>
 <td><code><a href="https://rdrr.io/pkg/Rchoice/man/hetprob.html" class="external-link">Rchoice::hetprob()</a></code></td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Bivariate probit</td>
 <td>
-<code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> with the same predictors in both
-equations</td>
+<code><a href="https://rdrr.io/pkg/GJRM/man/gjrm.html" class="external-link">GJRM::gjrm()</a></code>, with the same or different predictors in
+each equation; <code><a href="https://rdrr.io/pkg/mvProbit/man/mvProbit.html" class="external-link">mvProbit::mvProbit()</a></code> with the same
+predictors</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Instrumental-variable regression (two-stage least squares)</td>
 <td>
 <code><a href="https://lrberge.github.io/fixest/reference/feols.html" class="external-link">fixest::feols()</a></code>, unweighted and without absorbed fixed
 effects</td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Instrumental-variable probit</td>
 <td>
 <code><a href="https://rdrr.io/pkg/Rchoice/man/ivpml.html" class="external-link">Rchoice::ivpml()</a></code>; predictions are average structural
 probabilities</td>
 </tr>
-<tr class="odd">
+<tr class="even">
 <td>Generalized ordered logit (gologit2), including partial proportional
 odds, with logit, probit, cloglog, log-log, or cauchit links</td>
 <td>
@@ -316,7 +324,7 @@ odds, with logit, probit, cloglog, log-log, or cauchit links</td>
 models</a>
 </td>
 </tr>
-<tr class="even">
+<tr class="odd">
 <td>Heckman selection (maximum likelihood)</td>
 <td><code>sampleSelection::selection(method = "ml")</code></td>
 </tr>

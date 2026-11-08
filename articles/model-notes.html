@@ -146,6 +146,44 @@ error), although Stata can.</li>
 </ul>
 </div>
 <div class="section level2">
+<h2 id="gompertz-and-generalized-gamma-survival">Gompertz and generalized gamma survival<a class="anchor" aria-label="anchor" href="#gompertz-and-generalized-gamma-survival"></a>
+</h2>
+<ul>
+<li>Stata’s <code>streg, distribution(gompertz)</code> is
+<code>flexsurvreg(Surv(time, event) ~ x, dist = "gompertz")</code>, and
+<code>streg, distribution(ggamma)</code> is
+<code>dist = "gengamma"</code>. Stata’s <code>ancillary()</code> and
+<code>anc2()</code> are flexsurv’s <code>anc</code>, as in
+<code>anc = list(shape = ~ z)</code> for the Gompertz <code>gamma</code>
+or <code>anc = list(sigma = ~ z, Q = ~ z)</code> for the generalized
+gamma.</li>
+<li>Delayed entry,
+<code>stset time, failure(event) enter(time entry)</code>, is
+<code>Surv(entry, time, event)</code>.</li>
+<li>Predictions are median survival times, as after
+<code>streg</code>.</li>
+<li>Stata’s log likelihood after <code>streg</code> leaves out the sum
+of log times over the failures, so it is higher than flexsurv’s by that
+amount. Estimates and standard errors are the same.</li>
+<li>flexsurv’s optimizer can stop slightly short of the maximum, so
+estimates can differ from Stata’s in the fourth or fifth decimal place
+(up to about 1e-4 for a generalized gamma coefficient with flexsurv’s
+default settings).</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="bivariate-probit">Bivariate probit<a class="anchor" aria-label="anchor" href="#bivariate-probit"></a>
+</h2>
+<ul>
+<li>Stata’s <code>biprobit (y1 = x z) (y2 = x w)</code> is
+<code>gjrm(list(y1 ~ x + z, y2 ~ x + w), margins = c("probit", "probit"), model = "B", data = d)</code>.
+Predictions are the probability that both outcomes equal 1, as after
+<code>biprobit</code>.</li>
+<li>GJRM approximates the bivariate normal probabilities closely but not
+exactly, so its estimates can differ from Stata’s by about 1e-7.</li>
+</ul>
+</div>
+<div class="section level2">
 <h2 id="generalized-ordered-models">Generalized ordered models<a class="anchor" aria-label="anchor" href="#generalized-ordered-models"></a>
 </h2>
 <ul>
@@ -311,21 +349,13 @@ person</td>
 <code>survreg()</code> clustered on the group</td>
 <td><code>streg, vce(cluster group)</code></td>
 </tr>
-<tr class="even">
-<td>
-<code>biprobit</code> with different predictors</td>
-<td>Two probit models</td>
-<td>Two <code>probit</code> models</td>
-</tr>
 </tbody>
 </table>
 <p>Fixed-effects Poisson with robust standard errors is valid for
 overdispersed counts, and <code>xtnbreg, fe</code> is not a true
 fixed-effects model (Allison and Waterman 2002). The multinomial and
 survival stand-ins have no random effects, so they estimate effects
-averaged over people rather than for a given person. Two probit models
-estimate the same effects on each outcome as a bivariate probit, without
-the correlation between their errors.</p>
+averaged over people rather than for a given person.</p>
 <p>Allison, P. D., &amp; Waterman, R. P. (2002). Fixed-effects negative
 binomial regression models. <em>Sociological Methodology</em>, 32,
 247-265.</p>

@@ -249,6 +249,21 @@ survey t or F adjustment is applied.
   [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html)
   with a common scale, including Gaussian interval regression
 
+- Gompertz and generalized gamma survival models from
+  [`flexsurv::flexsurvreg()`](http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.md)
+  with `dist = "gompertz"` or `"gengamma"` (Stata's `streg` with
+  `distribution(gompertz)` or `distribution(ggamma)`), with right
+  censoring, optional delayed entry (`Surv(entry, time, event)`), and
+  covariates on ancillary parameters (`anc`). Parameters are flexsurv's
+  coefficients. For Gompertz, `rate` and the covariate effects are
+  Stata's log hazard-ratio coefficients (`rate` on the log scale) and
+  `shape` is Stata's `gamma`; for the generalized gamma, `mu` and the
+  covariate effects are Stata's `_t` equation, `sigma` (on the log
+  scale) is `lnsigma`, and `Q` is `kappa`. Response predictions are
+  median survival times, Stata's default after `streg`; `type = "link"`
+  gives the linear predictor of the location parameter. Weights, fixed
+  parameters, and interval censoring are not supported
+
 - truncated Gaussian regressions from
   [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html)
 
@@ -267,6 +282,15 @@ survey t or F adjustment is applied.
   [`mvProbit::mvProbit()`](https://rdrr.io/pkg/mvProbit/man/mvProbit.html)
   when both equations use the same regressors; fit with `intGrad = TRUE`
   and `finalHessian = TRUE`
+
+- bivariate probit from
+  [`GJRM::gjrm()`](https://rdrr.io/pkg/GJRM/man/gjrm.html) with
+  `margins = c("probit", "probit")`, `model = "B"`, and the default
+  Gaussian copula, where each equation can have its own predictors
+  (Stata's `biprobit (y1 = ...) (y2 = ...)`). Parameters are named by
+  outcome (`y1:x`, `y2:w`) and end with Stata's `athrho`. Smooth terms,
+  weights, offsets, and covariates in the correlation are not supported.
+  Response predictions are the probability that both outcomes equal 1
 
 - unweighted two-stage least squares from
   [`fixest::feols()`](https://lrberge.github.io/fixest/reference/feols.html)
