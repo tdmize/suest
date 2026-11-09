@@ -13,26 +13,22 @@ zeroinfl_test_data <- function(n = 1000L) {
   )
 }
 
-# Robust covariance with the observed information of an independently coded
-# zero-inflated Poisson log likelihood (Richardson-extrapolated Hessian).
+# Robust covariance with the exact observed information, from the sandwich
+# package's own analytic zeroinfl scores differentiated by Richardson
+# extrapolation. (A numerical Hessian of the log likelihood is too noisy for
+# probit inflation on some platforms: 1e-6 on macOS.)
 zip_exact_vcov <- function(model) {
-  X <- model$x$count
-  Z <- model$x$zero
-  y <- model$y
-  k <- ncol(X)
-  loglik <- function(p) {
-    mu <- exp(as.numeric(X %*% p[seq_len(k)]))
-    pz <- model$linkinv(as.numeric(Z %*% p[-seq_len(k)]))
-    ifelse(
-      y == 0,
-      log(pz + (1 - pz)*exp(-mu)),
-      log(1 - pz) + stats::dpois(y, mu, log = TRUE)
-    )
+  k <- length(model$coefficients$count)
+  at <- function(p) {
+    model$coefficients$count[] <- p[seq_len(k)]
+    model$coefficients$zero[] <- p[-seq_len(k)]
+    model
   }
   p <- stats::coef(model)
-  U <- numDeriv::jacobian(loglik, p)
-  B <- solve(-numDeriv::hessian(function(q) sum(loglik(q)), p))
-  n <- length(y)
+  U <- sandwich::estfun(model)
+  H <- numDeriv::jacobian(function(q) colSums(sandwich::estfun(at(q))), p)
+  B <- solve(-(H + t(H))/2)
+  n <- nrow(U)
   B %*% crossprod(U) %*% B * n/(n - 1)
 }
 
@@ -70,12 +66,12 @@ test_that("zero-inflated Poisson uses the exact observed information", {
   expect_equal(
     unname(vcov(fit)[fit$index[[1L]], fit$index[[1L]], drop = FALSE]),
     unname(zip_exact_vcov(base)),
-    tolerance = 1e-6
+    tolerance = 1e-7
   )
   expect_equal(
     unname(vcov(fit)[fit$index[[2L]], fit$index[[2L]], drop = FALSE]),
     unname(zip_exact_vcov(adjusted)),
-    tolerance = 1e-6
+    tolerance = 1e-7
   )
 })
 
