@@ -185,6 +185,12 @@ different response scales are labeled separately for <code>marginaleffects</code
 variance (<code>log(RSS / df.residual)</code> for unweighted fits). It has no effect on
 predictions or marginal effects.
 Negative-binomial models include <code>log(theta)</code> in the joint parameter vector.
+When every model is a zero-inflated <code><a href="https://rdrr.io/pkg/pscl/man/zeroinfl.html" class="external-link">pscl::zeroinfl()</a></code> model,
+<code>marginaleffects</code> functions also accept zeroinfl's own prediction types:
+<code>type = "count"</code> (the mean of the count part), <code>"zero"</code> (the probability of
+a structural zero), and <code>"prob"</code> (<code>Pr(y = k)</code> for each count <code>k</code> from 0 to
+the largest observed count, one outcome per count, labeled <code>model::k</code>). The
+default, <code>"response"</code>, is the overall mean.
 Ordered and multinomial models use analytic score and observed-information
 calculations for stable robust covariance estimation.
 Probit and other GLMs with non-canonical links, and beta regressions, use

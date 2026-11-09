@@ -2,6 +2,35 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Zero-inflated models: when every model is a
+  [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html)
+  model,
+  [`predictions()`](https://rdrr.io/pkg/marginaleffects/man/predictions.html),
+  [`avg_comparisons()`](https://rdrr.io/pkg/marginaleffects/man/comparisons.html),
+  [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),
+  and the other `marginaleffects` functions accept zeroinfl’s prediction
+  types: `type = "count"` (mean of the count part), `"zero"`
+  (probability of a structural zero), and `"prob"` (`Pr(y = k)` for each
+  count, one outcome per count). These correspond to Stata’s
+  `predict(pr)` and `predict(pr(k))` after `zip` and `zinb`, and the
+  count-part mean to `expression(exp(predict(equation(depvar))))`. A ZIP
+  and a ZINB model can be compared with any of these types. Previously
+  only the overall mean (`"response"`) was available.
+
+- Changed: zero-inflated Poisson and negative binomial standard errors
+  use the exact observed information, from central differences of the
+  analytic scores, as Stata does. They used pscl’s
+  [`optim()`](https://rdrr.io/r/stats/optim.html) Hessian, a coarse
+  numerical approximation, and were up to about 4e-4 (relative) off;
+  they no longer equal pscl’s own `sandwich()`. Stata check (Stata 19,
+  `zip` and `zinb` with `vce(robust)`, then `margins` with `predict(n)`,
+  `predict(pr)`, `predict(pr(0))` to `predict(pr(2))`, and the
+  count-part expression, each averaged and with `dydx()`; plus official
+  `suest` of the two models with the ZINB - ZIP difference in the
+  probability of a structural zero): estimates match within 6e-5
+  relative (3e-7 absolute), average predictions’ standard errors within
+  9e-6, and slopes’ standard errors within 1.7e-5 (before: 3.8e-4).
+
 - Changed: response predictions from
   [`survreg()`](https://rdrr.io/pkg/survival/man/survreg.html) and
   [`svysurvreg()`](https://rdrr.io/pkg/survey/man/svysurvreg.html)

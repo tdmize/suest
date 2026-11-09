@@ -98,6 +98,67 @@ are not: their standard errors can be missing or near zero.
   `cumulative(link = "clogloglink", reverse = FALSE)`: the same model,
   with every coefficient’s sign reversed.
 
+## Zero-inflated models
+
+When every model in the system is a
+[`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html) model
+(Poisson or negative binomial), predictions and marginal effects take
+the same `type` values as zeroinfl:
+
+| `type` | Prediction | Stata `margins` after `zip` or `zinb` |
+|----|----|----|
+| `"response"` (the default) | Expected count | `predict(n)` |
+| `"count"` | Mean of the count part | `expression(exp(predict(equation(depvar))))` |
+| `"zero"` | Probability of a structural zero | `predict(pr)` |
+| `"prob"` | `Pr(y = k)` for k = 0 to the largest observed count | `predict(pr(k))` |
+
+Here `depvar` is the name of the count outcome, which names the count
+equation. With `type = "prob"`, each count is a separate outcome,
+labeled `model::0`, `model::1`, and so on. Negative-binomial
+probabilities depend on the dispersion parameter, and their standard
+errors include its uncertainty. Standard errors use the exact observed
+information, as Stata does.
+
+``` r
+
+library(suest)
+library(marginaleffects)
+data("bioChemists", package = "pscl")
+
+zip <- pscl::zeroinfl(art ~ fem + kid5 + ment | ment, data = bioChemists)
+zinb <- pscl::zeroinfl(art ~ fem + kid5 + ment | ment, data = bioChemists,
+                       dist = "negbin")
+zi_fit <- suest(zip, zinb, model_names = c("ZIP", "ZINB"))
+
+# Effect of mentor productivity on the probability of a structural zero,
+# and its difference across the two models
+avg_slopes(zi_fit, variables = "ment", type = "zero")
+#> 
+#>  Group Estimate Std. Error     z Pr(>|z|)    S   2.5 %   97.5 %
+#>   ZIP   -0.0178    0.00679 -2.62  0.00877  6.8 -0.0311 -0.00449
+#>   ZINB  -0.0304    0.00791 -3.85  < 0.001 13.1 -0.0459 -0.01495
+#> 
+#> Term: ment
+#> Type: zero
+#> Comparison: dY/dX
+avg_slopes(zi_fit, variables = "ment", type = "zero", hypothesis = ~ pairwise)
+#> 
+#>      Hypothesis Estimate Std. Error     z Pr(>|z|)   S   2.5 %  97.5 %
+#>  (ZINB) - (ZIP)  -0.0127     0.0074 -1.71   0.0872 3.5 -0.0272 0.00185
+#> 
+#> Type: zero
+
+# Predicted Pr(no articles) in each model
+p <- avg_predictions(zi_fit, type = "prob")
+p[p$group %in% c("ZIP::0", "ZINB::0"), ]
+#> 
+#>    Group Estimate Std. Error    z Pr(>|z|)     S 2.5 % 97.5 %
+#>  ZIP::0     0.298     0.0154 19.4   <0.001 275.5 0.268  0.329
+#>  ZINB::0    0.313     0.0134 23.4   <0.001 400.2 0.287  0.339
+#> 
+#> Type: prob
+```
+
 ## Mixed models fitted with glmmTMB
 
 - Predictions and marginal effects average over the random intercept,
