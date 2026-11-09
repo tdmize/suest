@@ -23,7 +23,7 @@ evaluation data
 
 ## Tables
 
-Methods for modelsummary tables
+Methods for modelsummary tables and coefficient plots
 
 - [`tidy(`*`<suest_model>`*`)`](https://tdmize.github.io/suest/reference/tidy.suest_model.md)
   [`tidy(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/tidy.suest_model.md)

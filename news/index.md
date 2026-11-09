@@ -150,8 +150,11 @@
 - New: [`tidy()`](https://generics.r-lib.org/reference/tidy.html) and
   [`glance()`](https://generics.r-lib.org/reference/glance.html)
   methods, so `modelsummary::modelsummary(fit, shape = term ~ group)`
-  makes a table with one column per model. New article: Regression
-  tables. `generics` and `modelsummary` added to Suggests.
+  makes a table with one column per model, and
+  [`modelsummary::modelplot()`](https://modelsummary.com/man/modelplot.html)
+  with the same `shape` makes a coefficient plot with one series per
+  model. New article: Regression tables and coefficient plots.
+  `generics` and `modelsummary` added to Suggests.
 
 - Fixed:
   [`avg_slopes()`](https://rdrr.io/pkg/marginaleffects/man/slopes.html),

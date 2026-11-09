@@ -8,13 +8,13 @@
   Predictions from each model and their differences: Figures 3 to 6 of
   Mize, Doan, and Long (2019).
 
-### Regression tables
+### Regression tables and coefficient plots
 
-- [Regression
-  tables](https://tdmize.github.io/suest/articles/tables.md):
+- [Regression tables and coefficient
+  plots](https://tdmize.github.io/suest/articles/tables.md):
 
-  Tables of coefficients and marginal effects across models with
-  modelsummary.
+  Tables and coefficient plots of coefficients and marginal effects
+  across models with modelsummary.
 
 ### Examples: Mize, Doan & Long (2019)
 

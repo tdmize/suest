@@ -1,8 +1,10 @@
-# Regression tables
+# Regression tables and coefficient plots
 
 [`modelsummary`](https://modelsummary.com/) makes tables from a combined
 object and from the `marginaleffects` results computed with it. Add
 `shape = term ~ group` to put each model in its own column.
+[`modelplot()`](https://modelsummary.com/man/modelplot.html) makes
+coefficient plots and takes the same arguments.
 
 The models are the two logits of union membership from Getting started:
 
@@ -11,6 +13,7 @@ The models are the two logits of union membership from Getting started:
 library(suest)
 library(marginaleffects)
 library(modelsummary)
+library(ggplot2)
 library(haven)
 
 nlsw <- zap_labels(read_dta("https://tdmize.github.io/data/data/nlsw88.dta"))
@@ -51,6 +54,18 @@ modelsummary(combined, shape = term ~ group)
 |             |         | (0.013)  |
 | Num.Obs.    | 1878    |          |
 
+The same coefficients as a plot, without the intercepts:
+
+``` r
+
+modelplot(combined, shape = term ~ group, coef_omit = "Intercept") +
+  scale_color_discrete(labels = c("Base", "Adjusted"))
+```
+
+![Logit coefficients and 95% confidence intervals for union membership
+from the base and adjusted
+models.](tables_files/figure-html/coefficients-plot-1.png)
+
 ## Marginal effects and their differences
 
 ``` r
@@ -75,3 +90,19 @@ modelsummary(
 | south    | -0.131                   | -0.117   | -0.013          |
 |          | (0.019)                  | (0.020)  | (0.004)         |
 | Num.Obs. | 1878                     |          | 1878            |
+
+The same results as a plot:
+
+``` r
+
+modelplot(
+  list("Average marginal effects" = effects, "Difference" = differences),
+  shape = term ~ group,
+  background = list(geom_vline(xintercept = 0, color = "grey50"))
+) +
+  labs(x = "Change in the probability of union membership")
+```
+
+![Average marginal effects on the probability of union membership from
+the base and adjusted models, and their differences, with 95% confidence
+intervals.](tables_files/figure-html/effects-plot-1.png)

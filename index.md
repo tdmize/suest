@@ -100,8 +100,8 @@ models](https://www.trentonmize.com/software/suest_r/articles/suest.html#support
   graphs](https://www.trentonmize.com/software/suest_r/articles/predictions.html):
   predictions from each model, and tests and graphs of their
   differences.
-- [Regression
-  tables](https://www.trentonmize.com/software/suest_r/articles/tables.html)
+- [Regression tables and coefficient
+  plots](https://www.trentonmize.com/software/suest_r/articles/tables.html)
   of coefficients and marginal effects with `modelsummary`.
 - [Notes on specific
   models](https://www.trentonmize.com/software/suest_r/articles/model-notes.html).
