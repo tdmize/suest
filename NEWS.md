@@ -131,8 +131,10 @@
 
 * New: `tidy()` and `glance()` methods, so
   `modelsummary::modelsummary(fit, shape = term ~ group)` makes a table with
-  one column per model. New article: Regression tables. `generics` and
-  `modelsummary` added to Suggests.
+  one column per model, and `modelsummary::modelplot()` with the same `shape`
+  makes a coefficient plot with one series per model. New article: Regression
+  tables and coefficient plots. `generics` and `modelsummary` added to
+  Suggests.
 
 * Fixed: `avg_slopes()`, `avg_comparisons()`, and `slopes()` without
   `variables` also returned rows for the models' outcome variables (estimates

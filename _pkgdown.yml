@@ -16,7 +16,7 @@ articles:
   navbar: ~
   contents:
   - predictions
-- title: Regression tables
+- title: Regression tables and coefficient plots
   navbar: ~
   contents:
   - tables
@@ -50,7 +50,7 @@ reference:
   - suest_mi
   - suest_newdata
 - title: Tables
-  desc: Methods for modelsummary tables
+  desc: Methods for modelsummary tables and coefficient plots
   contents:
   - tidy.suest_model
 

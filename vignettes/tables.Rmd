@@ -1,9 +1,9 @@
 ---
-title: "Regression tables"
-description: "Tables of coefficients and marginal effects across models with modelsummary."
+title: "Regression tables and coefficient plots"
+description: "Tables and coefficient plots of coefficients and marginal effects across models with modelsummary."
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Regression tables}
+  %\VignetteIndexEntry{Regression tables and coefficient plots}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,13 +11,15 @@ vignette: >
 ```{r setup, include=FALSE}
 site <- identical(Sys.getenv("IN_PKGDOWN"), "true")
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = site,
-                      message = FALSE, warning = FALSE)
+                      message = FALSE, warning = FALSE,
+                      fig.width = 7, fig.height = 3.8, dpi = 150)
 options(width = 100)
 ```
 
 [`modelsummary`](https://modelsummary.com/) makes tables from a combined
 object and from the `marginaleffects` results computed with it. Add
-`shape = term ~ group` to put each model in its own column.
+`shape = term ~ group` to put each model in its own column. `modelplot()`
+makes coefficient plots and takes the same arguments.
 
 The models are the two logits of union membership from Getting started:
 
@@ -25,6 +27,7 @@ The models are the two logits of union membership from Getting started:
 library(suest)
 library(marginaleffects)
 library(modelsummary)
+library(ggplot2)
 library(haven)
 
 nlsw <- zap_labels(read_dta("https://tdmize.github.io/data/data/nlsw88.dta"))
@@ -47,6 +50,13 @@ covariance matrix.
 modelsummary(combined, shape = term ~ group)
 ```
 
+The same coefficients as a plot, without the intercepts:
+
+```{r coefficients-plot, fig.alt = "Logit coefficients and 95% confidence intervals for union membership from the base and adjusted models."}
+modelplot(combined, shape = term ~ group, coef_omit = "Intercept") +
+  scale_color_discrete(labels = c("Base", "Adjusted"))
+```
+
 ## Marginal effects and their differences
 
 ```{r effects}
@@ -58,4 +68,15 @@ modelsummary(
   list("Average marginal effects" = effects, "Difference" = differences),
   shape = term ~ group
 )
+```
+
+The same results as a plot:
+
+```{r effects-plot, fig.alt = "Average marginal effects on the probability of union membership from the base and adjusted models, and their differences, with 95% confidence intervals."}
+modelplot(
+  list("Average marginal effects" = effects, "Difference" = differences),
+  shape = term ~ group,
+  background = list(geom_vline(xintercept = 0, color = "grey50"))
+) +
+  labs(x = "Change in the probability of union membership")
 ```
