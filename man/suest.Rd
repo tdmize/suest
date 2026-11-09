@@ -107,6 +107,12 @@ Linear models include an ancillary \code{lnvar} parameter, the log of the error
 variance (\code{log(RSS / df.residual)} for unweighted fits). It has no effect on
 predictions or marginal effects.
 Negative-binomial models include \code{log(theta)} in the joint parameter vector.
+When every model is a zero-inflated \code{pscl::zeroinfl()} model,
+\code{marginaleffects} functions also accept zeroinfl's own prediction types:
+\code{type = "count"} (the mean of the count part), \code{"zero"} (the probability of
+a structural zero), and \code{"prob"} (\code{Pr(y = k)} for each count \code{k} from 0 to
+the largest observed count, one outcome per count, labeled \code{model::k}). The
+default, \code{"response"}, is the overall mean.
 Ordered and multinomial models use analytic score and observed-information
 calculations for stable robust covariance estimation.
 Probit and other GLMs with non-canonical links, and beta regressions, use

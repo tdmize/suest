@@ -13,8 +13,32 @@ zeroinfl_test_data <- function(n = 1000L) {
   )
 }
 
-test_that("zero-inflated Poisson preserves its robust covariance", {
+# Robust covariance with the observed information of an independently coded
+# zero-inflated Poisson log likelihood (Richardson-extrapolated Hessian).
+zip_exact_vcov <- function(model) {
+  X <- model$x$count
+  Z <- model$x$zero
+  y <- model$y
+  k <- ncol(X)
+  loglik <- function(p) {
+    mu <- exp(as.numeric(X %*% p[seq_len(k)]))
+    pz <- model$linkinv(as.numeric(Z %*% p[-seq_len(k)]))
+    ifelse(
+      y == 0,
+      log(pz + (1 - pz)*exp(-mu)),
+      log(1 - pz) + stats::dpois(y, mu, log = TRUE)
+    )
+  }
+  p <- stats::coef(model)
+  U <- numDeriv::jacobian(loglik, p)
+  B <- solve(-numDeriv::hessian(function(q) sum(loglik(q)), p))
+  n <- length(y)
+  B %*% crossprod(U) %*% B * n/(n - 1)
+}
+
+test_that("zero-inflated Poisson uses the exact observed information", {
   skip_if_not_installed("pscl")
+  skip_if_not_installed("numDeriv")
   dat <- zeroinfl_test_data()
   base <- pscl::zeroinfl(
     y ~ x | z,
@@ -37,15 +61,21 @@ test_that("zero-inflated Poisson preserves its robust covariance", {
   fit <- suest(base, adjusted)
 
   expect_equal(unname(fit$model_types), rep("zip", 2L))
+  components <- .suest_zeroinfl_components(base, "zip")
+  expect_equal(
+    unname(components$score),
+    unname(sandwich::estfun(base)),
+    tolerance = 1e-10
+  )
   expect_equal(
     unname(vcov(fit)[fit$index[[1L]], fit$index[[1L]], drop = FALSE]),
-    unname(robust_vcov_direct(base)),
-    tolerance = 1e-8
+    unname(zip_exact_vcov(base)),
+    tolerance = 1e-6
   )
   expect_equal(
     unname(vcov(fit)[fit$index[[2L]], fit$index[[2L]], drop = FALSE]),
-    unname(robust_vcov_direct(adjusted)),
-    tolerance = 1e-8
+    unname(zip_exact_vcov(adjusted)),
+    tolerance = 1e-6
   )
 })
 
@@ -61,7 +91,7 @@ test_that("ZINB includes dispersion and matches numerical likelihood scores", {
     x = TRUE,
     y = TRUE
   )
-  components <- .suest_zinb_components(model)
+  components <- .suest_zeroinfl_components(model, "zinb")
   parameters <- components$parameters
 
   expect_true("ln_theta" %in% names(parameters))
@@ -70,11 +100,30 @@ test_that("ZINB includes dispersion and matches numerical likelihood scores", {
     sandwich::estfun(model),
     tolerance = 1e-10
   )
-  expect_equal(
-    unname(components$bread/nrow(components$score)),
-    unname(solve(-model$optim$hessian)),
-    tolerance = 1e-10
-  )
+
+  # The bread is the inverse observed information of the full likelihood,
+  # including log(theta), not pscl's optim() Hessian.
+  if (requireNamespace("numDeriv", quietly = TRUE)) {
+    X <- model$x$count
+    Z <- model$x$zero
+    k <- ncol(X)
+    m <- ncol(Z)
+    total_loglik <- function(p) {
+      mu <- exp(as.numeric(X %*% p[seq_len(k)]))
+      pz <- model$linkinv(as.numeric(Z %*% p[k + seq_len(m)]))
+      theta <- exp(p[k + m + 1L])
+      sum(ifelse(
+        model$y == 0,
+        log(pz + (1 - pz)*stats::dnbinom(0, size = theta, mu = mu)),
+        log(1 - pz) + stats::dnbinom(model$y, size = theta, mu = mu, log = TRUE)
+      ))
+    }
+    expect_equal(
+      unname(components$bread/nrow(components$score)),
+      unname(solve(-numDeriv::hessian(total_loglik, parameters))),
+      tolerance = 1e-6
+    )
+  }
 
   observation_loglik <- function(par, row) {
     count_names <- names(model$coefficients$count)
@@ -145,4 +194,174 @@ test_that("ZIP and ZINB work together with marginaleffects", {
   expect_equal(nrow(effects), 2L)
   expect_true(all(is.finite(effects$estimate)))
   expect_true(all(is.finite(effects$std.error)))
+})
+
+# insight cannot find the data of a zeroinfl model fitted inside a function
+# and falls back on the model frame, which is fine for these models alone.
+without_data_warning <- function(expr) {
+  withCallingHandlers(expr, warning = function(w) {
+    if (grepl("could not be extracted reliably", conditionMessage(w), fixed = TRUE))
+      invokeRestart("muffleWarning")
+  })
+}
+
+zeroinfl_type_fits <- function() {
+  dat <- zeroinfl_test_data()
+  zip <- pscl::zeroinfl(y ~ x + z | z, data = dat, dist = "poisson")
+  zinb <- pscl::zeroinfl(y ~ x | x + z, data = dat, dist = "negbin")
+  list(
+    data = dat,
+    zip = zip,
+    zinb = zinb,
+    fit = suest(zip, zinb, model_names = c("ZIP", "ZINB"))
+  )
+}
+
+test_that("zero-inflated prediction types match zeroinfl's own predictions", {
+  skip_if_not_installed("pscl")
+  skip_if_not_installed("marginaleffects")
+  s <- zeroinfl_type_fits()
+  # zeroinfl alone with the ZIP block of the joint covariance
+  index <- s$fit$index[[1L]]
+  V <- vcov(s$fit)[index, index]
+  dimnames(V) <- list(names(coef(s$zip)), names(coef(s$zip)))
+
+  for (type in c("response", "count", "zero", "prob")) {
+    alone <- as.data.frame(without_data_warning(marginaleffects::avg_slopes(
+      s$zip, variables = "x", type = type, vcov = V, newdata = s$data
+    )))
+    joint <- as.data.frame(marginaleffects::avg_slopes(
+      s$fit, variables = "x", type = type
+    ))
+    zip_rows <- as.character(joint$group) == "ZIP" |
+      startsWith(as.character(joint$group), "ZIP::")
+    joint <- joint[zip_rows, , drop = FALSE]
+    if (type == "prob") {
+      joint <- joint[match(paste0("ZIP::", alone$group), joint$group), ]
+    }
+
+    expect_equal(nrow(joint), nrow(alone))
+    expect_equal(joint$estimate, alone$estimate, tolerance = 1e-8)
+    expect_equal(joint$std.error, alone$std.error, tolerance = 1e-6)
+  }
+
+  for (type in c("response", "count", "zero")) {
+    alone <- without_data_warning(
+      marginaleffects::avg_predictions(s$zinb, type = type, newdata = s$data)
+    )
+    joint <- as.data.frame(marginaleffects::avg_predictions(s$fit, type = type))
+    expect_equal(
+      joint$estimate[joint$group == "ZINB"],
+      alone$estimate,
+      tolerance = 1e-8
+    )
+  }
+})
+
+test_that("type = 'prob' gives one outcome per count, including dispersion", {
+  skip_if_not_installed("pscl")
+  skip_if_not_installed("marginaleffects")
+  s <- zeroinfl_type_fits()
+  probabilities <- as.data.frame(
+    marginaleffects::avg_predictions(s$fit, type = "prob")
+  )
+  counts <- as.character(0:max(s$data$y))
+
+  expect_equal(
+    as.character(probabilities$group),
+    c(paste0("ZIP::", counts), paste0("ZINB::", counts))
+  )
+  zinb_rows <- startsWith(as.character(probabilities$group), "ZINB::")
+  expect_equal(
+    probabilities$estimate[zinb_rows],
+    unname(colMeans(predict(s$zinb, type = "prob"))),
+    tolerance = 1e-8
+  )
+
+  # Pr(y = 0) for the ZINB model depends on log(theta); its standard error
+  # comes from the joint covariance, including the dispersion parameter.
+  index <- s$fit$index[[2L]]
+  parameters <- coef(s$fit)[index]
+  average_zero <- function(p) {
+    m <- s$zinb
+    k <- length(m$coefficients$count)
+    m$coefficients$count[] <- p[seq_len(k)]
+    m$coefficients$zero[] <- p[k + seq_along(m$coefficients$zero)]
+    m$theta <- exp(p[length(p)])
+    mean(predict(m, newdata = s$data, type = "prob", at = 0:max(m$y))[, 1L])
+  }
+  step <- 1e-6
+  gradient <- vapply(seq_along(parameters), function(j) {
+    upper <- lower <- parameters
+    upper[j] <- upper[j] + step
+    lower[j] <- lower[j] - step
+    (average_zero(upper) - average_zero(lower)) / (2 * step)
+  }, numeric(1))
+  by_hand <- sqrt(drop(t(gradient) %*% vcov(s$fit)[index, index] %*% gradient))
+
+  expect_equal(
+    probabilities$std.error[probabilities$group == "ZINB::0"],
+    by_hand,
+    tolerance = 1e-5
+  )
+})
+
+test_that("zero-inflated types work with model-specific samples", {
+  skip_if_not_installed("pscl")
+  skip_if_not_installed("marginaleffects")
+  dat <- zeroinfl_test_data()
+  first <- dat[dat$id <= 500, ]
+  second <- dat[dat$id > 500, ]
+  zip1 <- pscl::zeroinfl(y ~ x + z | z, data = first)
+  zip2 <- pscl::zeroinfl(y ~ x + z | z, data = second)
+  fit <- suest(zip1, zip2, observation_id = "id")
+  newdata <- suest_newdata(fit)
+
+  zero <- as.data.frame(
+    marginaleffects::avg_predictions(fit, type = "zero", newdata = newdata)
+  )
+  expect_equal(
+    zero$estimate,
+    c(mean(predict(zip1, type = "zero")), mean(predict(zip2, type = "zero"))),
+    tolerance = 1e-8
+  )
+
+  probabilities <- as.data.frame(
+    marginaleffects::avg_predictions(fit, type = "prob", newdata = newdata)
+  )
+  expect_equal(
+    probabilities$estimate[as.character(probabilities$group) == "zip2::0"],
+    mean(predict(zip2, type = "prob")[, 1L]),
+    tolerance = 1e-8
+  )
+
+  difference <- marginaleffects::avg_comparisons(
+    fit, variables = "x", type = "count", newdata = newdata,
+    hypothesis = ~ pairwise
+  )
+  expect_equal(nrow(difference), 1L)
+  expect_true(is.finite(difference$std.error))
+})
+
+test_that("zero-inflated types need every model to be zero-inflated", {
+  skip_if_not_installed("pscl")
+  skip_if_not_installed("marginaleffects")
+  s <- zeroinfl_type_fits()
+  dat <- s$data
+  zip <- pscl::zeroinfl(y ~ x + z | z, data = dat)
+  logit <- glm(I(y > 0) ~ x + z, family = binomial, data = dat)
+  mixed <- suest(zip, logit, model_names = c("ZIP", "Logit"))
+
+  expect_error(
+    marginaleffects::avg_predictions(mixed, type = "zero"),
+    "Not zero-inflated: Logit"
+  )
+  expect_error(
+    marginaleffects::avg_predictions(s$fit, type = "link"),
+    "no single link scale"
+  )
+  expect_error(
+    marginaleffects::avg_predictions(s$fit, type = "probs"),
+    "'response', 'count', 'zero', or 'prob'"
+  )
 })

@@ -108,6 +108,45 @@ zero.
 - gologit2's `link(loglog)` is `cumulative(link = "clogloglink",
   reverse = FALSE)`: the same model, with every coefficient's sign reversed.
 
+## Zero-inflated models
+
+When every model in the system is a `pscl::zeroinfl()` model (Poisson or
+negative binomial), predictions and marginal effects take the same `type`
+values as zeroinfl:
+
+| `type` | Prediction | Stata `margins` after `zip` or `zinb` |
+|---|---|---|
+| `"response"` (the default) | Expected count | `predict(n)` |
+| `"count"` | Mean of the count part | `expression(exp(predict(equation(depvar))))` |
+| `"zero"` | Probability of a structural zero | `predict(pr)` |
+| `"prob"` | `Pr(y = k)` for k = 0 to the largest observed count | `predict(pr(k))` |
+
+Here `depvar` is the name of the count outcome, which names the count
+equation. With `type = "prob"`, each count is a separate outcome, labeled
+`model::0`, `model::1`, and so on. Negative-binomial probabilities depend on
+the dispersion parameter, and their standard errors include its uncertainty.
+Standard errors use the exact observed information, as Stata does.
+
+```{r zeroinfl-types}
+library(suest)
+library(marginaleffects)
+data("bioChemists", package = "pscl")
+
+zip <- pscl::zeroinfl(art ~ fem + kid5 + ment | ment, data = bioChemists)
+zinb <- pscl::zeroinfl(art ~ fem + kid5 + ment | ment, data = bioChemists,
+                       dist = "negbin")
+zi_fit <- suest(zip, zinb, model_names = c("ZIP", "ZINB"))
+
+# Effect of mentor productivity on the probability of a structural zero,
+# and its difference across the two models
+avg_slopes(zi_fit, variables = "ment", type = "zero")
+avg_slopes(zi_fit, variables = "ment", type = "zero", hypothesis = ~ pairwise)
+
+# Predicted Pr(no articles) in each model
+p <- avg_predictions(zi_fit, type = "prob")
+p[p$group %in% c("ZIP::0", "ZINB::0"), ]
+```
+
 ## Mixed models fitted with glmmTMB
 
 - Predictions and marginal effects average over the random intercept, and

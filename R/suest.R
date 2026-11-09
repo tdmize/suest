@@ -73,6 +73,12 @@
 #' variance (`log(RSS / df.residual)` for unweighted fits). It has no effect on
 #' predictions or marginal effects.
 #' Negative-binomial models include `log(theta)` in the joint parameter vector.
+#' When every model is a zero-inflated `pscl::zeroinfl()` model,
+#' `marginaleffects` functions also accept zeroinfl's own prediction types:
+#' `type = "count"` (the mean of the count part), `"zero"` (the probability of
+#' a structural zero), and `"prob"` (`Pr(y = k)` for each count `k` from 0 to
+#' the largest observed count, one outcome per count, labeled `model::k`). The
+#' default, `"response"`, is the overall mean.
 #' Ordered and multinomial models use analytic score and observed-information
 #' calculations for stable robust covariance estimation.
 #' Probit and other GLMs with non-canonical links, and beta regressions, use

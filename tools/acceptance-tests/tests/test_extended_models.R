@@ -173,9 +173,27 @@ test_case("Zero-inflated Poisson and negative binomial", {
     newdata = extended_data
   )
 
+  # Robust covariance with the exact observed information of the ZIP log
+  # likelihood (pscl's own vcov() uses a coarse numerical Hessian).
+  X <- zip$x$count
+  Z <- zip$x$zero
+  k <- ncol(X)
+  zip_loglik <- function(p) {
+    mu <- exp(as.numeric(X %*% p[seq_len(k)]))
+    pz <- stats::plogis(as.numeric(Z %*% p[-seq_len(k)]))
+    ifelse(
+      zip$y == 0,
+      log(pz + (1 - pz)*exp(-mu)),
+      log(1 - pz) + stats::dpois(zip$y, mu, log = TRUE)
+    )
+  }
+  p <- stats::coef(zip)
+  U <- numDeriv::jacobian(zip_loglik, p)
+  B <- solve(-numDeriv::hessian(function(q) sum(zip_loglik(q)), p))
+  n <- length(zip$y)
   expect_near(
     stats::vcov(combined)[combined$index[[1L]], combined$index[[1L]]],
-    extended_robust_vcov(zip),
+    B %*% crossprod(U) %*% B * n/(n - 1),
     tolerance = 1e-8,
     label = "ZIP robust covariance"
   )

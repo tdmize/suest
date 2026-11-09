@@ -1608,9 +1608,20 @@
     "linear"
   } else if (model_type %in% c("zip", "zinb") && identical(type, "link")) {
     stop(
-      "Zero-inflated models are currently supported on the response scale only.",
+      paste0(
+        "Zero-inflated models have no single link scale. Use type = 'response', ",
+        "'count', 'zero', or 'prob'."
+      ),
       call. = FALSE
     )
+  } else if (model_type %in% c("zip", "zinb") && identical(type, "prob")) {
+    p <- stats::predict(
+      model,
+      newdata = newdata,
+      type = "prob",
+      at = as.integer(.suest_zeroinfl_count_levels(model))
+    )
+    return(as.matrix(p))
   } else {
     type
   }
@@ -1620,4 +1631,17 @@
     newdata = newdata,
     type = prediction_type
   )
+}
+
+# Prediction types of pscl::zeroinfl beyond the overall mean ("response"):
+# "count", the mean of the count part; "zero", the probability of a structural
+# zero; and "prob", Pr(y = k) for every count k from 0 to the largest observed
+# count.
+.suest_zeroinfl_types <- c("count", "zero", "prob")
+
+.suest_zeroinfl_count_levels <- function(model) {
+  y <- model$y
+  if (is.null(y))
+    y <- stats::model.response(stats::model.frame(model))
+  as.character(0:max(y))
 }

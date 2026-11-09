@@ -16,7 +16,7 @@ shown.
 | `mlogit` | `nnet::multinom()` | Implemented, including analytic scores, pweights, and category probabilities. |
 | `poisson` | `stats::glm()`, `glm2::glm2()` | Implemented, including exposure/offset and pweights. |
 | `nbreg` | `MASS::glm.nb()` | Implemented with `log(theta)`, including pweights. |
-| `zip`, `zinb` | `pscl::zeroinfl()` | Implemented for logit/probit inflation links and response-scale expected counts. The ZINB adapter restores the dispersion score and observed-information block omitted by the package's default sandwich methods. |
+| `zip`, `zinb` | `pscl::zeroinfl()` | Implemented for logit/probit inflation links. Predictions: overall mean, count-part mean, probability of a structural zero, and Pr(y = k) (Stata's `n`, `exp(xb)` of the count equation, `pr`, `pr(k)`). Analytic scores (including the ZINB dispersion score omitted by pscl's sandwich methods) and exact observed information from them, as in Stata; pscl's `optim()` Hessian is not used. |
 | `glm` | `stats::glm()`, `glm2::glm2()` | Implemented for identity, log, logit, probit, cloglog, and user-supplied loglog links. |
 | `fracreg logit`, `fracreg probit` | quasi-binomial `glm()`/`glm2()` | Implemented. R additionally supports fractional cloglog and user-supplied loglog links. |
 | `tobit` | `censReg::censReg()` or Gaussian `survival::survreg()` | Implemented with scale and latent-mean predictions. The two R likelihoods agree in coefficients, scores, and bread. |
@@ -62,8 +62,10 @@ shown.
 
 1. `sandwich::estfun.polr()` ignores model offsets. The R adapter therefore
    uses its own ordered-model score calculation.
-2. `pscl`'s default ZINB `estfun()`/`vcov()` omit the dispersion parameter.
-   The R adapter supplies the complete score and observed-information blocks.
+2. `pscl`'s default ZINB `estfun()`/`vcov()` omit the dispersion parameter,
+   and its `vcov()` for both ZIP and ZINB comes from `optim()`'s numerical
+   Hessian, up to about 4e-4 off in standard errors. The R adapter supplies
+   the complete scores and the exact observed information.
 3. `survival::survreg()` with stratum-specific scales exposes a score layout
    that does not match its fitted covariance parameters. These models are
    rejected rather than silently misaligned.

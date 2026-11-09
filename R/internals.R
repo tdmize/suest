@@ -1941,77 +1941,66 @@
   )
 }
 
-.suest_zinb_components <- function(model) {
+# Zero-inflated Poisson and negative binomial: analytic scores, and observed
+# information from central differences of their sums (pscl's optim() Hessian
+# is a coarse finite difference, off by up to about 4e-4 in standard errors).
+.suest_zeroinfl_components <- function(model, type) {
   X <- if (is.null(model$x$count)) stats::model.matrix(model, model = "count") else model$x$count
   Z <- if (is.null(model$x$zero)) stats::model.matrix(model, model = "zero") else model$x$zero
   y <- as.numeric(if (is.null(model$y)) stats::model.response(stats::model.frame(model)) else model$y)
   weights <- as.numeric(model$weights)
-  beta <- model$coefficients$count
-  gamma <- model$coefficients$zero
-  theta <- as.numeric(model$theta)
-
   count_offset <- if (is.null(model$offset$count)) 0 else model$offset$count
   zero_offset <- if (is.null(model$offset$zero)) 0 else model$offset$zero
-
-  mu <- exp(as.numeric(X %*% beta) + count_offset)
-  zero_eta <- as.numeric(Z %*% gamma) + zero_offset
   zero_link <- stats::make.link(model$link)
-  probability_zero <- zero_link$linkinv(zero_eta)
-  probability_derivative <- zero_link$mu.eta(zero_eta)
-  probability_nb_zero <- stats::dnbinom(0, size = theta, mu = mu)
-
   is_zero <- y == 0
-  mixture_probability <- probability_zero +
-    (1 - probability_zero)*probability_nb_zero
-  posterior_count <- rep.int(1, length(y))
-  posterior_count[is_zero] <-
-    (1 - probability_zero[is_zero])*probability_nb_zero[is_zero] /
-    mixture_probability[is_zero]
+  parameters <- .suest_extract_parameters(model, type, "pscl::zeroinfl")
+  count_index <- seq_len(ncol(X))
+  zero_index <- ncol(X) + seq_len(ncol(Z))
 
-  score_count_eta <- theta*(y - mu)/(theta + mu)
-  score_count_eta[is_zero] <-
-    posterior_count[is_zero]*score_count_eta[is_zero]
-
-  score_zero_eta <- -probability_derivative/(1 - probability_zero)
-  score_zero_eta[is_zero] <-
-    probability_derivative[is_zero]*
-    (1 - probability_nb_zero[is_zero]) /
-    mixture_probability[is_zero]
-
-  theta_score <- theta*(
-    digamma(y + theta) - digamma(theta) + log(theta) + 1 -
-      log(theta + mu) - (theta + y)/(theta + mu)
-  )
-  theta_score[is_zero] <-
-    posterior_count[is_zero]*theta_score[is_zero]
-
-  U <- cbind(
-    X*as.numeric(weights*score_count_eta),
-    Z*as.numeric(weights*score_zero_eta),
-    ln_theta = weights*theta_score
-  )
-  parameters <- .suest_extract_parameters(
-    model,
-    "zinb",
-    "pscl::zeroinfl"
-  )
-  colnames(U) <- names(parameters)
-
-  H <- model$optim$hessian
-  if (!is.matrix(H) || any(dim(H) != length(parameters)))
-    stop(
-      "Unable to retrieve the full observed-information matrix for the ZINB model.",
-      call. = FALSE
+  score <- function(p) {
+    mu <- exp(as.numeric(X %*% p[count_index]) + count_offset)
+    zero_eta <- as.numeric(Z %*% p[zero_index]) + zero_offset
+    probability_zero <- zero_link$linkinv(zero_eta)
+    probability_derivative <- zero_link$mu.eta(zero_eta)
+    if (type == "zinb") {
+      theta <- exp(p[[length(p)]])
+      count_zero <- stats::dnbinom(0, size = theta, mu = mu)
+      score_count_eta <- theta*(y - mu)/(theta + mu)
+    } else {
+      count_zero <- exp(-mu)
+      score_count_eta <- y - mu
+    }
+    mixture <- probability_zero + (1 - probability_zero)*count_zero
+    # Probability that an observed zero comes from the count part
+    posterior <- ifelse(is_zero, (1 - probability_zero)*count_zero/mixture, 1)
+    score_zero_eta <- ifelse(
+      is_zero,
+      probability_derivative*(1 - count_zero)/mixture,
+      -probability_derivative/(1 - probability_zero)
     )
+    U <- cbind(
+      X*(weights*posterior*score_count_eta),
+      Z*(weights*score_zero_eta)
+    )
+    if (type == "zinb") {
+      theta_score <- theta*(
+        digamma(y + theta) - digamma(theta) + log(theta) + 1 -
+          log(theta + mu) - (theta + y)/(theta + mu)
+      )
+      U <- cbind(U, ln_theta = weights*posterior*theta_score)
+    }
+    colnames(U) <- names(parameters)
+    U
+  }
 
-  information <- -(H + t(H))/2
-  B <- nrow(U)*solve(information)
-  B <- (B + t(B))/2
+  U <- score(parameters)
+  information <- .suest_score_information(parameters, function(p) colSums(score(p)))
+  B <- nrow(U)*.suest_information_inverse(information)
   dimnames(B) <- list(names(parameters), names(parameters))
 
   if (any(!is.finite(U)) || any(!is.finite(B)))
     stop(
-      "Unable to construct finite zero-inflated negative-binomial scores.",
+      "Unable to construct finite zero-inflated scores and bread.",
       call. = FALSE
     )
 
@@ -2151,8 +2140,8 @@
     .suest_poisson_pweight_components(model)
   } else if (type == "negbin") {
     .suest_negbin_components(model)
-  } else if (type == "zinb") {
-    .suest_zinb_components(model)
+  } else if (type %in% c("zip", "zinb")) {
+    .suest_zeroinfl_components(model, type)
   } else if (type == "survreg") {
     .suest_survreg_components(model)
   } else if (type == "truncreg") {

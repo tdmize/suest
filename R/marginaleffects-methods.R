@@ -146,12 +146,34 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
     type <- "response"
 
   categorical <- model$model_types %in% c("ologit", "oprobit", "multinom", "gologit", "re_ologit", "re_oprobit")
+  zero_inflated <- model$model_types %in% c("zip", "zinb")
+  zero_inflated_type <- type %in% .suest_zeroinfl_types
 
-  if (model$mixed_models && !type %in% c("response", "probs"))
+  if (zero_inflated_type && !all(zero_inflated))
+    stop(
+      sprintf(
+        paste0(
+          "type = \"%s\" is for zero-inflated models (pscl::zeroinfl), and ",
+          "every model in the system must be one. Not zero-inflated: %s."
+        ),
+        type,
+        paste(model$model_names[!zero_inflated], collapse = ", ")
+      ),
+      call. = FALSE
+    )
+
+  # A zip and a zinb model are different types, but they share every
+  # zero-inflated prediction type.
+  if (model$mixed_models && !all(zero_inflated) && !type %in% c("response", "probs"))
     stop(
       "Cross-type SUEST comparisons are supported on the response scale only.",
       call. = FALSE
     )
+
+  # Count probabilities, Pr(y = 0), Pr(y = 1), ..., have one outcome per count,
+  # so they are returned the way category probabilities are.
+  if (identical(type, "prob"))
+    categorical <- categorical | zero_inflated
 
   model_specific <- ".suest_model" %in% names(newdata)
   # With model-specific rows, marginaleffects can replicate the stacked data
@@ -208,17 +230,26 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
     }
   }
 
-  if (any(categorical) && !type %in% c("response", "probs"))
+  if (any(categorical) && !zero_inflated_type && !type %in% c("response", "probs"))
     stop(
       "Systems containing categorical models require response-scale predictions.",
       call. = FALSE
     )
-  if (!any(categorical) && !type %in% c("response", "link"))
-    stop("'type' must be 'response' or 'link'.", call. = FALSE)
+  if (!any(categorical) && !zero_inflated_type && !type %in% c("response", "link"))
+    stop(
+      if (all(zero_inflated)) {
+        "'type' must be 'response', 'count', 'zero', or 'prob' for zero-inflated models."
+      } else {
+        "'type' must be 'response' or 'link'."
+      },
+      call. = FALSE
+    )
 
   category_levels <- lapply(seq_along(model$models), function(i) {
     if (!categorical[i])
       return(NULL)
+    if (zero_inflated[i])
+      return(.suest_zeroinfl_count_levels(model$models[[i]]))
     if (!is.null(model$category_levels))
       return(model$category_levels[[i]])
     .suest_category_levels(
@@ -249,7 +280,11 @@ get_predict.suest_model <- function(model, newdata, type = "response", ...) {
     }
 
     if (categorical[i]) {
-      p <- .suest_predict_probabilities(model$models[[i]], nd, engine)
+      p <- if (zero_inflated[i]) {
+        .suest_predict_values(model$models[[i]], nd, "prob", engine, model$model_types[i])
+      } else {
+        .suest_predict_probabilities(model$models[[i]], nd, engine)
+      }
       if (pad_outcome_blocks) {
         keep <- which(as.character(newdata$.suest_model) == model$model_names[i])
         full <- matrix(NA_real_, nrow(newdata), ncol(p),

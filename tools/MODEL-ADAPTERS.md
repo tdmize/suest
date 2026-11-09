@@ -32,7 +32,7 @@ covariance and `marginaleffects` interfaces.
 | `nnet::multinom()` | multinomial logit | `summ = 0` |
 | `survival::survreg()` | parametric survival and censored regression | one common scale parameter |
 | `betareg::betareg()` | beta regression | standard beta distribution and supported mean links |
-| `pscl::zeroinfl()` | zero-inflated Poisson and negative binomial | response-scale predictions |
+| `pscl::zeroinfl()` | zero-inflated Poisson and negative binomial | overall mean, count-part mean, structural-zero probability, and count probabilities |
 | `truncreg::truncreg()` | truncated Gaussian regression | left or right truncation |
 | `censReg::censReg()` | censored Gaussian (Tobit) regression | latent-mean predictions |
 | `fixest::feols()` | instrumental-variable 2SLS | unweighted, no absorbed fixed effects, original data available |
