@@ -33,6 +33,12 @@ nobs(object, ...)
 
 # S3 method for class 'suest_model'
 print(x, ...)
+
+# S3 method for class 'suest_model'
+summary(object, conf.level = 0.95, ...)
+
+# S3 method for class 'summary.suest_model'
+print(x, digits = 3, ...)
 ```
 
 ## Arguments
@@ -104,6 +110,16 @@ print(x, ...)
 - object, x:
 
   A `"suest_model"` object.
+
+- conf.level:
+
+  Confidence level for the intervals shown by
+  [`summary()`](https://rdrr.io/r/base/summary.html).
+
+- digits:
+
+  Number of decimal places shown by the
+  [`summary()`](https://rdrr.io/r/base/summary.html) table.
 
 ## Value
 

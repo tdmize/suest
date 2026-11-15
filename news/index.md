@@ -2,6 +2,14 @@
 
 ## suest 0.1.6.9000 (development)
 
+- [`summary()`](https://rdrr.io/r/base/summary.html) of a
+  [`suest()`](https://tdmize.github.io/suest/reference/suest.md) result
+  shows each model’s coefficients as a panel, with joint robust standard
+  errors, z statistics, p-values, and confidence intervals, as Stata’s
+  `suest` and `suest2` display them. It previously showed R’s default
+  list summary. `conf.level` sets the interval level, and
+  `print(summary(fit), digits = 4)` the decimal places.
+
 - Zero-inflated models: when every model is a
   [`pscl::zeroinfl()`](https://rdrr.io/pkg/pscl/man/zeroinfl.html)
   model,
@@ -1018,10 +1026,8 @@
 - Made the acceptance-test runners remove stale global
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md) and
   [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-  functions before
-  [`devtools::load_all()`](https://devtools.r-lib.org/reference/load_all.html).
-  This prevents a previously sourced standalone implementation from
-  masking the package code.
+  functions before `devtools::load_all()`. This prevents a previously
+  sourced standalone implementation from masking the package code.
 
 - Added a test-runner guard and log entry confirming that tests use the
   package namespace and model-adapter implementation.
