@@ -61,6 +61,7 @@ adjusted <- glm(union ~ collgrad + age + south + wage + ttl_exp,
                 family = binomial("logit"), data = nlsw)
 combined <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
 combined
+summary(combined)
 
 effects <- avg_comparisons(combined, variables = "collgrad", newdata = nlsw)
 effects

@@ -1,5 +1,11 @@
 # suest 0.1.6.9000 (development)
 
+* `summary()` of a `suest()` result shows each model's coefficients as a
+  panel, with joint robust standard errors, z statistics, p-values, and
+  confidence intervals, as Stata's `suest` and `suest2` display them. It
+  previously showed R's default list summary. `conf.level` sets the interval
+  level, and `print(summary(fit), digits = 4)` the decimal places.
+
 * Zero-inflated models: when every model is a `pscl::zeroinfl()` model,
   `predictions()`, `avg_comparisons()`, `avg_slopes()`, and the other
   `marginaleffects` functions accept zeroinfl's prediction types:

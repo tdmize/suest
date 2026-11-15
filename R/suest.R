@@ -1201,6 +1201,56 @@ print.suest_model <- function(x, ...) {
   invisible(x)
 }
 
+#' @rdname suest
+#' @param conf.level Confidence level for the intervals shown by `summary()`.
+#' @export
+summary.suest_model <- function(object, conf.level = 0.95, ...) {
+  if (length(conf.level) != 1L || !is.finite(conf.level) ||
+      conf.level <= 0 || conf.level >= 1)
+    stop("'conf.level' must be one number strictly between zero and one.",
+         call. = FALSE)
+  out <- list(coefficients = tidy.suest_model(object, conf.level = conf.level),
+    model_names = object$model_names, nobs = object$nobs_union,
+    n_clusters = object$n_clusters, survey = !is.null(object$survey),
+    conf.level = conf.level)
+  class(out) <- "summary.suest_model"
+  out
+}
+
+#' @rdname suest
+#' @param digits Number of decimal places shown by the `summary()` table.
+#' @export
+print.summary.suest_model <- function(x, digits = 3, ...) {
+  tab <- x$coefficients
+  w <- max(13L, nchar(c(tab$term, x$model_names)))
+  total <- w + 67L
+  rule <- function(sep) cat(strrep("-", w + 1L), sep, strrep("-", 65L), "\n", sep = "")
+  num <- function(v) formatC(v, format = "f", digits = digits)
+  nobs <- paste("Number of obs =", format(x$nobs, big.mark = ","))
+  title <- paste("Simultaneous results for", paste(x$model_names, collapse = ", "))
+  cat("\n", formatC(title, width = -(total - nchar(nobs))), nobs, "\n", sep = "")
+  if (x$survey) {
+    cat(formatC(paste("Number of PSUs =", format(x$n_clusters, big.mark = ",")), width = total), "\n", sep = "")
+  } else if (!is.null(x$n_clusters)) {
+    cat(formatC(paste0("(Std. err. adjusted for ", format(x$n_clusters, big.mark = ","), " clusters)"),
+                width = total), "\n", sep = "")
+  }
+  cat("\n")
+  rule("-")
+  cat(strrep(" ", w + 1L), "|", sprintf("%23s", if (x$survey) "Linearized" else "Robust"), "\n", sep = "")
+  cat(strrep(" ", w + 1L), "|", sprintf("%12s%11s%9s%8s%25s", "Coefficient", "std. err.", "z", "P>|z|",
+      paste0("[", format(100 * x$conf.level), "% conf. interval]")), "\n", sep = "")
+  for (m in x$model_names) {
+    rule("+")
+    cat(formatC(m, width = -w), " |\n", sep = "")
+    r <- tab[tab$group == m, ]
+    cat(sprintf("%*s |%12s%11s%9s%8s%13s%12s\n", w, r$term, num(r$estimate), num(r$std.error),
+        num(r$statistic), num(r$p.value), num(r$conf.low), num(r$conf.high)), sep = "")
+  }
+  rule("-")
+  invisible(x)
+}
+
 # Create model-specific newdata using each model's own estimation sample.
 # This is useful when models were estimated on different samples and effects
 # should be averaged separately within those samples.

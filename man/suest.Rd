@@ -6,6 +6,8 @@
 \alias{vcov.suest_model}
 \alias{nobs.suest_model}
 \alias{print.suest_model}
+\alias{summary.suest_model}
+\alias{print.summary.suest_model}
 \title{Combine fitted models with seemingly unrelated estimation}
 \usage{
 suest(
@@ -24,6 +26,10 @@ suest(
 \method{nobs}{suest_model}(object, ...)
 
 \method{print}{suest_model}(x, ...)
+
+\method{summary}{suest_model}(object, conf.level = 0.95, ...)
+
+\method{print}{summary.suest_model}(x, digits = 3, ...)
 }
 \arguments{
 \item{...}{Two or more supported fitted model objects. For backward
@@ -69,6 +75,10 @@ and clusters in this design, without \code{weight_type} or \code{cluster}. Ordin
 models leave this argument \code{NULL}.}
 
 \item{object, x}{A \code{"suest_model"} object.}
+
+\item{conf.level}{Confidence level for the intervals shown by \code{summary()}.}
+
+\item{digits}{Number of decimal places shown by the \code{summary()} table.}
 }
 \value{
 An object of class \code{"suest_model"} containing the fitted models,
