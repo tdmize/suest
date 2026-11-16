@@ -81,3 +81,34 @@ gay/lesbian respondents and between bisexual and gay/lesbian respondents do
 not differ significantly across the two models. However, the difference
 between heterosexual and bisexual respondents is significantly larger when
 sexuality is measured using identity than when it is measured using behavior.
+
+The article's Table 4 also compares the predicted probabilities from the two
+models. Setting both measures to the same category gives each model's
+prediction for that category:
+
+```{r example-6-3-predictions}
+orientation <- levels(dat63$sexident)
+pred63 <- avg_predictions(fit63,
+  variables = list(sexbehav = orientation, sexident = orientation),
+  newdata = dat63)
+pred63[pred63$sexbehav == pred63$sexident, ]
+```
+
+The difference between the two models in each category:
+
+```{r example-6-3-prediction-differences}
+orientation_differences <- function(x) {
+  same <- x$sexbehav == x$sexident
+  data.frame(
+    term = c("Heterosexual", "Bisexual", "Gay/Lesbian"),
+    estimate = x$estimate[same & x$group == "Behavior"] -
+      x$estimate[same & x$group == "Identity"])
+}
+
+avg_predictions(fit63,
+  variables = list(sexbehav = orientation, sexident = orientation),
+  newdata = dat63, hypothesis = orientation_differences)
+```
+
+Only for people classified as bisexual do the two measures give a
+significantly different predicted probability.
