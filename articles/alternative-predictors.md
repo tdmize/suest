@@ -94,3 +94,53 @@ do not differ significantly across the two models. However, the
 difference between heterosexual and bisexual respondents is
 significantly larger when sexuality is measured using identity than when
 it is measured using behavior.
+
+The article’s Table 4 also compares the predicted probabilities from the
+two models. Setting both measures to the same category gives each
+model’s prediction for that category:
+
+``` r
+
+orientation <- levels(dat63$sexident)
+pred63 <- avg_predictions(fit63,
+  variables = list(sexbehav = orientation, sexident = orientation),
+  newdata = dat63)
+pred63[pred63$sexbehav == pred63$sexident, ]
+#> 
+#>     Group sexbehav sexident Estimate Std. Error     z Pr(>|z|)     S  2.5 % 97.5 %
+#>  Behavior        1        1    0.533    0.00710 75.07  < 0.001   Inf 0.5191  0.547
+#>  Behavior        2        2    0.436    0.02236 19.49  < 0.001 278.6 0.3920  0.480
+#>  Behavior        3        3    0.171    0.03772  4.53  < 0.001  17.4 0.0971  0.245
+#>  Identity        1        1    0.531    0.00686 77.36  < 0.001   Inf 0.5176  0.545
+#>  Identity        2        2    0.257    0.04085  6.29  < 0.001  31.6 0.1769  0.337
+#>  Identity        3        3    0.104    0.03302  3.14  0.00171   9.2 0.0388  0.168
+#> 
+#> Type: response
+```
+
+The difference between the two models in each category:
+
+``` r
+
+orientation_differences <- function(x) {
+  same <- x$sexbehav == x$sexident
+  data.frame(
+    term = c("Heterosexual", "Bisexual", "Gay/Lesbian"),
+    estimate = x$estimate[same & x$group == "Behavior"] -
+      x$estimate[same & x$group == "Identity"])
+}
+
+avg_predictions(fit63,
+  variables = list(sexbehav = orientation, sexident = orientation),
+  newdata = dat63, hypothesis = orientation_differences)
+#> 
+#>          Term Estimate Std. Error     z Pr(>|z|)    S    2.5 %  97.5 %
+#>  Heterosexual  0.00192    0.00193 0.996   0.3194  1.6 -0.00186 0.00569
+#>  Bisexual      0.17883    0.04136 4.324   <0.001 16.0  0.09778 0.25989
+#>  Gay/Lesbian   0.06745    0.04013 1.681   0.0928  3.4 -0.01121 0.14611
+#> 
+#> Type: response
+```
+
+Only for people classified as bisexual do the two measures give a
+significantly different predicted probability.

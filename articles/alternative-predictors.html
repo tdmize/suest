@@ -167,6 +167,47 @@ gay/lesbian respondents do not differ significantly across the two
 models. However, the difference between heterosexual and bisexual
 respondents is significantly larger when sexuality is measured using
 identity than when it is measured using behavior.</p>
+<p>The article’s Table 4 also compares the predicted probabilities from
+the two models. Setting both measures to the same category gives each
+model’s prediction for that category:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">orientation</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/levels.html" class="external-link">levels</a></span><span class="op">(</span><span class="va">dat63</span><span class="op">$</span><span class="va">sexident</span><span class="op">)</span></span>
+<span><span class="va">pred63</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">avg_predictions</a></span><span class="op">(</span><span class="va">fit63</span>,</span>
+<span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sexbehav <span class="op">=</span> <span class="va">orientation</span>, sexident <span class="op">=</span> <span class="va">orientation</span><span class="op">)</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">dat63</span><span class="op">)</span></span>
+<span><span class="va">pred63</span><span class="op">[</span><span class="va">pred63</span><span class="op">$</span><span class="va">sexbehav</span> <span class="op">==</span> <span class="va">pred63</span><span class="op">$</span><span class="va">sexident</span>, <span class="op">]</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     Group sexbehav sexident Estimate Std. Error     z Pr(&gt;|z|)     S  2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  Behavior        1        1    0.533    0.00710 75.07  &lt; 0.001   Inf 0.5191  0.547</span></span>
+<span><span class="co">#&gt;  Behavior        2        2    0.436    0.02236 19.49  &lt; 0.001 278.6 0.3920  0.480</span></span>
+<span><span class="co">#&gt;  Behavior        3        3    0.171    0.03772  4.53  &lt; 0.001  17.4 0.0971  0.245</span></span>
+<span><span class="co">#&gt;  Identity        1        1    0.531    0.00686 77.36  &lt; 0.001   Inf 0.5176  0.545</span></span>
+<span><span class="co">#&gt;  Identity        2        2    0.257    0.04085  6.29  &lt; 0.001  31.6 0.1769  0.337</span></span>
+<span><span class="co">#&gt;  Identity        3        3    0.104    0.03302  3.14  0.00171   9.2 0.0388  0.168</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Type: response</span></span></code></pre></div>
+<p>The difference between the two models in each category:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">orientation_differences</span> <span class="op">&lt;-</span> <span class="kw">function</span><span class="op">(</span><span class="va">x</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">same</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">$</span><span class="va">sexbehav</span> <span class="op">==</span> <span class="va">x</span><span class="op">$</span><span class="va">sexident</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span></span>
+<span>    term <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Heterosexual"</span>, <span class="st">"Bisexual"</span>, <span class="st">"Gay/Lesbian"</span><span class="op">)</span>,</span>
+<span>    estimate <span class="op">=</span> <span class="va">x</span><span class="op">$</span><span class="va">estimate</span><span class="op">[</span><span class="va">same</span> <span class="op">&amp;</span> <span class="va">x</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="st">"Behavior"</span><span class="op">]</span> <span class="op">-</span></span>
+<span>      <span class="va">x</span><span class="op">$</span><span class="va">estimate</span><span class="op">[</span><span class="va">same</span> <span class="op">&amp;</span> <span class="va">x</span><span class="op">$</span><span class="va">group</span> <span class="op">==</span> <span class="st">"Identity"</span><span class="op">]</span><span class="op">)</span></span>
+<span><span class="op">}</span></span>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/predictions.html" class="external-link">avg_predictions</a></span><span class="op">(</span><span class="va">fit63</span>,</span>
+<span>  variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>sexbehav <span class="op">=</span> <span class="va">orientation</span>, sexident <span class="op">=</span> <span class="va">orientation</span><span class="op">)</span>,</span>
+<span>  newdata <span class="op">=</span> <span class="va">dat63</span>, hypothesis <span class="op">=</span> <span class="va">orientation_differences</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;          Term Estimate Std. Error     z Pr(&gt;|z|)    S    2.5 %  97.5 %</span></span>
+<span><span class="co">#&gt;  Heterosexual  0.00192    0.00193 0.996   0.3194  1.6 -0.00186 0.00569</span></span>
+<span><span class="co">#&gt;  Bisexual      0.17883    0.04136 4.324   &lt;0.001 16.0  0.09778 0.25989</span></span>
+<span><span class="co">#&gt;  Gay/Lesbian   0.06745    0.04013 1.681   0.0928  3.4 -0.01121 0.14611</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Type: response</span></span></code></pre></div>
+<p>Only for people classified as bisexual do the two measures give a
+significantly different predicted probability.</p>
   </main>
 </div>
 
