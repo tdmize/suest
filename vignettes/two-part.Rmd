@@ -21,8 +21,8 @@ the non-zeroes. The expected outcome is the product of the two:
 
 $$E(y) = \Pr(y > 0) \times E(y \mid y > 0)$$
 
-With `suest()`, fit the two parts as separate models and combine them with
-`twopart`. Predictions and marginal effects from `marginaleffects` are then on
+In R, fit the two parts as separate models and combine them with `suest()` and
+the `twopart` option. Predictions and marginal effects from `marginaleffects` are then on
 the expected outcome, with standard errors from the joint covariance of the
 two parts.
 
@@ -66,14 +66,16 @@ the sampling weights:
 
 ```{r survey}
 design <- survey::svydesign(ids = ~duid, weights = ~wtdper, data = meps)
-any_s <- survey::svyglm(I(exp_tot > 0) ~ age + female + ins_unins,
-                        design = design, family = quasibinomial)
-amount_s <- survey::svyglm(exp_tot ~ age + female + ins_unins,
+any_s <- survey::svyglm(I(exp_tot > 0) ~ age + female + lninc + pcs12 + mcs12 +
+                          ins_unins + anylim, design = design,
+                        family = quasibinomial)
+amount_s <- survey::svyglm(exp_tot ~ age + female + lninc + pcs12 + mcs12 +
+                             ins_unins + anylim,
                            design = subset(design, exp_tot > 0),
                            family = quasipoisson)
 fit_s <- suest(any_s, amount_s, survey_design = design,
                observation_id = "dupersid", twopart = TRUE)
-avg_slopes(fit_s, variables = "ins_unins", wts = TRUE)
+avg_slopes(fit_s, variables = c("age", "ins_unins"), wts = TRUE)
 ```
 
 ## Expected expenditures and effects on them
