@@ -11,7 +11,9 @@ and leaves calculating and presenting the quantities themselves to
 
 - [`suest()`](https://tdmize.github.io/suest/reference/suest.md)
   combines two or more fitted models and calculates their joint
-  covariance matrix.
+  covariance matrix. Its `twopart` option combines the two parts of
+  [two-part
+  models](https://tdmize.github.io/suest/articles/two-part.md).
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
   stacks the models’ estimation samples so each model’s effects can be
   averaged over its own sample.
@@ -158,7 +160,7 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 | Other GLMs with identity, log, logit, probit, complementary log-log, or log-log links | [`glm()`](https://rdrr.io/r/stats/glm.html), [`glm2::glm2()`](https://rdrr.io/pkg/glm2/man/glm2.html) |
 | Tobit regression | [`censReg::censReg()`](https://rdrr.io/pkg/censReg/man/censReg.html); predictions are the latent mean |
 | Interval, censored, and parametric survival regression | [`survival::survreg()`](https://rdrr.io/pkg/survival/man/survreg.html) with a common scale |
-| Gompertz and generalized gamma survival | [`flexsurv::flexsurvreg()`](http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.md) with `dist = "gompertz"` or `"gengamma"` |
+| Gompertz and generalized gamma survival | [`flexsurv::flexsurvreg()`](https://chjackson.github.io/flexsurv/reference/flexsurvreg.html) with `dist = "gompertz"` or `"gengamma"` |
 | Truncated regression | [`truncreg::truncreg()`](https://rdrr.io/pkg/truncreg/man/truncreg.html) |
 | Fractional response | [`glm()`](https://rdrr.io/r/stats/glm.html) with [`quasibinomial()`](https://rdrr.io/r/stats/family.html): logit, probit, complementary log-log, or log-log link |
 | Beta regression | [`betareg::betareg()`](https://rdrr.io/pkg/betareg/man/betareg.html) with a logit, probit, complementary log-log, or log-log link |
@@ -431,9 +433,11 @@ from Mize and Han (forthcoming), [multilevel
 models](https://tdmize.github.io/suest/articles/multilevel.md), [panel
 models](https://tdmize.github.io/suest/articles/panel.md),
 [within-person
-effects](https://tdmize.github.io/suest/articles/within-person.md), and
+effects](https://tdmize.github.io/suest/articles/within-person.md),
 [instrumental-variable
-models](https://tdmize.github.io/suest/articles/instrumental-variables.md).
+models](https://tdmize.github.io/suest/articles/instrumental-variables.md),
+and [two-part
+models](https://tdmize.github.io/suest/articles/two-part.md).
 [Predictions and
 graphs](https://tdmize.github.io/suest/articles/predictions.md) shows
 predictions from each model and tests and graphs of their differences.

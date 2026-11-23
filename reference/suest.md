@@ -19,7 +19,9 @@ suest(
   observation_id = NULL,
   cluster = NULL,
   weight_type = NULL,
-  survey_design = NULL
+  survey_design = NULL,
+  twopart = NULL,
+  retransform = NULL
 )
 
 # S3 method for class 'suest_model'
@@ -81,10 +83,10 @@ print(x, digits = 3, ...)
 
   Optional weight interpretation. The default `NULL` preserves the
   unweighted behavior and rejects nonunit estimation weights. Use
-  `"pweight"` to treat model weights as sampling weights. In version
-  0.1.4, pweights are supported for linear, binary logit/probit,
-  Poisson, negative-binomial, ordered logit/probit, and multinomial
-  logit models.
+  `"pweight"` to treat model weights as sampling weights. Pweights are
+  supported for linear, binary logit/probit/cloglog, Poisson, other GLMs
+  (such as quasi-Poisson and Gamma), negative-binomial, ordered
+  logit/probit, and multinomial logit models.
 
 - survey_design:
 
@@ -106,6 +108,27 @@ print(x, digits = 3, ...)
   model-specific domain subsetting. Specify weights and clusters in this
   design, without `weight_type` or `cluster`. Ordinary models leave this
   argument `NULL`.
+
+- twopart:
+
+  Two-part models, `E(y) = Pr(y > 0) * E(y | y > 0)`: a binary first
+  part (logit, probit, or cloglog) for whether the outcome is positive,
+  and a second part fit to the positive outcomes (a linear model, a GLM
+  such as a Gamma or quasi-Poisson model with a log link, or a negative
+  binomial model). `TRUE` takes the models in pairs, in order; a
+  character vector names the models in pairs, as in
+  `c("Any", "Gamma", "Any", "Poisson")`; a named list of pairs, as in
+  `list("Two-part" = c("Any", "Amount"))`, also labels them (by default
+  `Any+Amount`). Models not in a pair keep their own prediction. See
+  "Two-part models" below.
+
+- retransform:
+
+  For [`lm()`](https://rdrr.io/r/stats/lm.html) second parts of the log
+  of the outcome: `"duan"` for Duan's smearing estimate, `exp(xb)` times
+  the mean of the exponentiated residuals, or `"normal"` for the
+  normal-theory retransformation, `exp(xb + sigma^2/2)` with `sigma^2`
+  the mean squared residual.
 
 - object, x:
 
@@ -172,8 +195,10 @@ unless `weight_type = "pweight"`. Pweights must be finite and strictly
 positive. For observations included in any pair of models, evaluated
 weights must agree; weights may differ for observations unique to either
 model, including completely disjoint samples. Pweight support is
-available for linear, binary logit/probit, Poisson, negative-binomial,
-ordered logit/probit, and multinomial logit models.
+available for linear, binary logit/probit/cloglog, Poisson, other GLMs,
+negative-binomial, ordered logit/probit, and multinomial logit models.
+With pweights or a survey design, `wts = TRUE` in the `marginaleffects`
+functions averages with the sampling weights, as Stata's `margins` does.
 
 Bias-reduced, adjusted-score, Firth, and penalized GLM fits are rejected
 because they do not use ordinary maximum-likelihood score equations.
@@ -184,6 +209,18 @@ nonzero `decay` are also rejected. Beta regression requires
 `survreg` fits are not supported. Conventional `survreg` fits with
 `robust = TRUE` use their model-based information for the joint sandwich
 covariance.
+
+## Two-part models
+
+With `twopart`, predictions are on the expected outcome, the first
+part's probability times the second part's mean, and standard errors
+come from the joint covariance of the two parts. `type = "positive"`
+gives the first part's probability and `type = "amount"` the second
+part's mean; models not in a pair are left out of these. Without
+`newdata`, each two-part model is averaged over its first part's sample,
+with every variable of the first part's data, so `by =` and
+`newdata = subset(y > 0)` work. The retransformation factor is held
+fixed at its estimate, as in Stata's `suest2` and `twopm`.
 
 ## Survey models
 
@@ -279,7 +316,7 @@ survey t or F adjustment is applied.
   [`survey::svysurvreg()`](https://rdrr.io/pkg/survey/man/svysurvreg.html)
 
 - Gompertz and generalized gamma survival models from
-  [`flexsurv::flexsurvreg()`](http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.md)
+  [`flexsurv::flexsurvreg()`](https://chjackson.github.io/flexsurv/reference/flexsurvreg.html)
   with `dist = "gompertz"` or `"gengamma"` (Stata's `streg` with
   `distribution(gompertz)` or `distribution(ggamma)`), with right
   censoring, optional delayed entry (`Surv(entry, time, event)`), and
@@ -599,5 +636,20 @@ marginaleffects::hypotheses(effects, hypothesis = difference ~ revpairwise)
 #>           Hypothesis Estimate Std. Error    z Pr(>|z|)    S  2.5 % 97.5 %
 #>  (Base) - (Adjusted)   0.0779     0.0141 5.54   <0.001 25.0 0.0503  0.105
 #> 
+#> 
+
+# A two-part model: whether the outcome is positive, then its amount
+dat$y <- ifelse(dat$am == "1", dat$mpg, 0)
+any <- glm(I(y > 0) ~ wt, family = binomial(), data = dat)
+amount <- glm(y ~ wt, family = Gamma(link = "log"), data = dat, subset = y > 0)
+fit <- suest(any, amount, model_names = c("Any", "Amount"), twopart = TRUE)
+marginaleffects::avg_slopes(fit, variables = "wt")
+#> 
+#>  Estimate Std. Error     z Pr(>|z|)    S 2.5 % 97.5 %
+#>     -10.7      0.953 -11.2   <0.001 94.5 -12.5  -8.82
+#> 
+#> Term: wt
+#> Type: response
+#> Comparison: dY/dX
 #> 
 ```

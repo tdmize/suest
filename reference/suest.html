@@ -43,6 +43,7 @@ marginaleffects::avg_slopes(), and marginaleffects::hypotheses()."></head><body>
     <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
     <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
     <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
+    <li><a class="dropdown-item" href="../articles/two-part.html">Two-part models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Reference</a></li>
@@ -78,7 +79,9 @@ marginal effects differ across the models. Pass the result directly to
 <span>  observation_id <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cluster <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  weight_type <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  survey_design <span class="op">=</span> <span class="cn">NULL</span></span>
+<span>  survey_design <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  twopart <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  retransform <span class="op">=</span> <span class="cn">NULL</span></span>
 <span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># S3 method for class 'suest_model'</span></span>
@@ -141,9 +144,10 @@ for these models must contain whole panels.</p></dd>
 <dt id="arg-weight-type">weight_type<a class="anchor" aria-label="anchor" href="#arg-weight-type"></a></dt>
 <dd><p>Optional weight interpretation. The default <code>NULL</code>
 preserves the unweighted behavior and rejects nonunit estimation weights.
-Use <code>"pweight"</code> to treat model weights as sampling weights. In version
-0.1.4, pweights are supported for linear, binary logit/probit, Poisson,
-negative-binomial, ordered logit/probit, and multinomial logit models.</p></dd>
+Use <code>"pweight"</code> to treat model weights as sampling weights. Pweights are
+supported for linear, binary logit/probit/cloglog, Poisson, other GLMs
+(such as quasi-Poisson and Gamma), negative-binomial, ordered
+logit/probit, and multinomial logit models.</p></dd>
 
 
 <dt id="arg-survey-design">survey_design<a class="anchor" aria-label="anchor" href="#arg-survey-design"></a></dt>
@@ -156,6 +160,27 @@ supported survey models: <code><a href="https://rdrr.io/pkg/survey/man/svyglm.ht
 Retain the design before model-specific domain subsetting. Specify weights
 and clusters in this design, without <code>weight_type</code> or <code>cluster</code>. Ordinary
 models leave this argument <code>NULL</code>.</p></dd>
+
+
+<dt id="arg-twopart">twopart<a class="anchor" aria-label="anchor" href="#arg-twopart"></a></dt>
+<dd><p>Two-part models, <code>E(y) = Pr(y &gt; 0) * E(y | y &gt; 0)</code>: a
+binary first part (logit, probit, or cloglog) for whether the outcome is
+positive, and a second part fit to the positive outcomes (a linear model, a
+GLM such as a Gamma or quasi-Poisson model with a log link, or a negative
+binomial model). <code>TRUE</code> takes the models in pairs, in order; a character
+vector names the models in pairs, as in
+<code>c("Any", "Gamma", "Any", "Poisson")</code>; a named list of pairs, as in
+<code>list("Two-part" = c("Any", "Amount"))</code>, also labels them (by default
+<code>Any+Amount</code>). Models not in a pair keep their own prediction. See
+"Two-part models" below.</p></dd>
+
+
+<dt id="arg-retransform">retransform<a class="anchor" aria-label="anchor" href="#arg-retransform"></a></dt>
+<dd><p>For <code><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm()</a></code> second parts of the log of the outcome:
+<code>"duan"</code> for Duan's smearing estimate, <code>exp(xb)</code> times the mean of the
+exponentiated residuals, or <code>"normal"</code> for the normal-theory
+retransformation, <code>exp(xb + sigma^2/2)</code> with <code>sigma^2</code> the mean squared
+residual.</p></dd>
 
 
 <dt id="arg-object-x">object, x<a class="anchor" aria-label="anchor" href="#arg-object-x"></a></dt>
@@ -214,8 +239,10 @@ observed information in the sandwich bread, as Stata does.</p>
 strictly positive. For observations included in any pair of models, evaluated
 weights must agree; weights may differ for observations unique to either
 model, including completely disjoint samples. Pweight support is available
-for linear, binary logit/probit, Poisson, negative-binomial, ordered
-logit/probit, and multinomial logit models.</p>
+for linear, binary logit/probit/cloglog, Poisson, other GLMs,
+negative-binomial, ordered logit/probit, and multinomial logit models.
+With pweights or a survey design, <code>wts = TRUE</code> in the <code>marginaleffects</code>
+functions averages with the sampling weights, as Stata's <code>margins</code> does.</p>
 <p>Bias-reduced, adjusted-score, Firth, and penalized
 GLM fits are rejected because they do not use ordinary maximum-likelihood
 score equations. Ordinary <code>glm</code> and <code>glm2</code> fits must have converged.
@@ -224,6 +251,20 @@ Beta regression requires <code>type = "ML"</code>; bias-reduced and bias-correct
 beta fits and penalized <code>survreg</code> fits are not supported. Conventional
 <code>survreg</code> fits with <code>robust = TRUE</code> use their model-based information for
 the joint sandwich covariance.</p>
+    </div>
+    <div class="section level2">
+    <h2 id="two-part-models">Two-part models<a class="anchor" aria-label="anchor" href="#two-part-models"></a></h2>
+
+
+<p>With <code>twopart</code>, predictions are on the expected outcome, the first part's
+probability times the second part's mean, and standard errors come from the
+joint covariance of the two parts. <code>type = "positive"</code> gives the first
+part's probability and <code>type = "amount"</code> the second part's mean; models not
+in a pair are left out of these. Without <code>newdata</code>, each two-part model is
+averaged over its first part's sample, with every variable of the first
+part's data, so <code>by =</code> and <code>newdata = subset(y &gt; 0)</code> work. The
+retransformation factor is held fixed at its estimate, as in Stata's
+<code>suest2</code> and <code>twopm</code>.</p>
     </div>
     <div class="section level2">
     <h2 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a></h2>
@@ -294,7 +335,7 @@ times, Stata's default after <code>streg</code>; <code>type = "link"</code> give
 predictor. Gaussian, logistic, and extreme-value models predict the
 linear predictor. The same holds for <code><a href="https://rdrr.io/pkg/survey/man/svysurvreg.html" class="external-link">survey::svysurvreg()</a></code></p></li>
 <li><p>Gompertz and generalized gamma survival models from
-<code><a href="http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with <code>dist = "gompertz"</code> or <code>"gengamma"</code>
+<code><a href="https://chjackson.github.io/flexsurv/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with <code>dist = "gompertz"</code> or <code>"gengamma"</code>
 (Stata's <code>streg</code> with <code>distribution(gompertz)</code> or
 <code>distribution(ggamma)</code>), with right censoring, optional delayed entry
 (<code>Surv(entry, time, event)</code>), and covariates on ancillary parameters
@@ -561,6 +602,21 @@ generalized ordered models from <code><a href="https://rdrr.io/pkg/svyVGAM/man/s
 <span class="r-out co"><span class="r-pr">#&gt;</span>           Hypothesis Estimate Std. Error    z Pr(&gt;|z|)    S  2.5 % 97.5 %</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  (Base) - (Adjusted)   0.0779     0.0141 5.54   &lt;0.001 25.0 0.0503  0.105</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># A two-part model: whether the outcome is positive, then its amount</span></span></span>
+<span class="r-in"><span><span class="va">dat</span><span class="op">$</span><span class="va">y</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/ifelse.html" class="external-link">ifelse</a></span><span class="op">(</span><span class="va">dat</span><span class="op">$</span><span class="va">am</span> <span class="op">==</span> <span class="st">"1"</span>, <span class="va">dat</span><span class="op">$</span><span class="va">mpg</span>, <span class="fl">0</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">any</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">y</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">wt</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">amount</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">wt</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">Gamma</a></span><span class="op">(</span>link <span class="op">=</span> <span class="st">"log"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">dat</span>, subset <span class="op">=</span> <span class="va">y</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu">suest</span><span class="op">(</span><span class="va">any</span>, <span class="va">amount</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Any"</span>, <span class="st">"Amount"</span><span class="op">)</span>, twopart <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu">marginaleffects</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes</a></span><span class="op">(</span><span class="va">fit</span>, variables <span class="op">=</span> <span class="st">"wt"</span><span class="op">)</span></span></span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  Estimate Std. Error     z Pr(&gt;|z|)    S 2.5 % 97.5 %</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>     -10.7      0.953 -11.2   &lt;0.001 94.5 -12.5  -8.82</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Term: wt</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Type: response</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Comparison: dY/dX</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

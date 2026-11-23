@@ -135,7 +135,7 @@ zi_fit <- suest(zip, zinb, model_names = c("ZIP", "ZINB"))
 avg_slopes(zi_fit, variables = "ment", type = "zero")
 #> 
 #>  Group Estimate Std. Error     z Pr(>|z|)    S   2.5 %   97.5 %
-#>   ZIP   -0.0178    0.00679 -2.62  0.00876  6.8 -0.0311 -0.00449
+#>   ZIP   -0.0178    0.00679 -2.62  0.00877  6.8 -0.0311 -0.00449
 #>   ZINB  -0.0304    0.00791 -3.85  < 0.001 13.1 -0.0459 -0.01495
 #> 
 #> Term: ment
@@ -158,6 +158,27 @@ p[p$group %in% c("ZIP::0", "ZINB::0"), ]
 #> 
 #> Type: prob
 ```
+
+## Two-part models
+
+With `twopart`, predictions and marginal effects take these `type`
+values:
+
+| `type` | Prediction | Stata `margins` after `suest2` |
+|----|----|----|
+| `"response"` (the default) | Expected outcome, `Pr(y > 0) * E(y | y > 0)` | `predict(twopart(Any Amount))` |
+| `"positive"` | Probability of a positive outcome (the first part) | `predict(model(Any))` |
+| `"amount"` | Expected outcome among the positive outcomes (the second part) | `predict(model(Amount))` |
+
+The first part can be a logit, probit, or complementary log-log
+[`glm()`](https://rdrr.io/r/stats/glm.html) or survey `svyglm()`; the
+second part a linear model, a GLM such as a Gamma or quasi-Poisson model
+with a log link, a negative binomial
+[`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html), or a
+survey quasi-Poisson `svyglm()`. Models not in a pair keep their own
+prediction with `"response"` and are left out with `"positive"` and
+`"amount"`. See [Two-part
+models](https://tdmize.github.io/suest/articles/two-part.md).
 
 ## Mixed models fitted with glmmTMB
 

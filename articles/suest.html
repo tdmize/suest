@@ -51,6 +51,7 @@
     <li><a class="dropdown-item" href="../articles/panel.html">Panel models</a></li>
     <li><a class="dropdown-item" href="../articles/within-person.html">Within-person effects</a></li>
     <li><a class="dropdown-item" href="../articles/instrumental-variables.html">Instrumental-variable models</a></li>
+    <li><a class="dropdown-item" href="../articles/two-part.html">Two-part models</a></li>
     <li><a class="dropdown-item" href="../articles/model-notes.html">Notes on specific models</a></li>
   </ul>
 </li>
@@ -94,7 +95,9 @@ themselves to <a href="https://marginaleffects.com/" class="external-link"><code
 <ul>
 <li>
 <code><a href="../reference/suest.html">suest()</a></code> combines two or more fitted models and
-calculates their joint covariance matrix.</li>
+calculates their joint covariance matrix. Its <code>twopart</code>
+option combines the two parts of <a href="two-part.html">two-part
+models</a>.</li>
 <li>
 <code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> stacks the models’ estimation samples
 so each model’s effects can be averaged over its own sample.</li>
@@ -293,7 +296,7 @@ mean</td>
 <tr class="even">
 <td>Gompertz and generalized gamma survival</td>
 <td>
-<code><a href="http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with
+<code><a href="https://chjackson.github.io/flexsurv/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code> with
 <code>dist = "gompertz"</code> or <code>"gengamma"</code>
 </td>
 </tr>
@@ -699,7 +702,8 @@ nominal</li>
 </ol>
 <p>More examples: <a href="chapter-groups.html">group comparisons</a>
 from Mize and Han (forthcoming), <a href="multilevel.html">multilevel
-models</a>, <a href="panel.html">panel models</a>, <a href="within-person.html">within-person effects</a>, and <a href="instrumental-variables.html">instrumental-variable models</a>. <a href="predictions.html">Predictions and graphs</a> shows predictions
+models</a>, <a href="panel.html">panel models</a>, <a href="within-person.html">within-person effects</a>, <a href="instrumental-variables.html">instrumental-variable models</a>, and
+<a href="two-part.html">two-part models</a>. <a href="predictions.html">Predictions and graphs</a> shows predictions
 from each model and tests and graphs of their differences.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>

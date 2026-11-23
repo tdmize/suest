@@ -2,6 +2,44 @@
 
 ## suest 0.1.6.9000 (development)
 
+- Two-part models: `suest(..., twopart = TRUE)` combines a binary first
+  part (logit, probit, or cloglog) for whether the outcome is positive
+  with a second part fit to the positive outcomes (a linear model, a GLM
+  such as a Gamma or quasi-Poisson model with a log link, or
+  [`MASS::glm.nb()`](https://rdrr.io/pkg/MASS/man/glm.nb.html)), as
+  Stata’s `margins, predict(twopart(Any Amount))` after `suest2`.
+  Predictions and marginal effects are on the expected outcome,
+  `Pr(y > 0) * E(y | y > 0)`, with standard errors from the joint
+  covariance of the two parts; `type = "positive"` and `type = "amount"`
+  give each part’s prediction (`predict(model())`). A character vector
+  of model names in pairs or a named list of pairs compares several
+  two-part models, which can share a first part, as
+  `mecompare, twopart()` does; models not in a pair keep their own
+  prediction. `retransform = "duan"` or `"normal"` retransforms a linear
+  second part of the log of the outcome, with the retransformation
+  factor held fixed at its estimate, as in `suest2` and `twopm`. Without
+  `newdata`, each two-part model is averaged over its first part’s
+  sample, with every variable of the first part’s data. New article:
+  Two-part models. Stata check (Stata 19, `suest2` 1.4.0 and `mecompare`
+  1.15.0, MEPS 2004): logit or probit first parts with Poisson, Gamma,
+  negative binomial, linear, and log-linear (Duan and normal) second
+  parts, clustered, pweighted, and `svy` systems, `predict(model())`,
+  `if`, `over()`, and the two `mecompare` comparisons: estimates match
+  within 4e-6 (relative) and standard errors within 1.4e-4, except Gamma
+  second parts, whose standard errors are 0.16% to 0.19% larger in Stata
+  because of Stata `glm`’s stored covariance.
+
+- Pweights for GLMs other than logit, probit, and Poisson, such as
+  quasi-Poisson and Gamma models, and for cloglog and fractional
+  (quasi-binomial) models. `wts = TRUE` now averages with the sampling
+  weights after pweighted and survey systems (as `wts = ".suest_weight"`
+  did).
+
+- `vcov = FALSE` in `marginaleffects` functions now omits standard
+  errors, and other `vcov` values give a message that they are ignored
+  (suest always uses its joint robust covariance); they were ignored
+  without one.
+
 - [`summary()`](https://rdrr.io/r/base/summary.html) of a
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md) result
   shows each model’s coefficients as a panel, with joint robust standard
@@ -61,7 +99,7 @@
 
   - Gompertz and generalized gamma survival models (Stata’s `streg` with
     `distribution(gompertz)` and `distribution(ggamma)`) from
-    [`flexsurv::flexsurvreg()`](http://chjackson.github.io/flexsurv-dev/reference/flexsurvreg.md),
+    [`flexsurv::flexsurvreg()`](https://chjackson.github.io/flexsurv/reference/flexsurvreg.html),
     with right censoring, delayed entry (`Surv(entry, time, event)`),
     and covariates on the ancillary parameters (`anc`, Stata’s
     `ancillary()` and `anc2()`). Predictions are median survival times,

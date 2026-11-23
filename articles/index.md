@@ -79,6 +79,12 @@
   Comparing effects across two-stage least squares models with different
   instruments.
 
+- [Two-part
+  models](https://tdmize.github.io/suest/articles/two-part.md):
+
+  Expected outcomes from a model of whether the outcome is positive and
+  a model of how large it is.
+
 ### More
 
 - [Notes on specific

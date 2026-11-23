@@ -94,8 +94,10 @@ models](https://www.trentonmize.com/software/suest_r/articles/suest.html#support
   models](https://www.trentonmize.com/software/suest_r/articles/panel.html),
   [within-person
   effects](https://www.trentonmize.com/software/suest_r/articles/within-person.html),
-  and [instrumental-variable
-  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html).
+  [instrumental-variable
+  models](https://www.trentonmize.com/software/suest_r/articles/instrumental-variables.html),
+  and [two-part
+  models](https://www.trentonmize.com/software/suest_r/articles/two-part.html).
 - [Predictions and
   graphs](https://www.trentonmize.com/software/suest_r/articles/predictions.html):
   predictions from each model, and tests and graphs of their
@@ -221,6 +223,12 @@ Methods for modelsummary tables and coefficient plots
 
   Comparing effects across two-stage least squares models with different
   instruments.
+
+- [Two-part
+  models](https://tdmize.github.io/suest/articles/two-part.md):
+
+  Expected outcomes from a model of whether the outcome is positive and
+  a model of how large it is.
 
 ### More
 
