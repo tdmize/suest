@@ -89,10 +89,11 @@ two processes, one for observed zeroes and non-zeroes, and one for an
 amount among the non-zeroes. The expected outcome is the product of the
 two:</p>
 <p><math display="block" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>E</mi><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo stretchy="false" form="postfix">)</mo><mo>=</mo><mrow><mi mathvariant="normal">Pr</mi><mo>⁡</mo></mrow><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo>&gt;</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo><mo>×</mo><mi>E</mi><mo stretchy="false" form="prefix">(</mo><mi>y</mi><mo>∣</mo><mi>y</mi><mo>&gt;</mo><mn>0</mn><mo stretchy="false" form="postfix">)</mo></mrow><annotation encoding="application/x-tex">E(y) = \Pr(y &gt; 0) \times E(y \mid y &gt; 0)</annotation></semantics></math></p>
-<p>With <code><a href="../reference/suest.html">suest()</a></code>, fit the two parts as separate models and
-combine them with <code>twopart</code>. Predictions and marginal effects
-from <code>marginaleffects</code> are then on the expected outcome, with
-standard errors from the joint covariance of the two parts.</p>
+<p>In R, fit the two parts as separate models and combine them with
+<code><a href="../reference/suest.html">suest()</a></code> and the <code>twopart</code> option. Predictions
+and marginal effects from <code>marginaleffects</code> are then on the
+expected outcome, with standard errors from the joint covariance of the
+two parts.</p>
 <p>The examples use the medical expenditures of 19,386 adults in the
 2004 Medical Expenditure Panel Survey. The first part is a logit of
 whether a person had any medical expenditures. The second part is a
@@ -163,21 +164,22 @@ second part to the people with any expenditures, and give
 with the sampling weights:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span>ids <span class="op">=</span> <span class="op">~</span><span class="va">duid</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">wtdper</span>, data <span class="op">=</span> <span class="va">meps</span><span class="op">)</span></span>
-<span><span class="va">any_s</span> <span class="op">&lt;-</span> <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">exp_tot</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">female</span> <span class="op">+</span> <span class="va">ins_unins</span>,</span>
-<span>                        design <span class="op">=</span> <span class="va">design</span>, family <span class="op">=</span> <span class="va">quasibinomial</span><span class="op">)</span></span>
-<span><span class="va">amount_s</span> <span class="op">&lt;-</span> <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">exp_tot</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">female</span> <span class="op">+</span> <span class="va">ins_unins</span>,</span>
+<span><span class="va">any_s</span> <span class="op">&lt;-</span> <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/AsIs.html" class="external-link">I</a></span><span class="op">(</span><span class="va">exp_tot</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">female</span> <span class="op">+</span> <span class="va">lninc</span> <span class="op">+</span> <span class="va">pcs12</span> <span class="op">+</span> <span class="va">mcs12</span> <span class="op">+</span></span>
+<span>                          <span class="va">ins_unins</span> <span class="op">+</span> <span class="va">anylim</span>, design <span class="op">=</span> <span class="va">design</span>,</span>
+<span>                        family <span class="op">=</span> <span class="va">quasibinomial</span><span class="op">)</span></span>
+<span><span class="va">amount_s</span> <span class="op">&lt;-</span> <span class="fu">survey</span><span class="fu">::</span><span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">exp_tot</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">female</span> <span class="op">+</span> <span class="va">lninc</span> <span class="op">+</span> <span class="va">pcs12</span> <span class="op">+</span> <span class="va">mcs12</span> <span class="op">+</span></span>
+<span>                             <span class="va">ins_unins</span> <span class="op">+</span> <span class="va">anylim</span>,</span>
 <span>                           design <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">design</span>, <span class="va">exp_tot</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span>,</span>
 <span>                           family <span class="op">=</span> <span class="va">quasipoisson</span><span class="op">)</span></span>
 <span><span class="va">fit_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">any_s</span>, <span class="va">amount_s</span>, survey_design <span class="op">=</span> <span class="va">design</span>,</span>
 <span>               observation_id <span class="op">=</span> <span class="st">"dupersid"</span>, twopart <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes</a></span><span class="op">(</span><span class="va">fit_s</span>, variables <span class="op">=</span> <span class="st">"ins_unins"</span>, wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes</a></span><span class="op">(</span><span class="va">fit_s</span>, variables <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"age"</span>, <span class="st">"ins_unins"</span><span class="op">)</span>, wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt;  Estimate Std. Error     z Pr(&gt;|z|)     S 2.5 % 97.5 %</span></span>
-<span><span class="co">#&gt;     -2566        168 -15.3   &lt;0.001 173.1 -2895  -2237</span></span>
+<span><span class="co">#&gt;       Term Contrast Estimate Std. Error     z Pr(&gt;|z|)     S   2.5 %  97.5 %</span></span>
+<span><span class="co">#&gt;  age          dY/dX     55.3       5.42  10.2   &lt;0.001  78.9    44.7    65.9</span></span>
+<span><span class="co">#&gt;  ins_unins    1 - 0  -2595.1     163.67 -15.9   &lt;0.001 185.7 -2915.9 -2274.3</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; Term: ins_unins</span></span>
-<span><span class="co">#&gt; Type: response</span></span>
-<span><span class="co">#&gt; Comparison: 1 - 0</span></span></code></pre></div>
+<span><span class="co">#&gt; Type: response</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="expected-expenditures-and-effects-on-them">Expected expenditures and effects on them<a class="anchor" aria-label="anchor" href="#expected-expenditures-and-effects-on-them"></a>

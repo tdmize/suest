@@ -135,7 +135,7 @@ zi_fit <- suest(zip, zinb, model_names = c("ZIP", "ZINB"))
 avg_slopes(zi_fit, variables = "ment", type = "zero")
 #> 
 #>  Group Estimate Std. Error     z Pr(>|z|)    S   2.5 %   97.5 %
-#>   ZIP   -0.0178    0.00679 -2.62  0.00877  6.8 -0.0311 -0.00449
+#>   ZIP   -0.0178    0.00679 -2.62  0.00876  6.8 -0.0311 -0.00449
 #>   ZINB  -0.0304    0.00791 -3.85  < 0.001 13.1 -0.0459 -0.01495
 #> 
 #> Term: ment

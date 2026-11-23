@@ -8,11 +8,11 @@ among the non-zeroes. The expected outcome is the product of the two:
 E(y) = \Pr(y > 0) \times E(y \mid y > 0)
 ```
 
-With [`suest()`](https://tdmize.github.io/suest/reference/suest.md), fit
-the two parts as separate models and combine them with `twopart`.
-Predictions and marginal effects from `marginaleffects` are then on the
-expected outcome, with standard errors from the joint covariance of the
-two parts.
+In R, fit the two parts as separate models and combine them with
+[`suest()`](https://tdmize.github.io/suest/reference/suest.md) and the
+`twopart` option. Predictions and marginal effects from
+`marginaleffects` are then on the expected outcome, with standard errors
+from the joint covariance of the two parts.
 
 The examples use the medical expenditures of 19,386 adults in the 2004
 Medical Expenditure Panel Survey. The first part is a logit of whether a
@@ -91,21 +91,22 @@ design. `wts = TRUE` averages with the sampling weights:
 ``` r
 
 design <- survey::svydesign(ids = ~duid, weights = ~wtdper, data = meps)
-any_s <- survey::svyglm(I(exp_tot > 0) ~ age + female + ins_unins,
-                        design = design, family = quasibinomial)
-amount_s <- survey::svyglm(exp_tot ~ age + female + ins_unins,
+any_s <- survey::svyglm(I(exp_tot > 0) ~ age + female + lninc + pcs12 + mcs12 +
+                          ins_unins + anylim, design = design,
+                        family = quasibinomial)
+amount_s <- survey::svyglm(exp_tot ~ age + female + lninc + pcs12 + mcs12 +
+                             ins_unins + anylim,
                            design = subset(design, exp_tot > 0),
                            family = quasipoisson)
 fit_s <- suest(any_s, amount_s, survey_design = design,
                observation_id = "dupersid", twopart = TRUE)
-avg_slopes(fit_s, variables = "ins_unins", wts = TRUE)
+avg_slopes(fit_s, variables = c("age", "ins_unins"), wts = TRUE)
 #> 
-#>  Estimate Std. Error     z Pr(>|z|)     S 2.5 % 97.5 %
-#>     -2566        168 -15.3   <0.001 173.1 -2895  -2237
+#>       Term Contrast Estimate Std. Error     z Pr(>|z|)     S   2.5 %  97.5 %
+#>  age          dY/dX     55.3       5.42  10.2   <0.001  78.9    44.7    65.9
+#>  ins_unins    1 - 0  -2595.1     163.67 -15.9   <0.001 185.7 -2915.9 -2274.3
 #> 
-#> Term: ins_unins
 #> Type: response
-#> Comparison: 1 - 0
 ```
 
 ## Expected expenditures and effects on them
