@@ -30,9 +30,10 @@
 #'   for these models must contain whole panels.
 #' @param weight_type Optional weight interpretation. The default `NULL`
 #'   preserves the unweighted behavior and rejects nonunit estimation weights.
-#'   Use `"pweight"` to treat model weights as sampling weights. In version
-#'   0.1.4, pweights are supported for linear, binary logit/probit, Poisson,
-#'   negative-binomial, ordered logit/probit, and multinomial logit models.
+#'   Use `"pweight"` to treat model weights as sampling weights. Pweights are
+#'   supported for linear, binary logit/probit/cloglog, Poisson, other GLMs
+#'   (such as quasi-Poisson and Gamma), negative-binomial, ordered
+#'   logit/probit, and multinomial logit models.
 #' @param survey_design Full common one-stage `survey::svydesign()` object for
 #'   supported survey models: `survey::svyglm()` (Gaussian identity, binary
 #'   `quasibinomial()` logit/probit/cloglog, or `quasipoisson()` log),
@@ -42,6 +43,21 @@
 #'   Retain the design before model-specific domain subsetting. Specify weights
 #'   and clusters in this design, without `weight_type` or `cluster`. Ordinary
 #'   models leave this argument `NULL`.
+#' @param twopart Two-part models, `E(y) = Pr(y > 0) * E(y | y > 0)`: a
+#'   binary first part (logit, probit, or cloglog) for whether the outcome is
+#'   positive, and a second part fit to the positive outcomes (a linear model, a
+#'   GLM such as a Gamma or quasi-Poisson model with a log link, or a negative
+#'   binomial model). `TRUE` takes the models in pairs, in order; a character
+#'   vector names the models in pairs, as in
+#'   `c("Any", "Gamma", "Any", "Poisson")`; a named list of pairs, as in
+#'   `list("Two-part" = c("Any", "Amount"))`, also labels them (by default
+#'   `Any+Amount`). Models not in a pair keep their own prediction. See
+#'   "Two-part models" below.
+#' @param retransform For `lm()` second parts of the log of the outcome:
+#'   `"duan"` for Duan's smearing estimate, `exp(xb)` times the mean of the
+#'   exponentiated residuals, or `"normal"` for the normal-theory
+#'   retransformation, `exp(xb + sigma^2/2)` with `sigma^2` the mean squared
+#'   residual.
 #' @param object,x A `"suest_model"` object.
 #'
 #' @return An object of class `"suest_model"` containing the fitted models,
@@ -89,8 +105,10 @@
 #' strictly positive. For observations included in any pair of models, evaluated
 #' weights must agree; weights may differ for observations unique to either
 #' model, including completely disjoint samples. Pweight support is available
-#' for linear, binary logit/probit, Poisson, negative-binomial, ordered
-#' logit/probit, and multinomial logit models.
+#' for linear, binary logit/probit/cloglog, Poisson, other GLMs,
+#' negative-binomial, ordered logit/probit, and multinomial logit models.
+#' With pweights or a survey design, `wts = TRUE` in the `marginaleffects`
+#' functions averages with the sampling weights, as Stata's `margins` does.
 #'
 #' Bias-reduced, adjusted-score, Firth, and penalized
 #' GLM fits are rejected because they do not use ordinary maximum-likelihood
@@ -100,6 +118,17 @@
 #' beta fits and penalized `survreg` fits are not supported. Conventional
 #' `survreg` fits with `robust = TRUE` use their model-based information for
 #' the joint sandwich covariance.
+#'
+#' @section Two-part models:
+#' With `twopart`, predictions are on the expected outcome, the first part's
+#' probability times the second part's mean, and standard errors come from the
+#' joint covariance of the two parts. `type = "positive"` gives the first
+#' part's probability and `type = "amount"` the second part's mean; models not
+#' in a pair are left out of these. Without `newdata`, each two-part model is
+#' averaged over its first part's sample, with every variable of the first
+#' part's data, so `by =` and `newdata = subset(y > 0)` work. The
+#' retransformation factor is held fixed at its estimate, as in Stata's
+#' `suest2` and `twopm`.
 #'
 #' @section Survey models:
 #' Survey support combines linear, binary, and Poisson `svyglm()` fits,
@@ -402,6 +431,13 @@
 #' effects <- marginaleffects::avg_comparisons(fit, variables = "wt", newdata = dat)
 #' marginaleffects::hypotheses(effects, hypothesis = difference ~ revpairwise)
 #'
+#' # A two-part model: whether the outcome is positive, then its amount
+#' dat$y <- ifelse(dat$am == "1", dat$mpg, 0)
+#' any <- glm(I(y > 0) ~ wt, family = binomial(), data = dat)
+#' amount <- glm(y ~ wt, family = Gamma(link = "log"), data = dat, subset = y > 0)
+#' fit <- suest(any, amount, model_names = c("Any", "Amount"), twopart = TRUE)
+#' marginaleffects::avg_slopes(fit, variables = "wt")
+#'
 #' @export
 suest <- function(
     ...,
@@ -409,7 +445,9 @@ suest <- function(
     observation_id = NULL,
     cluster = NULL,
     weight_type = NULL,
-    survey_design = NULL) {
+    survey_design = NULL,
+    twopart = NULL,
+    retransform = NULL) {
   if (!requireNamespace("sandwich", quietly = TRUE))
     stop("Package 'sandwich' is required.", call. = FALSE)
   if (!requireNamespace("marginaleffects", quietly = TRUE))
@@ -455,8 +493,8 @@ suest <- function(
 
   survey_models <- vapply(models, .suest_is_survey_model, logical(1))
   if (any(survey_models) || !is.null(survey_design))
-    return(.suest_survey_system(models, model_names, observation_id,
-      survey_design, cluster, weight_type, match.call(), parent.frame()))
+    return(.suest_twopart_setup(.suest_survey_system(models, model_names, observation_id,
+      survey_design, cluster, weight_type, match.call(), parent.frame()), twopart, retransform))
 
   adapters <- lapply(models, .suest_model_adapter)
   model_types <- vapply(adapters, `[[`, character(1), "type")
@@ -661,8 +699,8 @@ suest <- function(
         )
     } else {
       if (!type %in% c(
-        "lm", "logit", "probit", "poisson", "negbin",
-        "ologit", "oprobit", "multinom"
+        "lm", "logit", "probit", "cloglog", "fraclogit", "fracprobit",
+        "fraccloglog", "poisson", "negbin", "glm", "ologit", "oprobit", "multinom"
       ))
         stop(
           paste0(
@@ -732,7 +770,7 @@ suest <- function(
     if (type %in% c(
       "fraclogit", "fracprobit", "fraccloglog", "fracloglog"
     )) {
-      fractional <- is.numeric(y) && !is.matrix(y) && all(is.finite(y)) &&
+      fractional <- (is.numeric(y) || is.logical(y)) && !is.matrix(y) && all(is.finite(y)) &&
         all(y >= 0 & y <= 1)
       if (!fractional)
         stop(
@@ -1122,7 +1160,7 @@ suest <- function(
     call = match.call()
   )
   class(out) <- "suest_model"
-  out
+  .suest_twopart_setup(out, twopart, retransform)
 }
 
 #' @rdname suest
@@ -1159,6 +1197,16 @@ print.suest_model <- function(x, ...) {
       ),
       "\n"
     )
+  }
+  if (!is.null(x$twopart)) {
+    pairs <- Filter(function(u) u$kind == "pair", x$twopart$units)
+    parts <- vapply(pairs, function(u) paste(x$model_names[c(u$first, u$second)],
+      collapse = "+"), "")
+    labels <- vapply(pairs, `[[`, "", "label")
+    cat("Two-part models:", paste0(labels, ifelse(labels == parts, "",
+      paste0(" (", parts, ")")), collapse = ", "), "\n")
+    if (!is.null(x$twopart$retransform))
+      cat("Retransformation:", x$twopart$retransform, "\n")
   }
   cat("Comparison scale:", x$comparison_scale, "\n")
   if (!is.null(x$weight_type))

@@ -16,7 +16,9 @@ suest(
   observation_id = NULL,
   cluster = NULL,
   weight_type = NULL,
-  survey_design = NULL
+  survey_design = NULL,
+  twopart = NULL,
+  retransform = NULL
 )
 
 \method{coef}{suest_model}(object, ...)
@@ -60,9 +62,10 @@ for these models must contain whole panels.}
 
 \item{weight_type}{Optional weight interpretation. The default \code{NULL}
 preserves the unweighted behavior and rejects nonunit estimation weights.
-Use \code{"pweight"} to treat model weights as sampling weights. In version
-0.1.4, pweights are supported for linear, binary logit/probit, Poisson,
-negative-binomial, ordered logit/probit, and multinomial logit models.}
+Use \code{"pweight"} to treat model weights as sampling weights. Pweights are
+supported for linear, binary logit/probit/cloglog, Poisson, other GLMs
+(such as quasi-Poisson and Gamma), negative-binomial, ordered
+logit/probit, and multinomial logit models.}
 
 \item{survey_design}{Full common one-stage \code{survey::svydesign()} object for
 supported survey models: \code{survey::svyglm()} (Gaussian identity, binary
@@ -73,6 +76,23 @@ supported survey models: \code{survey::svyglm()} (Gaussian identity, binary
 Retain the design before model-specific domain subsetting. Specify weights
 and clusters in this design, without \code{weight_type} or \code{cluster}. Ordinary
 models leave this argument \code{NULL}.}
+
+\item{twopart}{Two-part models, \code{E(y) = Pr(y > 0) * E(y | y > 0)}: a
+binary first part (logit, probit, or cloglog) for whether the outcome is
+positive, and a second part fit to the positive outcomes (a linear model, a
+GLM such as a Gamma or quasi-Poisson model with a log link, or a negative
+binomial model). \code{TRUE} takes the models in pairs, in order; a character
+vector names the models in pairs, as in
+\code{c("Any", "Gamma", "Any", "Poisson")}; a named list of pairs, as in
+\code{list("Two-part" = c("Any", "Amount"))}, also labels them (by default
+\code{Any+Amount}). Models not in a pair keep their own prediction. See
+"Two-part models" below.}
+
+\item{retransform}{For \code{lm()} second parts of the log of the outcome:
+\code{"duan"} for Duan's smearing estimate, \code{exp(xb)} times the mean of the
+exponentiated residuals, or \code{"normal"} for the normal-theory
+retransformation, \code{exp(xb + sigma^2/2)} with \code{sigma^2} the mean squared
+residual.}
 
 \item{object, x}{A \code{"suest_model"} object.}
 
@@ -133,8 +153,10 @@ Aliased parameters are not supported. Nonunit weights are rejected unless
 strictly positive. For observations included in any pair of models, evaluated
 weights must agree; weights may differ for observations unique to either
 model, including completely disjoint samples. Pweight support is available
-for linear, binary logit/probit, Poisson, negative-binomial, ordered
-logit/probit, and multinomial logit models.
+for linear, binary logit/probit/cloglog, Poisson, other GLMs,
+negative-binomial, ordered logit/probit, and multinomial logit models.
+With pweights or a survey design, \code{wts = TRUE} in the \code{marginaleffects}
+functions averages with the sampling weights, as Stata's \code{margins} does.
 
 Bias-reduced, adjusted-score, Firth, and penalized
 GLM fits are rejected because they do not use ordinary maximum-likelihood
@@ -145,6 +167,19 @@ beta fits and penalized \code{survreg} fits are not supported. Conventional
 \code{survreg} fits with \code{robust = TRUE} use their model-based information for
 the joint sandwich covariance.
 }
+\section{Two-part models}{
+
+With \code{twopart}, predictions are on the expected outcome, the first part's
+probability times the second part's mean, and standard errors come from the
+joint covariance of the two parts. \code{type = "positive"} gives the first
+part's probability and \code{type = "amount"} the second part's mean; models not
+in a pair are left out of these. Without \code{newdata}, each two-part model is
+averaged over its first part's sample, with every variable of the first
+part's data, so \verb{by =} and \code{newdata = subset(y > 0)} work. The
+retransformation factor is held fixed at its estimate, as in Stata's
+\code{suest2} and \code{twopm}.
+}
+
 \section{Survey models}{
 
 Survey support combines linear, binary, and Poisson \code{svyglm()} fits,
@@ -463,5 +498,12 @@ fit
 
 effects <- marginaleffects::avg_comparisons(fit, variables = "wt", newdata = dat)
 marginaleffects::hypotheses(effects, hypothesis = difference ~ revpairwise)
+
+# A two-part model: whether the outcome is positive, then its amount
+dat$y <- ifelse(dat$am == "1", dat$mpg, 0)
+any <- glm(I(y > 0) ~ wt, family = binomial(), data = dat)
+amount <- glm(y ~ wt, family = Gamma(link = "log"), data = dat, subset = y > 0)
+fit <- suest(any, amount, model_names = c("Any", "Amount"), twopart = TRUE)
+marginaleffects::avg_slopes(fit, variables = "wt")
 
 }

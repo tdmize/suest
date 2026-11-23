@@ -37,6 +37,7 @@ articles:
   - panel
   - within-person
   - instrumental-variables
+  - two-part
 - title: More
   navbar: ~
   contents:

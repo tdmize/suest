@@ -44,7 +44,15 @@ set_coef.suest_model <- function(model, coefs, ...) {
 }
 
 get_vcov.suest_model <- function(model, vcov = NULL, ...) {
+  if (isFALSE(vcov)) return(NULL)
+  if (!is.null(vcov) && !isTRUE(vcov))
+    message("suest uses its joint robust covariance; the 'vcov' argument is ignored.")
   model$vcov
+}
+
+# Lets wts = TRUE average with the sampling weights (.suest_weight).
+find_weights.suest_model <- function(x, ...) {
+  if (any(x$weight_type %in% c("pweight", "survey"))) ".suest_weight" else NULL
 }
 
 # Data used when newdata is omitted and by datagrid().
@@ -142,6 +150,8 @@ get_predict.suest_mi <- function(model, newdata, type = "response", ...) {
 }
 
 get_predict.suest_model <- function(model, newdata, type = "response", ...) {
+  if (!is.null(model$twopart))
+    return(.suest_twopart_predict(model, newdata, type))
   if (is.null(type))
     type <- "response"
 

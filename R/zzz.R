@@ -44,5 +44,8 @@
     registerS3method("find_response", "suest_model",
                      find_response.suest_model,
                      envir = asNamespace("insight"))
+    registerS3method("find_weights", "suest_model",
+                     find_weights.suest_model,
+                     envir = asNamespace("insight"))
   }
 }

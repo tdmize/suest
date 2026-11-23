@@ -28,7 +28,11 @@
 suest_newdata <- function(object) {
   if (!inherits(object, "suest_model"))
     stop("'object' must be a suest_model.", call. = FALSE)
+  if (!is.null(object$twopart)) return(.suest_twopart_data(object, stack = TRUE))
+  .suest_stacked_frames(object)
+}
 
+.suest_stacked_frames <- function(object) {
   raw_data <- object$raw_data
   if (is.null(raw_data)) raw_data <- vector("list", length(object$model_frames))
   model_frames <- Map(function(x, raw) {
@@ -141,6 +145,7 @@ suest_newdata <- function(object) {
 # averaged over its own sample, and grids include every model's predictors.
 # Otherwise each model's own sample, stacked as in suest_newdata().
 .suest_default_data <- function(object) {
+  if (!is.null(object$twopart)) return(.suest_twopart_data(object))
   stacked <- suest_newdata(object)
   keys <- object$sample_keys
   same_sample <- length(keys) > 1L &&

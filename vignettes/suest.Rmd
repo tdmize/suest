@@ -24,7 +24,8 @@ leaves calculating and presenting the quantities themselves to
 ## Functions at a glance
 
 - `suest()` combines two or more fitted models and calculates their joint
-  covariance matrix.
+  covariance matrix. Its `twopart` option combines the two parts of
+  [two-part models](two-part.html).
 - `suest_newdata()` stacks the models' estimation samples so each model's
   effects can be averaged over its own sample.
 - `suest_mi()` pools `suest()` results across multiply imputed datasets.
@@ -310,7 +311,8 @@ Six examples from Mize, Doan, and Long (2019), with code and output:
 
 More examples: [group comparisons](chapter-groups.html) from Mize and Han
 (forthcoming), [multilevel models](multilevel.html),
-[panel models](panel.html), [within-person effects](within-person.html), and
-[instrumental-variable models](instrumental-variables.html).
+[panel models](panel.html), [within-person effects](within-person.html),
+[instrumental-variable models](instrumental-variables.html), and
+[two-part models](two-part.html).
 [Predictions and graphs](predictions.html) shows predictions from each model
 and tests and graphs of their differences.

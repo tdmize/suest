@@ -147,6 +147,23 @@ p <- avg_predictions(zi_fit, type = "prob")
 p[p$group %in% c("ZIP::0", "ZINB::0"), ]
 ```
 
+## Two-part models
+
+With `twopart`, predictions and marginal effects take these `type` values:
+
+| `type` | Prediction | Stata `margins` after `suest2` |
+|---|---|---|
+| `"response"` (the default) | Expected outcome, `Pr(y > 0) * E(y | y > 0)` | `predict(twopart(Any Amount))` |
+| `"positive"` | Probability of a positive outcome (the first part) | `predict(model(Any))` |
+| `"amount"` | Expected outcome among the positive outcomes (the second part) | `predict(model(Amount))` |
+
+The first part can be a logit, probit, or complementary log-log `glm()` or
+survey `svyglm()`; the second part a linear model, a GLM such as a Gamma or
+quasi-Poisson model with a log link, a negative binomial `MASS::glm.nb()`, or
+a survey quasi-Poisson `svyglm()`. Models not in a pair keep their own
+prediction with `"response"` and are left out with `"positive"` and
+`"amount"`. See [Two-part models](two-part.html).
+
 ## Mixed models fitted with glmmTMB
 
 - Predictions and marginal effects average over the random intercept, and
