@@ -128,6 +128,7 @@ evaluation data
   [`vcov(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)
   [`nobs(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)
   [`summary(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)
+  [`print(`*`<summary.suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)
   [`print(`*`<suest_mi>`*`)`](https://tdmize.github.io/suest/reference/suest_mi.md)
   : Pool SUEST systems across multiple imputations
 - [`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)

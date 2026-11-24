@@ -16,9 +16,11 @@ models. See
 full list.
 
 Probability weights (`weight_type = "pweight"`) are supported for
-linear, binary logit and probit, Poisson, negative-binomial, ordered
-logit and probit, and multinomial logit models. Joint cluster-robust
-covariance is available through the `cluster` argument to
+linear, binary (logit, probit, complementary log-log), fractional,
+Poisson, negative-binomial, ordered logit and probit, and multinomial
+logit models, and for other GLMs such as Gamma and quasi-Poisson models.
+Joint cluster-robust covariance is available through the `cluster`
+argument to
 [`suest()`](https://tdmize.github.io/suest/reference/suest.md). Systems
 fitted in multiply imputed datasets can be pooled with
 [`suest_mi()`](https://tdmize.github.io/suest/reference/suest_mi.md)

@@ -293,9 +293,10 @@ A singleton stratum with a certainty FPC is supported under <code>fail</code>.
 Extra fitting weights are unsupported; place offsets in the model formula.</p>
 <p>Predictions and effects use the joint design-based coefficient covariance.
 Averaging treats the supplied covariate distribution as fixed; it does not
-add design uncertainty from estimating that distribution. Use
-<code><a href="suest_newdata.html">suest_newdata()</a></code> and <code>wts = ".suest_weight"</code> for model-specific weighted
-averages. Inference uses the usual asymptotic normal default. The full
+add design uncertainty from estimating that distribution. <code>wts = TRUE</code>
+averages with the sampling weights, each model over its own estimation
+sample when <code>newdata</code> is omitted. Inference uses the usual asymptotic
+normal default. The full
 design's degrees of freedom are recorded in <code>$survey$design_df</code>; no automatic
 survey t or F adjustment is applied.</p>
     </div>
@@ -431,8 +432,8 @@ A user-supplied <code>zcor</code> is unsupported</p></li>
 <div class="section">
 <h3 id="multilevel-models">Multilevel models<a class="anchor" aria-label="anchor" href="#multilevel-models"></a></h3>
 
-<ul><li><p>unweighted single-level random-intercept Gaussian models from
-<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> fitted with <code>method = "ML"</code>, matching Stata's
+<ul><li><p>unweighted Gaussian models with a random intercept for one grouping
+variable from <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code> fitted with <code>method = "ML"</code>, matching Stata's
 <code>xtreg, mle</code> (full observed-information bread). For Stata's <code>mixed</code>
 layout, fit the same model with <code>lme4::lmer(..., REML = FALSE)</code>; the
 standard errors differ only slightly</p></li>

@@ -99,8 +99,8 @@ calculates their joint covariance matrix. Its <code>twopart</code>
 option combines the two parts of <a href="two-part.html">two-part
 models</a>.</li>
 <li>
-<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> stacks the models’ estimation samples
-so each model’s effects can be averaged over its own sample.</li>
+<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> stacks the models’ estimation samples,
+one block of rows per model.</li>
 <li>
 <code><a href="../reference/suest_mi.html">suest_mi()</a></code> pools <code><a href="../reference/suest.html">suest()</a></code> results across
 multiply imputed datasets.</li>
@@ -409,35 +409,35 @@ or unstructured correlation</td>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Linear random-intercept</td>
+<td>Linear, random intercept</td>
 <td><code>nlme::lme(method = "ML")</code></td>
 </tr>
 <tr class="even">
-<td>Random-intercept logit, probit, cloglog, Poisson, negative binomial
+<td>Linear (maximum likelihood)</td>
+<td><code>lme4::lmer(REML = FALSE)</code></td>
+</tr>
+<tr class="odd">
+<td>Logit, probit, complementary log-log, and Poisson</td>
+<td>
+<code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>; with only a random intercept, any
+<code>nAGQ</code>
+</td>
+</tr>
+<tr class="even">
+<td>Logit, probit, complementary log-log, Poisson, negative binomial
 (mean or constant dispersion), linear, and Gamma (log link)</td>
 <td><code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code></td>
 </tr>
 <tr class="odd">
-<td>Random intercept and slope, <code>(1 + x | id)</code>, for the same
-families</td>
-<td><code><a href="https://rdrr.io/pkg/glmmTMB/man/glmmTMB.html" class="external-link">glmmTMB::glmmTMB()</a></code></td>
-</tr>
-<tr class="even">
-<td>Linear random intercept or slope (ML)</td>
-<td><code>lme4::lmer(REML = FALSE)</code></td>
-</tr>
-<tr class="odd">
-<td>Random-intercept or slope logit, probit, cloglog, and Poisson</td>
-<td>
-<code><a href="https://rdrr.io/pkg/lme4/man/glmer.html" class="external-link">lme4::glmer()</a></code>, any <code>nAGQ</code>
-</td>
-</tr>
-<tr class="even">
-<td>Random-intercept ordered logit and probit</td>
+<td>Ordered logit and probit</td>
 <td><code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">ordinal::clmm()</a></code></td>
 </tr>
 </tbody>
 </table>
+<p>Except for <code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>, these models can have random
+slopes, several of them, and a level nested in the grouping variable
+(three-level models); see <a href="model-notes.html#several-random-slopes-and-three-level-models">Notes
+on specific models</a>.</p>
 </div>
 <div class="section level3">
 <h3 id="survey-models">Survey models<a class="anchor" aria-label="anchor" href="#survey-models"></a>
@@ -514,17 +514,24 @@ odds</td>
 different samples. Any single-level models can be combined, including
 models for different outcomes and models for categorical outcomes.
 Results on different scales are labeled separately rather than treated
-as directly comparable. Random-effects models (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>,
-<code>pglm()</code>, <code>glmmTMB()</code>, lme4, <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">clmm()</a></code>)
-can be combined with each other, including different families, and with
-linear, binary, count, and ordered models, such as a logit model with a
-random-intercept logit model. They must share one grouping variable (for
-three-level models, the top level), which the system is clustered on,
-and must be unweighted. Random-effects models can have several random
-slopes and a level nested in the grouping variable. Other panel models
-(<code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm()</a></code>, <code>geeglm()</code>) can be combined only with
-models of the same kind. Offsets are supported, except in
-<code>pglm()</code> and <code>glmmTMB()</code> models.</p>
+as directly comparable.</p>
+<p>Random-effects models (<code><a href="https://rdrr.io/pkg/nlme/man/lme.html" class="external-link">nlme::lme()</a></code>, <code>pglm()</code>,
+<code>glmmTMB()</code>, lme4, <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">clmm()</a></code>) can be combined with
+each other, including different families, and with linear, logit,
+probit, complementary log-log, Poisson, negative binomial, and ordered
+logit and probit models, such as a logit model with a random-intercept
+logit model. They must be unweighted and share one grouping variable
+(for three-level models, the top level), and the system is clustered on
+that variable. Other panel models (<code><a href="https://rdrr.io/pkg/plm/man/plm.html" class="external-link">plm()</a></code>,
+<code>geeglm()</code>) can be combined only with models of the same
+kind.</p>
+<p>Offsets work in most models, written in the formula or given in the
+<code>offset</code> argument. They are not supported in
+<code>glmmTMB()</code>, lme4, <code><a href="https://rdrr.io/pkg/ordinal/man/clmm.html" class="external-link">clmm()</a></code>, <code>pglm()</code>,
+<code><a href="https://lrberge.github.io/fixest/reference/feglm.html" class="external-link">fixest::fepois()</a></code>, <code><a href="https://rdrr.io/pkg/VGAM/man/vglm.html" class="external-link">VGAM::vglm()</a></code>,
+<code><a href="https://chjackson.github.io/flexsurv/reference/flexsurvreg.html" class="external-link">flexsurv::flexsurvreg()</a></code>, and <code><a href="https://rdrr.io/pkg/GJRM/man/gjrm.html" class="external-link">GJRM::gjrm()</a></code>
+models. Survey models need them in the formula, as
+<code><a href="https://rdrr.io/r/stats/offset.html" class="external-link">offset()</a></code>.</p>
 <p>A few models have settings worth knowing about; see <a href="model-notes.html">Notes on specific models</a>.</p>
 </div>
 </div>
@@ -532,8 +539,10 @@ models of the same kind. Offsets are supported, except in
 <h2 id="different-samples-or-groups">Different samples or groups<a class="anchor" aria-label="anchor" href="#different-samples-or-groups"></a>
 </h2>
 <p>When the models are fitted to different samples, such as separate
-groups, use <code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> so each model’s effects are
-averaged over its own sample:</p>
+groups, each model’s effects are averaged over its own sample. That is
+the default when <code>newdata</code> is left out;
+<code>newdata = suest_newdata(fit)</code> says the same thing
+explicitly:</p>
 <div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">south_model</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">union</span> <span class="op">~</span> <span class="va">age</span> <span class="op">+</span> <span class="va">hours</span> <span class="op">+</span> <span class="va">collgrad</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>,</span>
 <span>                   data <span class="op">=</span> <span class="va">nlsw</span>, subset <span class="op">=</span> <span class="va">south</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
@@ -562,10 +571,33 @@ averaged over its own sample:</p>
 <h2 id="cluster-robust-standard-errors">Cluster-robust standard errors<a class="anchor" aria-label="anchor" href="#cluster-robust-standard-errors"></a>
 </h2>
 <p>Supply a cluster variable to get cluster-robust standard errors for
-the combined models:</p>
+the combined models. The National Longitudinal Survey of Young Women
+follows the same women over many years, so the same two models of union
+membership, fitted to all the years, cluster on each woman’s ID:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit_clustered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base</span>, <span class="va">adjusted</span>, cluster <span class="op">=</span> <span class="st">"person_id"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_clustered</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">nlswork</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://haven.tidyverse.org/reference/zap_labels.html" class="external-link">zap_labels</a></span><span class="op">(</span><span class="fu"><a href="https://haven.tidyverse.org/reference/read_dta.html" class="external-link">read_dta</a></span><span class="op">(</span><span class="st">"https://tdmize.github.io/data/data/nlswork.dta"</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">base_p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">union</span> <span class="op">~</span> <span class="va">collgrad</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">south</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>,</span>
+<span>              data <span class="op">=</span> <span class="va">nlswork</span><span class="op">)</span></span>
+<span><span class="va">adjusted_p</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">union</span> <span class="op">~</span> <span class="va">collgrad</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">south</span> <span class="op">+</span> <span class="va">ln_wage</span> <span class="op">+</span> <span class="va">ttl_exp</span>,</span>
+<span>                  family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">binomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span>, data <span class="op">=</span> <span class="va">nlswork</span><span class="op">)</span></span>
+<span><span class="va">fit_clustered</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base_p</span>, <span class="va">adjusted_p</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span>,</span>
+<span>                       cluster <span class="op">=</span> <span class="st">"idcode"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">effects_clustered</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_clustered</span>, variables <span class="op">=</span> <span class="st">"collgrad"</span><span class="op">)</span></span>
+<span><span class="va">effects_clustered</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     Group Estimate Std. Error      z Pr(&gt;|z|)    S   2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  Base      0.06226     0.0151  4.115   &lt;0.001 14.7  0.0326 0.0919</span></span>
+<span><span class="co">#&gt;  Adjusted -0.00436     0.0148 -0.294    0.768  0.4 -0.0333 0.0246</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Term: collgrad</span></span>
+<span><span class="co">#&gt; Type: response</span></span>
+<span><span class="co">#&gt; Comparison: 1 - 0</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects_clustered</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;           Hypothesis Estimate Std. Error    z Pr(&gt;|z|)     S 2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  (Base) - (Adjusted)   0.0666    0.00542 12.3   &lt;0.001 112.9 0.056 0.0772</span></span></code></pre></div>
 <p><code>cluster</code> takes one or more column names, or a list with
 one vector, matrix, or data frame matched to each model’s estimation
 sample. An observation that appears in more than one model must have the
@@ -579,10 +611,12 @@ you supply must contain whole panels.</p>
 <h2 id="probability-weights">Probability weights<a class="anchor" aria-label="anchor" href="#probability-weights"></a>
 </h2>
 <p><code>suest</code> supports probability weights for linear, binary
-logit and probit, Poisson, negative binomial, ordered logit and probit,
-and multinomial logit models. Fit each model with <code>weights=</code>,
-and tell <code><a href="../reference/suest.html">suest()</a></code> that they are probability weights with
-<code>weight_type = "pweight"</code>:</p>
+(logit, probit, complementary log-log), fractional, Poisson, negative
+binomial, ordered logit and probit, and multinomial logit models, and
+for other GLMs such as Gamma and quasi-Poisson models. Fit each model
+with <code>weights =</code>, and tell <code><a href="../reference/suest.html">suest()</a></code> that they are
+probability weights with <code>weight_type = "pweight"</code>.
+<code>wts = TRUE</code> averages with the weights:</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">376</span><span class="op">)</span></span>
 <span><span class="va">weighted</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>x <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">500</span><span class="op">)</span>, z <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="fl">500</span><span class="op">)</span><span class="op">)</span></span>
@@ -607,7 +641,7 @@ and tell <code><a href="../reference/suest.html">suest()</a></code> that they ar
 <span><span class="co">#&gt; Union observations: 500 </span></span>
 <span><span class="co">#&gt; Parameters: 9</span></span>
 <span></span>
-<span><span class="va">effects_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_w</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="va">weighted</span>, wts <span class="op">=</span> <span class="st">"pw"</span><span class="op">)</span></span>
+<span><span class="va">effects_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_w</span>, variables <span class="op">=</span> <span class="st">"x"</span>, wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
 <span><span class="va">effects_w</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     Group Estimate Std. Error    z Pr(&gt;|z|)     S 2.5 % 97.5 %</span></span>
@@ -624,29 +658,50 @@ and tell <code><a href="../reference/suest.html">suest()</a></code> that they ar
 <p>Weights must be positive and finite. An observation that appears in
 more than one model must have the same weight in each; weights can
 differ for observations in only one model, including completely
-different samples. When the models have different estimation samples,
-<code><a href="../reference/suest_newdata.html">suest_newdata()</a></code> includes the weights as
-<code>.suest_weight</code>:</p>
-<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">nd_w</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest_newdata.html">suest_newdata</a></span><span class="op">(</span><span class="va">fit_w</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">fit_w</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="va">nd_w</span>, wts <span class="op">=</span> <span class="st">".suest_weight"</span><span class="op">)</span></span></code></pre></div>
+different samples. When the models have different samples,
+<code>wts = TRUE</code> averages each model over its own sample with its
+own weights.</p>
 </div>
 <div class="section level2">
 <h2 id="survey-data">Survey data<a class="anchor" aria-label="anchor" href="#survey-data"></a>
 </h2>
 <p><code>suest</code> supports the survey models in the table above,
-fitted from one common one-stage survey design, in any combination:</p>
-<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+fitted from one common one-stage survey design, in any combination. Give
+<code><a href="../reference/suest.html">suest()</a></code> the design and a variable that identifies each
+observation. The example uses the stratified sample of California
+schools that comes with the <code>survey</code> package: does the effect
+of the percentage of English language learners on a school’s academic
+performance index shrink once the percentage of students eligible for
+free meals is held constant?</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="http://r-survey.r-forge.r-project.org/survey/" class="external-link">survey</a></span><span class="op">)</span></span>
-<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span><span class="op">~</span><span class="va">psu</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">strata</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">w</span>, data <span class="op">=</span> <span class="va">dat</span><span class="op">)</span></span>
-<span><span class="va">m1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">yb</span> <span class="op">~</span> <span class="va">x</span>, <span class="va">design</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">m2</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">yb</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, <span class="va">design</span>, family <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/stats/family.html" class="external-link">quasibinomial</a></span><span class="op">(</span><span class="st">"logit"</span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">m1</span>, <span class="va">m2</span>, survey_design <span class="op">=</span> <span class="va">design</span>, observation_id <span class="op">=</span> <span class="st">"id"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes</a></span><span class="op">(</span><span class="va">fit</span>, variables <span class="op">=</span> <span class="st">"x"</span>, newdata <span class="op">=</span> <span class="fu"><a href="../reference/suest_newdata.html">suest_newdata</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>, wts <span class="op">=</span> <span class="st">".suest_weight"</span><span class="op">)</span></span></code></pre></div>
-<p>If either model uses a subset (domain) of the data, keep
-<code>design</code> as the full sampled design. The joint covariance
-accounts for strata, PSUs, and optional one-stage finite population
-corrections. Replicate weights, multistage designs, calibration, and PPS
+<span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">api</span><span class="op">)</span></span>
+<span><span class="va">design</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svydesign.html" class="external-link">svydesign</a></span><span class="op">(</span>ids <span class="op">=</span> <span class="op">~</span><span class="fl">1</span>, strata <span class="op">=</span> <span class="op">~</span><span class="va">stype</span>, weights <span class="op">=</span> <span class="op">~</span><span class="va">pw</span>, fpc <span class="op">=</span> <span class="op">~</span><span class="va">fpc</span>,</span>
+<span>                    data <span class="op">=</span> <span class="va">apistrat</span><span class="op">)</span></span>
+<span><span class="va">base_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">api00</span> <span class="op">~</span> <span class="va">ell</span>, <span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">adjusted_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/survey/man/svyglm.html" class="external-link">svyglm</a></span><span class="op">(</span><span class="va">api00</span> <span class="op">~</span> <span class="va">ell</span> <span class="op">+</span> <span class="va">meals</span>, <span class="va">design</span><span class="op">)</span></span>
+<span><span class="va">fit_survey</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span><span class="va">base_s</span>, <span class="va">adjusted_s</span>, model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span>,</span>
+<span>                    survey_design <span class="op">=</span> <span class="va">design</span>, observation_id <span class="op">=</span> <span class="st">"snum"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">effects_survey</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/slopes.html" class="external-link">avg_slopes</a></span><span class="op">(</span><span class="va">fit_survey</span>, variables <span class="op">=</span> <span class="st">"ell"</span>, wts <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span><span class="va">effects_survey</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     Group Estimate Std. Error     z Pr(&gt;|z|)     S 2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  Base       -3.729      0.318 -11.7   &lt;0.001 103.1 -4.35 -3.106</span></span>
+<span><span class="co">#&gt;  Adjusted   -0.506      0.388  -1.3    0.192   2.4 -1.27  0.255</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Term: ell</span></span>
+<span><span class="co">#&gt; Type: response</span></span>
+<span><span class="co">#&gt; Comparison: dY/dX</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/hypotheses.html" class="external-link">hypotheses</a></span><span class="op">(</span><span class="va">effects_survey</span>, hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;           Hypothesis Estimate Std. Error     z Pr(&gt;|z|)    S 2.5 % 97.5 %</span></span>
+<span><span class="co">#&gt;  (Base) - (Adjusted)    -3.22      0.356 -9.06   &lt;0.001 62.7 -3.92  -2.53</span></span></code></pre></div>
+<p>If a model uses a subset (domain) of the data, fit it to
+<code>subset(design, ...)</code> and still give <code><a href="../reference/suest.html">suest()</a></code> the
+full design. The joint covariance accounts for strata, primary sampling
+units, and one-stage finite population corrections. Replicate weights,
+multistage designs, calibration, and probability-proportional-to-size
 designs are not supported.</p>
 </div>
 <div class="section level2">
@@ -656,23 +711,77 @@ designs are not supported.</p>
 <code>suest</code> system in each one. With <code>mice</code>,
 <code><a href="https://rdrr.io/r/base/with.html" class="external-link">with()</a></code> does this, and <code>marginaleffects</code>
 functions then estimate within each imputation and pool the results with
-Rubin’s rules, including cross-model differences:</p>
-<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">analyses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span></span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, family <span class="op">=</span> <span class="va">binomial</span><span class="op">)</span>,</span>
-<span>  <span class="fu"><a href="https://rdrr.io/r/stats/glm.html" class="external-link">glm</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="va">z</span>, family <span class="op">=</span> <span class="va">binomial</span><span class="op">)</span>,</span>
+Rubin’s rules, including cross-model differences. The example imputes
+missing wages, education, and occupation in an extract of the National
+Longitudinal Study of Adolescent to Adult Health (Add Health), then asks
+whether the effect of education on wages is smaller once part-time work
+and occupation are held constant:</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">ah</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://haven.tidyverse.org/reference/zap_labels.html" class="external-link">zap_labels</a></span><span class="op">(</span><span class="fu"><a href="https://haven.tidyverse.org/reference/read_dta.html" class="external-link">read_dta</a></span><span class="op">(</span><span class="st">"https://tdmize.github.io/data/data/addhealth4_mcar.dta"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ah</span> <span class="op">&lt;-</span> <span class="va">ah</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"wages"</span>, <span class="st">"edyrs"</span>, <span class="st">"woman"</span>, <span class="st">"age"</span>, <span class="st">"parttime"</span>, <span class="st">"occcat"</span><span class="op">)</span><span class="op">]</span></span>
+<span><span class="va">ah</span><span class="op">$</span><span class="va">occcat</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html" class="external-link">factor</a></span><span class="op">(</span><span class="va">ah</span><span class="op">$</span><span class="va">occcat</span><span class="op">)</span></span>
+<span><span class="va">imp</span> <span class="op">&lt;-</span> <span class="fu">mice</span><span class="fu">::</span><span class="fu"><a href="https://amices.org/mice/reference/mice.html" class="external-link">mice</a></span><span class="op">(</span><span class="va">ah</span>, m <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">2307</span>, printFlag <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">analyses</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/with.html" class="external-link">with</a></span><span class="op">(</span><span class="va">imp</span>, <span class="fu"><a href="../reference/suest.html">suest</a></span><span class="op">(</span></span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">wages</span> <span class="op">~</span> <span class="va">edyrs</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">age</span><span class="op">)</span>,</span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/stats/lm.html" class="external-link">lm</a></span><span class="op">(</span><span class="va">wages</span> <span class="op">~</span> <span class="va">edyrs</span> <span class="op">+</span> <span class="va">woman</span> <span class="op">+</span> <span class="va">age</span> <span class="op">+</span> <span class="va">parttime</span> <span class="op">+</span> <span class="va">occcat</span><span class="op">)</span>,</span>
 <span>  model_names <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"Base"</span>, <span class="st">"Adjusted"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">analyses</span>, variables <span class="op">=</span> <span class="st">"x"</span>,</span>
-<span>  hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">analyses</span>, variables <span class="op">=</span> <span class="st">"edyrs"</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;     Group Estimate Std. Error    t Pr(&gt;|t|)     S 2.5 % 97.5 %  Df</span></span>
+<span><span class="co">#&gt;  Base         1.64     0.0996 16.5   &lt;0.001 152.7  1.45   1.84 387</span></span>
+<span><span class="co">#&gt;  Adjusted     1.45     0.1026 14.2   &lt;0.001 130.6  1.25   1.66 663</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Term: edyrs</span></span>
+<span><span class="co">#&gt; Type: response</span></span>
+<span><span class="co">#&gt; Comparison: +1</span></span>
+<span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">analyses</span>, variables <span class="op">=</span> <span class="st">"edyrs"</span>,</span>
+<span>                hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt;           Hypothesis Estimate Std. Error    t Pr(&gt;|t|)    S 2.5 % 97.5 %  Df</span></span>
+<span><span class="co">#&gt;  (Base) - (Adjusted)    0.188     0.0402 4.67   &lt;0.001 17.0 0.108  0.267 120</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Type: response</span></span></code></pre></div>
 <p><code>mice</code> warns “Large sample assumed.” here. That is
-expected: SUEST reports large-sample statistics, so the pooled degrees
-of freedom are Rubin’s large-sample values.</p>
+expected: <code>suest</code> reports large-sample statistics, so the
+pooled degrees of freedom are Rubin’s large-sample values.</p>
 <p><code><a href="../reference/suest_mi.html">suest_mi()</a></code> pools the coefficients and their joint
 covariance:</p>
-<div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">pooled</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/suest_mi.html">suest_mi</a></span><span class="op">(</span><span class="va">analyses</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pooled</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">pooled</span><span class="op">)</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; Multiple-imputation estimates for Base, Adjusted           Number of obs = 4,307</span></span>
+<span><span class="co">#&gt;                                                                 Imputations = 10</span></span>
+<span><span class="co">#&gt;                                                     DF: min = 22.8, max = 1224.6</span></span>
+<span><span class="co">#&gt; </span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------------------------</span></span>
+<span><span class="co">#&gt;               | Coefficient  std. err.        t   P&gt;|t|     [95% conf. interval]</span></span>
+<span><span class="co">#&gt; --------------+-----------------------------------------------------------------</span></span>
+<span><span class="co">#&gt; Base          |</span></span>
+<span><span class="co">#&gt;   (Intercept) |     -18.442      3.456   -5.336   0.000      -25.234     -11.651</span></span>
+<span><span class="co">#&gt;         edyrs |       1.642      0.100   16.495   0.000        1.447       1.838</span></span>
+<span><span class="co">#&gt;         woman |      -4.944      0.420  -11.781   0.000       -5.770      -4.118</span></span>
+<span><span class="co">#&gt;           age |       0.500      0.109    4.591   0.000        0.286       0.714</span></span>
+<span><span class="co">#&gt;         lnvar |       4.965      0.049  102.371   0.000        4.870       5.060</span></span>
+<span><span class="co">#&gt; --------------+-----------------------------------------------------------------</span></span>
+<span><span class="co">#&gt; Adjusted      |</span></span>
+<span><span class="co">#&gt;   (Intercept) |     -12.534      3.649   -3.435   0.001      -19.710      -5.358</span></span>
+<span><span class="co">#&gt;         edyrs |       1.455      0.103   14.176   0.000        1.253       1.656</span></span>
+<span><span class="co">#&gt;         woman |      -5.013      0.478  -10.498   0.000       -5.956      -4.071</span></span>
+<span><span class="co">#&gt;           age |       0.488      0.109    4.485   0.000        0.274       0.701</span></span>
+<span><span class="co">#&gt;      parttime |       2.480      0.730    3.396   0.001        1.047       3.913</span></span>
+<span><span class="co">#&gt;       occcat2 |      -2.099      0.850   -2.469   0.014       -3.773      -0.425</span></span>
+<span><span class="co">#&gt;       occcat3 |      -6.310      1.061   -5.950   0.000       -8.394      -4.226</span></span>
+<span><span class="co">#&gt;       occcat4 |      -1.330      1.339   -0.993   0.321       -3.958       1.298</span></span>
+<span><span class="co">#&gt;       occcat5 |      -2.866      1.133   -2.529   0.012       -5.094      -0.638</span></span>
+<span><span class="co">#&gt;       occcat6 |      -5.070      1.061   -4.777   0.000       -7.159      -2.982</span></span>
+<span><span class="co">#&gt;       occcat7 |      -2.667      9.853   -0.271   0.789      -23.060      17.726</span></span>
+<span><span class="co">#&gt;       occcat8 |      -5.040      1.117   -4.514   0.000       -7.239      -2.841</span></span>
+<span><span class="co">#&gt;       occcat9 |      -4.810      0.883   -5.446   0.000       -6.547      -3.074</span></span>
+<span><span class="co">#&gt;         lnvar |       4.944      0.048  102.361   0.000        4.849       5.039</span></span>
+<span><span class="co">#&gt; --------------------------------------------------------------------------------</span></span></code></pre></div>
 <p><code>marginaleffects</code> functions give the same results on
 <code>pooled</code> as on <code>analyses</code>. A list of
 <code><a href="../reference/suest.html">suest()</a></code> results, one per imputation, or the result of

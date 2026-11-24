@@ -1,8 +1,10 @@
 # Stack the estimation samples from a SUEST object
 
-Creates a data frame that stacks each model's own estimation sample. Use
-it when the models were fitted on different samples, so that each
-model's marginal effects are averaged over its own sample.
+Creates a data frame that stacks each model's own estimation sample, one
+block of rows per model, so that each model's predictions and effects
+are averaged over its own sample. `marginaleffects` functions do this
+anyway when `newdata` is left out, so `suest_newdata()` is needed only
+to change or subset these data first.
 
 ## Usage
 
@@ -17,9 +19,6 @@ suest_newdata(object)
   A `"suest_model"` returned by
   [`suest()`](https://tdmize.github.io/suest/reference/suest.md).
 
-  Variables used inside formula transformations, such as `g` in
-  `factor(g)`, are included from the data the model was fit to.
-
 ## Value
 
 A data frame with the component model frames stacked vertically and
@@ -27,6 +26,11 @@ internal columns `.suest_model` and `.suest_rowid`, used to route rows
 to the correct component model. For pweighted and survey models,
 `.suest_weight` contains each row's evaluated sampling weight and can be
 supplied to the `wts` argument of `marginaleffects` averaging functions.
+
+## Details
+
+Variables used inside formula transformations, such as `g` in
+`factor(g)`, are included from the data the model was fit to.
 
 ## Examples
 

@@ -253,9 +253,8 @@ unsupported; place offsets in the model formula.
 Predictions and effects use the joint design-based coefficient
 covariance. Averaging treats the supplied covariate distribution as
 fixed; it does not add design uncertainty from estimating that
-distribution. Use
-[`suest_newdata()`](https://tdmize.github.io/suest/reference/suest_newdata.md)
-and `wts = ".suest_weight"` for model-specific weighted averages.
+distribution. `wts = TRUE` averages with the sampling weights, each
+model over its own estimation sample when `newdata` is omitted.
 Inference uses the usual asymptotic normal default. The full design's
 degrees of freedom are recorded in `$survey$design_df`; no automatic
 survey t or F adjustment is applied.
@@ -437,9 +436,9 @@ survey t or F adjustment is applied.
 
 ### Multilevel models
 
-- unweighted single-level random-intercept Gaussian models from
-  [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html) fitted with
-  `method = "ML"`, matching Stata's `xtreg, mle` (full
+- unweighted Gaussian models with a random intercept for one grouping
+  variable from [`nlme::lme()`](https://rdrr.io/pkg/nlme/man/lme.html)
+  fitted with `method = "ML"`, matching Stata's `xtreg, mle` (full
   observed-information bread). For Stata's `mixed` layout, fit the same
   model with `lme4::lmer(..., REML = FALSE)`; the standard errors differ
   only slightly

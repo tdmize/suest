@@ -80,8 +80,10 @@ predictions, slopes, and average comparisons across models.</p>
 instrumental-variable models, as well as panel, multilevel, and survey
 models. See <code><a href="suest.html">suest()</a></code> for the full list.</p>
 <p>Probability weights (<code>weight_type = "pweight"</code>) are supported for linear,
-binary logit and probit, Poisson, negative-binomial, ordered logit and
-probit, and multinomial logit models. Joint cluster-robust covariance is
+binary (logit, probit, complementary log-log), fractional, Poisson,
+negative-binomial, ordered logit and probit, and multinomial logit models,
+and for other GLMs such as Gamma and quasi-Poisson models. Joint
+cluster-robust covariance is
 available through the <code>cluster</code> argument to <code><a href="suest.html">suest()</a></code>. Systems fitted in
 multiply imputed datasets can be pooled with <code><a href="suest_mi.html">suest_mi()</a></code> using Rubin's
 rules.</p>

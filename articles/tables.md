@@ -91,6 +91,10 @@ modelsummary(
 |          | (0.019)                  | (0.020)  | (0.004)         |
 | Num.Obs. | 1878                     |          | 1878            |
 
+For an effect with several contrasts, such as a factor with three or
+more categories, use `shape = term + contrast ~ group` so that each
+contrast gets its own row.
+
 The same results as a plot:
 
 ``` r
