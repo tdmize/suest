@@ -1,0 +1,46 @@
+"check","measure","gap"
+"gomp_pair suest2","max_b",3.0868330114231e-10
+"entry_pair suest2","max_b",6.07963901444464e-10
+"ggamma_pair suest2","max_b",8.68974214807139e-09
+"biprobit_pair suest2","max_b",9.99378307331433e-08
+"three_mixed suest2","max_b",9.99378307331433e-08
+"gomp_pair A alone, robust","max_b",2.61899391063025e-10
+"gomp_pair B alone, robust","max_b",3.0868330114231e-10
+"ggamma_pair A alone, robust","max_b",4.17375023431532e-11
+"ggamma_pair B alone, robust","max_b",8.68974214807139e-09
+"entry_pair A alone, robust","max_b",1.33810740265972e-10
+"entry_pair B alone, robust","max_b",6.07963901444464e-10
+"biprobit_pair A alone, robust","max_b",9.99378307331433e-08
+"biprobit_pair B alone, robust","max_b",4.78969818251684e-08
+"gomp_pair suest2","max_se_rel",7.1568284631951e-10
+"entry_pair suest2","max_se_rel",6.03534111576209e-10
+"ggamma_pair suest2","max_se_rel",1.00423451776521e-08
+"biprobit_pair suest2","max_se_rel",7.97512572647818e-08
+"three_mixed suest2","max_se_rel",7.97512572647818e-08
+"gomp_pair A alone, robust","max_se_rel",2.55848675578818e-10
+"gomp_pair B alone, robust","max_se_rel",7.1568284631951e-10
+"ggamma_pair A alone, robust","max_se_rel",1.15463860694831e-10
+"ggamma_pair B alone, robust","max_se_rel",1.00423451776521e-08
+"entry_pair A alone, robust","max_se_rel",2.8280910946421e-10
+"entry_pair B alone, robust","max_se_rel",6.03534111576209e-10
+"biprobit_pair A alone, robust","max_se_rel",7.97512572647818e-08
+"biprobit_pair B alone, robust","max_se_rel",3.71231425599916e-08
+"gomp_pair suest2","max_V_rel",1.4313658952504e-09
+"entry_pair suest2","max_V_rel",1.2070679730796e-09
+"ggamma_pair suest2","max_V_rel",2.08565266785622e-08
+"biprobit_pair suest2","max_V_rel",1.59502508287344e-07
+"three_mixed suest2","max_V_rel",1.59502508287344e-07
+"gomp_pair A alone, robust","max_V_rel",5.11697451691047e-10
+"gomp_pair B alone, robust","max_V_rel",1.4313658952504e-09
+"ggamma_pair A alone, robust","max_V_rel",2.40056100714634e-10
+"ggamma_pair B alone, robust","max_V_rel",2.08565266785622e-08
+"entry_pair A alone, robust","max_V_rel",5.65618035014974e-10
+"entry_pair B alone, robust","max_V_rel",1.2070679730796e-09
+"biprobit_pair A alone, robust","max_V_rel",1.59502508287344e-07
+"biprobit_pair B alone, robust","max_V_rel",7.42462863651943e-08
+"Gompertz A: average median survival time","abs_diff",4.81036543931168e-10
+"Generalized gamma B: average median survival time","abs_diff",4.67019445338224e-09
+"Bivariate probit A: average Pr(y1 = 1, y2 = 1)","abs_diff",5.19055048942008e-09
+"Gompertz A: average median survival time","se_rel",1.38092925983102e-08
+"Generalized gamma B: average median survival time","se_rel",1.28854571901371e-07
+"Bivariate probit A: average Pr(y1 = 1, y2 = 1)","se_rel",4.45692451833679e-08

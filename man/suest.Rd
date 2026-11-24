@@ -207,9 +207,10 @@ Extra fitting weights are unsupported; place offsets in the model formula.
 
 Predictions and effects use the joint design-based coefficient covariance.
 Averaging treats the supplied covariate distribution as fixed; it does not
-add design uncertainty from estimating that distribution. Use
-\code{suest_newdata()} and \code{wts = ".suest_weight"} for model-specific weighted
-averages. Inference uses the usual asymptotic normal default. The full
+add design uncertainty from estimating that distribution. \code{wts = TRUE}
+averages with the sampling weights, each model over its own estimation
+sample when \code{newdata} is omitted. Inference uses the usual asymptotic
+normal default. The full
 design's degrees of freedom are recorded in \verb{$survey$design_df}; no automatic
 survey t or F adjustment is applied.
 }
@@ -343,8 +344,8 @@ A user-supplied \code{zcor} is unsupported
 
 \subsection{Multilevel models}{
 \itemize{
-\item unweighted single-level random-intercept Gaussian models from
-\code{nlme::lme()} fitted with \code{method = "ML"}, matching Stata's
+\item unweighted Gaussian models with a random intercept for one grouping
+variable from \code{nlme::lme()} fitted with \code{method = "ML"}, matching Stata's
 \verb{xtreg, mle} (full observed-information bread). For Stata's \code{mixed}
 layout, fit the same model with \code{lme4::lmer(..., REML = FALSE)}; the
 standard errors differ only slightly

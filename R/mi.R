@@ -221,7 +221,7 @@ summary.suest_mi <- function(object, conf.level = 0.95, ...) {
   df <- object$degrees_freedom
   critical <- stats::qt((1 + conf.level)/2, df = df)
   statistic <- estimate/std.error
-  data.frame(
+  out <- data.frame(
     term = names(estimate), estimate = unname(estimate),
     std.error = unname(std.error), statistic = unname(statistic),
     df = unname(df), p.value = 2*stats::pt(-abs(statistic), df = df),
@@ -229,6 +229,42 @@ summary.suest_mi <- function(object, conf.level = 0.95, ...) {
     conf.high = unname(estimate + critical*std.error),
     row.names = NULL, check.names = FALSE
   )
+  structure(out, class = c("summary.suest_mi", "data.frame"),
+    model_names = object$model_names, m = object$m,
+    nobs = object$nobs_union, conf.level = conf.level)
+}
+
+#' @rdname suest_mi
+#' @param digits Number of decimal places shown by the `summary()` table.
+#' @export
+print.summary.suest_mi <- function(x, digits = 3, ...) {
+  tab <- as.data.frame(unclass(x))
+  models <- attr(x, "model_names")
+  group <- sub("::.*$", "", tab$term)
+  term <- sub("^[^:]*::", "", tab$term)
+  w <- max(13L, nchar(c(term, models)))
+  total <- w + 67L
+  rule <- function(sep) cat(strrep("-", w + 1L), sep, strrep("-", 65L), "\n", sep = "")
+  num <- function(v) formatC(v, format = "f", digits = digits)
+  nobs <- paste("Number of obs =", format(attr(x, "nobs"), big.mark = ","))
+  title <- paste("Multiple-imputation estimates for", paste(models, collapse = ", "))
+  cat("\n", formatC(title, width = -(total - nchar(nobs))), nobs, "\n", sep = "")
+  cat(formatC(paste("Imputations =", attr(x, "m")), width = total), "\n", sep = "")
+  df <- range(tab$df)
+  cat(formatC(sprintf("DF: min = %s, max = %s", format(round(df[1], 1)), format(round(df[2], 1))),
+    width = total), "\n\n", sep = "")
+  rule("-")
+  cat(strrep(" ", w + 1L), "|", sprintf("%12s%11s%9s%8s%25s", "Coefficient", "std. err.", "t", "P>|t|",
+      paste0("[", format(100 * attr(x, "conf.level")), "% conf. interval]")), "\n", sep = "")
+  for (m in models) {
+    rule("+")
+    cat(formatC(m, width = -w), " |\n", sep = "")
+    r <- group == m
+    cat(sprintf("%*s |%12s%11s%9s%8s%13s%12s\n", w, term[r], num(tab$estimate[r]), num(tab$std.error[r]),
+        num(tab$statistic[r]), num(tab$p.value[r]), num(tab$conf.low[r]), num(tab$conf.high[r])), sep = "")
+  }
+  rule("-")
+  invisible(x)
 }
 
 #' @rdname suest_mi

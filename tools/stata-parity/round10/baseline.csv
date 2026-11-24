@@ -1,0 +1,25 @@
+"check","measure","gap"
+"mixed pair, suest2","max_b",1.14e-06
+"mixed A alone, clustered","max_b",1.14e-06
+"mixed B alone, clustered","max_b",4.97e-07
+"mixed + logit, suest2","max_b",4.97e-07
+"logit alone, clustered","max_b",7.45e-09
+"svy cloglog pair, suest2","max_b",1.5e-08
+"svy cloglog A alone","max_b",2.6e-09
+"svy cloglog B alone","max_b",1.5e-08
+"mixed pair, suest2","max_se_rel",5.51e-06
+"mixed A alone, clustered","max_se_rel",5.51e-06
+"mixed B alone, clustered","max_se_rel",1.04e-06
+"mixed + logit, suest2","max_se_rel",1.04e-06
+"logit alone, clustered","max_se_rel",4.75e-08
+"svy cloglog pair, suest2","max_se_rel",1.38e-08
+"svy cloglog A alone","max_se_rel",1.81e-09
+"svy cloglog B alone","max_se_rel",1.38e-08
+"mixed pair, suest2","max_V_rel",1.43e-05
+"mixed A alone, clustered","max_V_rel",1.43e-05
+"mixed B alone, clustered","max_V_rel",2.07e-06
+"mixed + logit, suest2","max_V_rel",2.07e-06
+"logit alone, clustered","max_V_rel",9.51e-08
+"svy cloglog pair, suest2","max_V_rel",2.76e-08
+"svy cloglog A alone","max_V_rel",3.62e-09
+"svy cloglog B alone","max_V_rel",2.76e-08

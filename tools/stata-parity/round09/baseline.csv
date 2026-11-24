@@ -1,0 +1,112 @@
+"check","measure","gap"
+"ologit_pair suest2","max_b",2.01e-08
+"ologit_pair native A","max_b",1.44e-08
+"ologit_pair native B","max_b",2.01e-08
+"oprobit_pair suest2","max_b",1.39e-07
+"oprobit_pair native A","max_b",1.39e-07
+"oprobit_pair native B","max_b",2.43e-08
+"mlogit_pair suest2","max_b",1.66e-10
+"mlogit_pair native A","max_b",1.66e-10
+"mlogit_pair native B","max_b",1.28e-12
+"nbreg_pair suest2","max_b",1.11e-10
+"nbreg_pair native A","max_b",1.11e-10
+"nbreg_pair native B","max_b",5.66e-12
+"gologit_pair suest2","max_b",9.25e-08
+"gologit_pair native A","max_b",9.25e-08
+"gologit_pair native B","max_b",6.24e-08
+"tobit_pair suest2","max_b",3.26e-10
+"tobit_pair native A","max_b",3.26e-10
+"tobit_pair native B","max_b",6.72e-11
+"intreg_pair suest2","max_b",1.7e-13
+"intreg_pair native A","max_b",8.17e-14
+"intreg_pair native B","max_b",1.7e-13
+"weibull_pair suest2","max_b",1.76e-10
+"weibull_pair native A","max_b",1.76e-10
+"weibull_pair native B","max_b",5.03e-11
+"ivreg_pair suest2","max_b",2e-15
+"ivreg_pair native A","max_b",1.78e-15
+"ivreg_pair native B","max_b",2e-15
+"mixed_six suest2","max_b",1.79e-07
+"mixed_six native A","max_b",4e-15
+"mixed_six native B","max_b",1.79e-07
+"mixed_six native C","max_b",1.44e-08
+"mixed_six native D","max_b",1.66e-10
+"mixed_six native E","max_b",1.11e-10
+"mixed_six native F","max_b",3.26e-10
+"domain_pair suest2","max_b",2.52e-08
+"domain_pair native A","max_b",2.52e-08
+"domain_pair native B","max_b",1.3e-10
+"ologit_pair suest2","max_se_rel",8.15e-09
+"ologit_pair native A","max_se_rel",5.62e-09
+"ologit_pair native B","max_se_rel",8.15e-09
+"oprobit_pair suest2","max_se_rel",1.38e-07
+"oprobit_pair native A","max_se_rel",1.38e-07
+"oprobit_pair native B","max_se_rel",2.13e-08
+"mlogit_pair suest2","max_se_rel",1.28e-10
+"mlogit_pair native A","max_se_rel",1.28e-10
+"mlogit_pair native B","max_se_rel",8.41e-12
+"nbreg_pair suest2","max_se_rel",2.26e-10
+"nbreg_pair native A","max_se_rel",2.26e-10
+"nbreg_pair native B","max_se_rel",1.25e-11
+"gologit_pair suest2","max_se_rel",4.12e-08
+"gologit_pair native A","max_se_rel",4.12e-08
+"gologit_pair native B","max_se_rel",2.13e-08
+"tobit_pair suest2","max_se_rel",6.73e-10
+"tobit_pair native A","max_se_rel",6.73e-10
+"tobit_pair native B","max_se_rel",1.13e-10
+"intreg_pair suest2","max_se_rel",5.86e-14
+"intreg_pair native A","max_se_rel",3.59e-14
+"intreg_pair native B","max_se_rel",5.88e-14
+"weibull_pair suest2","max_se_rel",1.91e-10
+"weibull_pair native A","max_se_rel",1.91e-10
+"weibull_pair native B","max_se_rel",3.53e-11
+"ivreg_pair suest2","max_se_rel",8.37e-09
+"ivreg_pair native A","max_se_rel",2.22e-15
+"ivreg_pair native B","max_se_rel",2.11e-15
+"mixed_six suest2","max_se_rel",7.38e-08
+"mixed_six native A","max_se_rel",3.77e-15
+"mixed_six native B","max_se_rel",7.38e-08
+"mixed_six native C","max_se_rel",5.62e-09
+"mixed_six native D","max_se_rel",1.28e-10
+"mixed_six native E","max_se_rel",2.26e-10
+"mixed_six native F","max_se_rel",6.73e-10
+"domain_pair suest2","max_se_rel",1.53e-08
+"domain_pair native A","max_se_rel",1.53e-08
+"domain_pair native B","max_se_rel",8.85e-11
+"ologit_pair suest2","max_V_rel",1.63e-08
+"ologit_pair native A","max_V_rel",1.12e-08
+"ologit_pair native B","max_V_rel",1.63e-08
+"oprobit_pair suest2","max_V_rel",2.76e-07
+"oprobit_pair native A","max_V_rel",2.76e-07
+"oprobit_pair native B","max_V_rel",4.25e-08
+"mlogit_pair suest2","max_V_rel",2.57e-10
+"mlogit_pair native A","max_V_rel",2.57e-10
+"mlogit_pair native B","max_V_rel",1.68e-11
+"nbreg_pair suest2","max_V_rel",4.51e-10
+"nbreg_pair native A","max_V_rel",4.51e-10
+"nbreg_pair native B","max_V_rel",2.51e-11
+"gologit_pair suest2","max_V_rel",8.24e-08
+"gologit_pair native A","max_V_rel",8.24e-08
+"gologit_pair native B","max_V_rel",4.27e-08
+"tobit_pair suest2","max_V_rel",1.35e-09
+"tobit_pair native A","max_V_rel",1.35e-09
+"tobit_pair native B","max_V_rel",2.25e-10
+"intreg_pair suest2","max_V_rel",1.17e-13
+"intreg_pair native A","max_V_rel",7.16e-14
+"intreg_pair native B","max_V_rel",1.18e-13
+"weibull_pair suest2","max_V_rel",3.82e-10
+"weibull_pair native A","max_V_rel",3.82e-10
+"weibull_pair native B","max_V_rel",7.06e-11
+"ivreg_pair suest2","max_V_rel",1.67e-08
+"ivreg_pair native A","max_V_rel",4.54e-15
+"ivreg_pair native B","max_V_rel",4.22e-15
+"mixed_six suest2","max_V_rel",1.48e-07
+"mixed_six native A","max_V_rel",7.49e-15
+"mixed_six native B","max_V_rel",1.48e-07
+"mixed_six native C","max_V_rel",1.12e-08
+"mixed_six native D","max_V_rel",2.57e-10
+"mixed_six native E","max_V_rel",4.51e-10
+"mixed_six native F","max_V_rel",1.35e-09
+"domain_pair suest2","max_V_rel",3.06e-08
+"domain_pair native A","max_V_rel",3.06e-08
+"domain_pair native B","max_V_rel",1.77e-10

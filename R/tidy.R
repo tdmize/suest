@@ -42,7 +42,7 @@ tidy.suest_model <- function(x, conf.int = TRUE, conf.level = 0.95, ...) {
 #' @exportS3Method generics::tidy
 tidy.suest_mi <- function(x, conf.int = TRUE, conf.level = 0.95, ...) {
   reference <- x$fits[[1L]]
-  out <- summary(x, conf.level = conf.level)
+  out <- as.data.frame(unclass(summary(x, conf.level = conf.level)))
   out$term <- unlist(reference$local_names, use.names = FALSE)
   out <- cbind(out[1L], group = rep(x$model_names, lengths(reference$local_names)), out[-1L])
   if (!isTRUE(conf.int)) out$conf.low <- out$conf.high <- NULL

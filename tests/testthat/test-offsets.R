@@ -167,3 +167,18 @@ test_that("ordered-model offsets use the correct analytic scores", {
   expect_equal(nrow(effects), 8L)
   expect_true(all(is.finite(effects$std.error)))
 })
+
+test_that("offsets given with the offset argument work without newdata", {
+  dat <- offset_test_data()
+  first <- glm(y_count ~ x, family = poisson(), offset = log(exposure), data = dat)
+  second <- glm(y_count ~ x + z, family = poisson(), offset = log(exposure), data = dat)
+  fit <- suest(first, second, model_names = c("First", "Second"))
+  expect_true("exposure" %in% names(suest_newdata(fit)))
+  combined <- marginaleffects::avg_predictions(fit)
+  expect_equal(combined$estimate, c(mean(fitted(first)), mean(fitted(second))),
+    tolerance = 1e-10)
+  slopes <- marginaleffects::avg_slopes(fit, variables = "x")
+  expect_equal(slopes$estimate,
+    marginaleffects::avg_slopes(fit, variables = "x", newdata = dat)$estimate,
+    tolerance = 1e-10)
+})

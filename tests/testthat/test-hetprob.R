@@ -125,3 +125,16 @@ test_that("heteroskedastic logit is available as an R extension", {
   expect_equal(unname(fit$model_types), rep("hetlogit", 2L))
   expect_true(all(is.finite(effects$std.error)))
 })
+
+test_that("default comparisons work for models with Formula formulas", {
+  skip_if_not_installed("Rchoice")
+  dat <- hetprob_test_data()
+  base <- Rchoice::hetprob(y ~ x | z, data = dat, link = "probit")
+  adjusted <- Rchoice::hetprob(y ~ x + w | z + w, data = dat, link = "probit")
+  fit <- suest(base, adjusted, model_names = c("Base", "Adjusted"))
+  effects <- marginaleffects::avg_comparisons(fit)
+  expect_setequal(unique(effects$term), c("x", "z", "w"))
+  # w is not in the base model: zero effect, no standard error.
+  present <- !(effects$term == "w" & effects$group == "Base")
+  expect_true(all(is.finite(effects$std.error[present])))
+})

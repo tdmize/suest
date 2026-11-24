@@ -1,11 +1,14 @@
 #' Stack the estimation samples from a SUEST object
 #'
-#' Creates a data frame that stacks each model's own estimation sample. Use it
-#' when the models were fitted on different samples, so that each model's
-#' marginal effects are averaged over its own sample.
+#' Creates a data frame that stacks each model's own estimation sample, one
+#' block of rows per model, so that each model's predictions and effects are
+#' averaged over its own sample. `marginaleffects` functions do this anyway
+#' when `newdata` is left out, so `suest_newdata()` is needed only to change
+#' or subset these data first.
 #'
 #' @param object A `"suest_model"` returned by [suest()].
 #'
+#' @details
 #' Variables used inside formula transformations, such as `g` in `factor(g)`,
 #' are included from the data the model was fit to.
 #'

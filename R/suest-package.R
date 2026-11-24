@@ -12,8 +12,10 @@
 #' models. See [suest()] for the full list.
 #'
 #' Probability weights (`weight_type = "pweight"`) are supported for linear,
-#' binary logit and probit, Poisson, negative-binomial, ordered logit and
-#' probit, and multinomial logit models. Joint cluster-robust covariance is
+#' binary (logit, probit, complementary log-log), fractional, Poisson,
+#' negative-binomial, ordered logit and probit, and multinomial logit models,
+#' and for other GLMs such as Gamma and quasi-Poisson models. Joint
+#' cluster-robust covariance is
 #' available through the `cluster` argument to [suest()]. Systems fitted in
 #' multiply imputed datasets can be pooled with [suest_mi()] using Rubin's
 #' rules.

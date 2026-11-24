@@ -1,0 +1,46 @@
+"check","measure","gap"
+"nb1_pair suest2","max_b",8.03e-08
+"nb_three suest2","max_b",2.51e-08
+"gee_ar1 suest2 (round 17)","max_b",3.39e-14
+"gee_un suest2 (round 17)","max_b",4.66e-15
+"gee_mixed suest2 (round 17)","max_b",6.63e-12
+"gee_short suest2 (round 17)","max_b",5.46e-12
+"cauchit_pair suest2","max_b",5.03e-07
+"loglog_pair suest2","max_b",9.19e-08
+"three_mixed suest2","max_b",5.03e-07
+"nb1_pair A alone, robust","max_b",3.61e-12
+"nb1_pair B alone, robust","max_b",8.03e-08
+"cauchit_pair A alone, robust","max_b",5.03e-07
+"cauchit_pair B alone, robust","max_b",1.81e-07
+"loglog_pair A alone, robust","max_b",9.19e-08
+"loglog_pair B alone, robust","max_b",9.13e-08
+"nb1_pair suest2","max_se_rel",1.15e-06
+"nb_three suest2","max_se_rel",1.15e-06
+"gee_ar1 suest2 (round 17)","max_se_rel",1.2e-14
+"gee_un suest2 (round 17)","max_se_rel",4.22e-15
+"gee_mixed suest2 (round 17)","max_se_rel",4.22e-12
+"gee_short suest2 (round 17)","max_se_rel",1.91e-12
+"cauchit_pair suest2","max_se_rel",3.44e-07
+"loglog_pair suest2","max_se_rel",5.83e-08
+"three_mixed suest2","max_se_rel",1.15e-06
+"nb1_pair A alone, robust","max_se_rel",1.15e-06
+"nb1_pair B alone, robust","max_se_rel",1.06e-06
+"cauchit_pair A alone, robust","max_se_rel",3.44e-07
+"cauchit_pair B alone, robust","max_se_rel",1.38e-07
+"loglog_pair A alone, robust","max_se_rel",4.88e-08
+"loglog_pair B alone, robust","max_se_rel",5.83e-08
+"nb1_pair suest2","max_V_rel",2.3e-06
+"nb_three suest2","max_V_rel",2.3e-06
+"gee_ar1 suest2 (round 17)","max_V_rel",3.06e-14
+"gee_un suest2 (round 17)","max_V_rel",8.58e-15
+"gee_mixed suest2 (round 17)","max_V_rel",1.33e-11
+"gee_short suest2 (round 17)","max_V_rel",3.81e-12
+"cauchit_pair suest2","max_V_rel",6.89e-07
+"loglog_pair suest2","max_V_rel",1.17e-07
+"three_mixed suest2","max_V_rel",2.3e-06
+"nb1_pair A alone, robust","max_V_rel",2.3e-06
+"nb1_pair B alone, robust","max_V_rel",2.11e-06
+"cauchit_pair A alone, robust","max_V_rel",6.89e-07
+"cauchit_pair B alone, robust","max_V_rel",2.76e-07
+"loglog_pair A alone, robust","max_V_rel",9.76e-08
+"loglog_pair B alone, robust","max_V_rel",1.17e-07

@@ -1,5 +1,38 @@
 # suest 0.1.6.9000 (development)
 
+* Fixed: `avg_comparisons()`, `datagrid()`, and other `marginaleffects`
+  calls that use every predictor by default stopped with "'length = 2' in
+  coercion to 'logical(1)'" when a model's formula has several parts
+  (`plm::plm()`, `Rchoice::hetprob()`, `Rchoice::ivpml()`).
+
+* Fixed: when a Heckman selection model's outcome formula or a
+  `flexsurvreg()` formula was built in code, for example with
+  `as.formula(paste(...))` inside a function, `datagrid()` (Heckman) and
+  `avg_comparisons()` without `variables` (flexsurv) could not find the
+  predictors. They are now read from the fitted model.
+
+* Fixed: predictions without `newdata` failed ("object not found") for
+  `glm()` and `glm2()` models with an offset given in the `offset` argument
+  rather than the formula; the default data now keep the offset's variables.
+
+* `summary()` of a `suest_mi()` result now prints the pooled coefficients as
+  one panel per model, with t statistics, p-values, and confidence intervals
+  from Rubin's degrees of freedom, as Stata's `mi estimate` displays them. It
+  still returns the same data frame.
+
+* Error messages now name lme4 and `clmm()` among the random-effects models
+  that combine with ordinary models, and `fixest::fepois()` among the models
+  that need fixest.
+
+* Stata check (November 2026): average predictions, average marginal
+  effects, and `mecompare` changes with their cross-model differences agree
+  with `margins` after `suest2` for 38 model types. The "Notes on specific
+  models" article now names the Stata `predict()` option that matches R's
+  prediction for random-effects logit, probit, and Poisson, fixed-effects
+  Poisson, and IV probit models, explains the two standard errors that
+  differ from Stata's, and recommends `method = "nr"` for
+  `truncreg::truncreg()`.
+
 * Two-part models: `suest(..., twopart = TRUE)` combines a binary first part
   (logit, probit, or cloglog) for whether the outcome is positive with a
   second part fit to the positive outcomes (a linear model, a GLM such as a

@@ -66,9 +66,20 @@ get_data.suest_model <- function(x, ...) .suest_default_data(x)
       predictors = unique(unlist(lapply(variables, `[`, -1L))),
       all = unique(unlist(variables))))
   }
+  # Heckman: both equations; read from the fit, since the call's formulas may
+  # be expressions such as as.formula(paste(...)).
+  if (inherits(m, "selection")) {
+    selection <- all.vars(m$termsS)
+    outcome <- all.vars(m$termsO)
+    return(list(response = c(outcome[1L], selection[1L]),
+      predictors = unique(c(outcome[-1L], selection[-1L])), all = unique(c(outcome, selection))))
+  }
   fit <- if (inherits(m, c("suest_lme4", "suest_vglm"))) m$fit else m
-  f <- tryCatch(stats::formula(m), error = function(e) m$formula)
-  two_sided <- inherits(f, "formula") && length(f) == 3L
+  f <- if (inherits(m, "flexsurvreg")) m$concat.formula else
+    tryCatch(stats::formula(m), error = function(e) m$formula)
+  # unclass(): Formula objects (plm, Rchoice) report one length per part.
+  f <- if (inherits(f, "formula")) unclass(f)
+  two_sided <- is.call(f) && length(f) == 3L
   response <- tryCatch(insight::find_response(fit, combine = FALSE), error = function(e) NULL)
   predictors <- tryCatch(insight::find_predictors(fit, effects = "fixed", component = "all"),
     error = function(e) NULL)
@@ -78,7 +89,7 @@ get_data.suest_model <- function(x, ...) .suest_default_data(x)
   if (is.null(response) && two_sided) response <- all.vars(f[[2L]])
   if (is.null(predictors) && two_sided) predictors <- all.vars(f[[3L]])
   list(response = response, predictors = predictors,
-       all = unique(c(if (inherits(f, "formula")) all.vars(f), all.vars(m$call))))
+       all = unique(c(if (is.call(f)) all.vars(f), all.vars(m$call))))
 }
 
 # Predictors (default variables for slopes and comparisons) plus, as auxiliary,

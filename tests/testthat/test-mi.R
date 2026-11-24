@@ -51,6 +51,14 @@ test_that("suest_mi summary uses Rubin degrees of freedom", {
     tolerance = 1e-14)
   expect_error(summary(pooled, conf.level = 1), "strictly between")
   expect_output(print(pooled), "Imputations: 5", fixed = TRUE)
+
+  # Printed as one panel per model, as after mi estimate
+  printed <- capture.output(print(out))
+  expect_match(printed[2], "Multiple-imputation estimates for")
+  expect_true(any(grepl("[90% conf. interval]", printed, fixed = TRUE)))
+  expect_true(all(paste0(formatC(pooled$model_names, width = -13), " |") %in% printed))
+  expect_s3_class(generics::tidy(pooled), "data.frame")
+  expect_false(inherits(generics::tidy(pooled), "summary.suest_mi"))
 })
 
 test_that("suest_mi validates complete system compatibility", {

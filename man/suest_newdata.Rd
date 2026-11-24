@@ -7,10 +7,7 @@
 suest_newdata(object)
 }
 \arguments{
-\item{object}{A \code{"suest_model"} returned by \code{\link[=suest]{suest()}}.
-
-Variables used inside formula transformations, such as \code{g} in \code{factor(g)},
-are included from the data the model was fit to.}
+\item{object}{A \code{"suest_model"} returned by \code{\link[=suest]{suest()}}.}
 }
 \value{
 A data frame with the component model frames stacked vertically and
@@ -20,9 +17,15 @@ contains each row's evaluated sampling weight and can be supplied to the
 \code{wts} argument of \code{marginaleffects} averaging functions.
 }
 \description{
-Creates a data frame that stacks each model's own estimation sample. Use it
-when the models were fitted on different samples, so that each model's
-marginal effects are averaged over its own sample.
+Creates a data frame that stacks each model's own estimation sample, one
+block of rows per model, so that each model's predictions and effects are
+averaged over its own sample. \code{marginaleffects} functions do this anyway
+when \code{newdata} is left out, so \code{suest_newdata()} is needed only to change
+or subset these data first.
+}
+\details{
+Variables used inside formula transformations, such as \code{g} in \code{factor(g)},
+are included from the data the model was fit to.
 }
 \examples{
 dat <- mtcars

@@ -26,8 +26,8 @@ leaves calculating and presenting the quantities themselves to
 - `suest()` combines two or more fitted models and calculates their joint
   covariance matrix. Its `twopart` option combines the two parts of
   [two-part models](two-part.html).
-- `suest_newdata()` stacks the models' estimation samples so each model's
-  effects can be averaged over its own sample.
+- `suest_newdata()` stacks the models' estimation samples, one block of rows
+  per model.
 - `suest_mi()` pools `suest()` results across multiply imputed datasets.
 - The usual `marginaleffects` functions, including `predictions()`,
   `avg_comparisons()`, `avg_slopes()`, `hypotheses()`, and the plotting
@@ -127,12 +127,15 @@ hypotheses(combined, hypothesis = "(b2 - b6) / b2 = 0")
 
 | Model | Fitted with |
 |---|---|
-| Linear random-intercept | `nlme::lme(method = "ML")` |
-| Random-intercept logit, probit, cloglog, Poisson, negative binomial (mean or constant dispersion), linear, and Gamma (log link) | `glmmTMB::glmmTMB()` |
-| Random intercept and slope, `(1 + x | id)`, for the same families | `glmmTMB::glmmTMB()` |
-| Linear random intercept or slope (ML) | `lme4::lmer(REML = FALSE)` |
-| Random-intercept or slope logit, probit, cloglog, and Poisson | `lme4::glmer()`, any `nAGQ` |
-| Random-intercept ordered logit and probit | `ordinal::clmm()` |
+| Linear, random intercept | `nlme::lme(method = "ML")` |
+| Linear (maximum likelihood) | `lme4::lmer(REML = FALSE)` |
+| Logit, probit, complementary log-log, and Poisson | `lme4::glmer()`; with only a random intercept, any `nAGQ` |
+| Logit, probit, complementary log-log, Poisson, negative binomial (mean or constant dispersion), linear, and Gamma (log link) | `glmmTMB::glmmTMB()` |
+| Ordered logit and probit | `ordinal::clmm()` |
+
+Except for `nlme::lme()`, these models can have random slopes, several of
+them, and a level nested in the grouping variable (three-level models); see
+[Notes on specific models](model-notes.html#several-random-slopes-and-three-level-models).
 
 ### Survey models
 
@@ -156,14 +159,20 @@ Models can use the same, partially overlapping, or completely different
 samples. Any single-level models can be combined, including models for
 different outcomes and models for categorical outcomes. Results on different
 scales are labeled separately rather than treated as directly comparable.
-Random-effects models (`nlme::lme()`, `pglm()`, `glmmTMB()`, lme4, `clmm()`) can be combined
-with each other, including different families, and with linear, binary, count,
-and ordered models, such as a logit model with a random-intercept logit model.
-They must share one grouping variable (for three-level models, the top level),
-which the system is clustered on, and must be unweighted. Random-effects models
-can have several random slopes and a level nested in the grouping variable. Other panel models (`plm()`, `geeglm()`) can be combined
-only with models of the same kind. Offsets are supported, except in `pglm()`
-and `glmmTMB()` models.
+
+Random-effects models (`nlme::lme()`, `pglm()`, `glmmTMB()`, lme4, `clmm()`)
+can be combined with each other, including different families, and with
+linear, logit, probit, complementary log-log, Poisson, negative binomial, and
+ordered logit and probit models, such as a logit model with a random-intercept
+logit model. They must be unweighted and share one grouping variable (for
+three-level models, the top level), and the system is clustered on that
+variable. Other panel models (`plm()`, `geeglm()`) can be combined only with
+models of the same kind.
+
+Offsets work in most models, written in the formula or given in the `offset`
+argument. They are not supported in `glmmTMB()`, lme4, `clmm()`, `pglm()`,
+`fixest::fepois()`, `VGAM::vglm()`, `flexsurv::flexsurvreg()`, and
+`GJRM::gjrm()` models. Survey models need them in the formula, as `offset()`.
 
 A few models have settings worth knowing about; see
 [Notes on specific models](model-notes.html).
@@ -171,8 +180,9 @@ A few models have settings worth knowing about; see
 ## Different samples or groups
 
 When the models are fitted to different samples, such as separate groups,
-use `suest_newdata()` so each model's effects are averaged over its own
-sample:
+each model's effects are averaged over its own sample. That is the default
+when `newdata` is left out; `newdata = suest_newdata(fit)` says the same thing
+explicitly:
 
 ```{r groups}
 south_model <- glm(union ~ age + hours + collgrad, family = binomial("logit"),
@@ -191,11 +201,23 @@ hypotheses(effects_groups, hypothesis = difference ~ revpairwise)
 ## Cluster-robust standard errors
 
 Supply a cluster variable to get cluster-robust standard errors for the
-combined models:
+combined models. The National Longitudinal Survey of Young Women follows the
+same women over many years, so the same two models of union membership,
+fitted to all the years, cluster on each woman's ID:
 
-```{r cluster-example, eval=FALSE}
-fit_clustered <- suest(base, adjusted, cluster = "person_id")
-avg_comparisons(fit_clustered, variables = "x", newdata = dat)
+```{r cluster-example}
+nlswork <- zap_labels(read_dta("https://tdmize.github.io/data/data/nlswork.dta"))
+
+base_p <- glm(union ~ collgrad + age + south, family = binomial("logit"),
+              data = nlswork)
+adjusted_p <- glm(union ~ collgrad + age + south + ln_wage + ttl_exp,
+                  family = binomial("logit"), data = nlswork)
+fit_clustered <- suest(base_p, adjusted_p, model_names = c("Base", "Adjusted"),
+                       cluster = "idcode")
+
+effects_clustered <- avg_comparisons(fit_clustered, variables = "collgrad")
+effects_clustered
+hypotheses(effects_clustered, hypothesis = difference ~ revpairwise)
 ```
 
 `cluster` takes one or more column names, or a list with one vector, matrix,
@@ -209,10 +231,12 @@ must contain whole panels.
 
 ## Probability weights
 
-`suest` supports probability weights for linear, binary logit and probit,
-Poisson, negative binomial, ordered logit and probit, and multinomial logit
-models. Fit each model with `weights=`, and tell `suest()` that they are
-probability weights with `weight_type = "pweight"`:
+`suest` supports probability weights for linear, binary (logit, probit,
+complementary log-log), fractional, Poisson, negative binomial, ordered logit
+and probit, and multinomial logit models, and for other GLMs such as Gamma and
+quasi-Poisson models. Fit each model with `weights =`, and tell `suest()` that
+they are probability weights with `weight_type = "pweight"`. `wts = TRUE`
+averages with the weights:
 
 ```{r pweight-example}
 set.seed(376)
@@ -228,7 +252,7 @@ fit_w <- suest(base_w, adjusted_w, model_names = c("Base", "Adjusted"),
                weight_type = "pweight")
 fit_w
 
-effects_w <- avg_comparisons(fit_w, variables = "x", newdata = weighted, wts = "pw")
+effects_w <- avg_comparisons(fit_w, variables = "x", wts = TRUE)
 effects_w
 hypotheses(effects_w, hypothesis = difference ~ revpairwise)
 ```
@@ -236,57 +260,74 @@ hypotheses(effects_w, hypothesis = difference ~ revpairwise)
 Weights must be positive and finite. An observation that appears in more than
 one model must have the same weight in each; weights can differ for
 observations in only one model, including completely different samples. When
-the models have different estimation samples, `suest_newdata()` includes the
-weights as `.suest_weight`:
-
-```{r pweight-model-specific, eval=FALSE}
-nd_w <- suest_newdata(fit_w)
-avg_comparisons(fit_w, variables = "x", newdata = nd_w, wts = ".suest_weight")
-```
+the models have different samples, `wts = TRUE` averages each model over its
+own sample with its own weights.
 
 ## Survey data
 
 `suest` supports the survey models in the table above, fitted from one common
-one-stage survey design, in any combination:
+one-stage survey design, in any combination. Give `suest()` the design and a
+variable that identifies each observation. The example uses the stratified
+sample of California schools that comes with the `survey` package: does the
+effect of the percentage of English language learners on a school's academic
+performance index shrink once the percentage of students eligible for free
+meals is held constant?
 
-```{r survey-example, eval=FALSE}
+```{r survey-example}
 library(survey)
-design <- svydesign(~psu, strata = ~strata, weights = ~w, data = dat)
-m1 <- svyglm(yb ~ x, design, family = quasibinomial("logit"))
-m2 <- svyglm(yb ~ x + z, design, family = quasibinomial("logit"))
-fit <- suest(m1, m2, survey_design = design, observation_id = "id")
-avg_slopes(fit, variables = "x", newdata = suest_newdata(fit), wts = ".suest_weight")
+data(api)
+design <- svydesign(ids = ~1, strata = ~stype, weights = ~pw, fpc = ~fpc,
+                    data = apistrat)
+base_s <- svyglm(api00 ~ ell, design)
+adjusted_s <- svyglm(api00 ~ ell + meals, design)
+fit_survey <- suest(base_s, adjusted_s, model_names = c("Base", "Adjusted"),
+                    survey_design = design, observation_id = "snum")
+
+effects_survey <- avg_slopes(fit_survey, variables = "ell", wts = TRUE)
+effects_survey
+hypotheses(effects_survey, hypothesis = difference ~ revpairwise)
 ```
 
-If either model uses a subset (domain) of the data, keep `design` as the full
-sampled design. The joint covariance accounts for strata, PSUs, and optional
-one-stage finite population corrections. Replicate weights, multistage
-designs, calibration, and PPS designs are not supported.
+If a model uses a subset (domain) of the data, fit it to `subset(design, ...)`
+and still give `suest()` the full design. The joint covariance accounts for
+strata, primary sampling units, and one-stage finite population corrections.
+Replicate weights, multistage designs, calibration, and
+probability-proportional-to-size designs are not supported.
 
 ## Multiple imputation
 
 To combine results across imputed datasets, fit the same `suest` system in
 each one. With `mice`, `with()` does this, and `marginaleffects` functions
 then estimate within each imputation and pool the results with Rubin's
-rules, including cross-model differences:
+rules, including cross-model differences. The example imputes missing wages,
+education, and occupation in an extract of the National Longitudinal Study of
+Adolescent to Adult Health (Add Health), then asks whether the effect of
+education on wages is smaller once part-time work and occupation are held
+constant:
 
-```{r mi-example, eval=FALSE}
+```{r mi-example}
+ah <- zap_labels(read_dta("https://tdmize.github.io/data/data/addhealth4_mcar.dta"))
+ah <- ah[c("wages", "edyrs", "woman", "age", "parttime", "occcat")]
+ah$occcat <- factor(ah$occcat)
+imp <- mice::mice(ah, m = 10, seed = 2307, printFlag = FALSE)
+
 analyses <- with(imp, suest(
-  glm(y ~ x, family = binomial),
-  glm(y ~ x + z, family = binomial),
+  lm(wages ~ edyrs + woman + age),
+  lm(wages ~ edyrs + woman + age + parttime + occcat),
   model_names = c("Base", "Adjusted")
 ))
-avg_comparisons(analyses, variables = "x",
-  hypothesis = difference ~ revpairwise)
+avg_comparisons(analyses, variables = "edyrs")
+avg_comparisons(analyses, variables = "edyrs",
+                hypothesis = difference ~ revpairwise)
 ```
 
-`mice` warns "Large sample assumed." here. That is expected: SUEST reports
+`mice` warns "Large sample assumed." here. That is expected: `suest` reports
 large-sample statistics, so the pooled degrees of freedom are Rubin's
 large-sample values.
 
 `suest_mi()` pools the coefficients and their joint covariance:
 
-```{r mi-pool, eval=FALSE}
+```{r mi-pool}
 pooled <- suest_mi(analyses)
 summary(pooled)
 ```

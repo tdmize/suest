@@ -121,6 +121,10 @@ test_that("plm within systems work with marginaleffects", {
     c(mean(dat$y1), mean(dat$y2)),
     tolerance = 1e-10
   )
+
+  # Default variables: plm's Formula formula once broke this.
+  default <- marginaleffects::avg_comparisons(fit, newdata = dat)
+  expect_setequal(unique(default$term), c("x", "z"))
 })
 
 test_that("plm within validation rejects unsupported panel specifications", {

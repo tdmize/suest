@@ -156,9 +156,10 @@
 #'
 #' Predictions and effects use the joint design-based coefficient covariance.
 #' Averaging treats the supplied covariate distribution as fixed; it does not
-#' add design uncertainty from estimating that distribution. Use
-#' `suest_newdata()` and `wts = ".suest_weight"` for model-specific weighted
-#' averages. Inference uses the usual asymptotic normal default. The full
+#' add design uncertainty from estimating that distribution. `wts = TRUE`
+#' averages with the sampling weights, each model over its own estimation
+#' sample when `newdata` is omitted. Inference uses the usual asymptotic
+#' normal default. The full
 #' design's degrees of freedom are recorded in `$survey$design_df`; no automatic
 #' survey t or F adjustment is applied.
 #'
@@ -278,8 +279,8 @@
 #'   A user-supplied `zcor` is unsupported
 #'
 #' ## Multilevel models
-#' * unweighted single-level random-intercept Gaussian models from
-#'   `nlme::lme()` fitted with `method = "ML"`, matching Stata's
+#' * unweighted Gaussian models with a random intercept for one grouping
+#'   variable from `nlme::lme()` fitted with `method = "ML"`, matching Stata's
 #'   `xtreg, mle` (full observed-information bread). For Stata's `mixed`
 #'   layout, fit the same model with `lme4::lmer(..., REML = FALSE)`; the
 #'   standard errors differ only slightly
@@ -513,7 +514,7 @@ suest <- function(
         "plm::plm linear ",
         "panel model, an nlme::lme random-intercept ML model, a pglm::pglm ",
         "random-effects binary or Poisson model, a supported ",
-        "glmmTMB::glmmTMB or lme4 random-effects model, a glmmTMB nbinom1 model, a VGAM::vglm generalized ordered model, a sampleSelection::selection ML Heckman model, an ordinal::clmm random-intercept ordered model, a supported ",
+        "glmmTMB::glmmTMB or lme4 random-effects model, a glmmTMB nbinom1 model, a VGAM::vglm generalized ordered model, a sampleSelection::selection ML Heckman model, an ordinal::clmm ordered random-effects model, a supported ",
         "geepack::geeglm model, ",
         "a fixest::feols IV model, or a fixest::fepois fixed-effects Poisson model. Unsupported model '",
         model_names[unsupported[1L]], "' has class '",
@@ -545,7 +546,7 @@ suest <- function(
       !all(model_types[!is_panel] %in% partner_types)))
     stop(
       paste0(
-        "Random-effects models (nlme::lme, pglm, glmmTMB) can be combined with ",
+        "Random-effects models (nlme::lme, pglm, glmmTMB, lme4, ordinal::clmm) can be combined with ",
         "each other and with linear, logit, probit, cloglog, Poisson, negative ",
         "binomial, ordered logit, and ordered probit models. Other panel ",
         "models (plm, geeglm) can be combined only with models of the same type."
@@ -607,7 +608,7 @@ suest <- function(
   if (any(model_types %in% c("ivreg", "panel_poisson_fe")) &&
       !requireNamespace("fixest", quietly = TRUE))
     stop(
-      "Package 'fixest' is required for instrumental-variable models.",
+      "Package 'fixest' is required for fixest::feols() and fixest::fepois() models.",
       call. = FALSE
     )
 

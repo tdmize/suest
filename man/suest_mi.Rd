@@ -6,6 +6,7 @@
 \alias{vcov.suest_mi}
 \alias{nobs.suest_mi}
 \alias{summary.suest_mi}
+\alias{print.summary.suest_mi}
 \alias{print.suest_mi}
 \title{Pool SUEST systems across multiple imputations}
 \usage{
@@ -19,6 +20,8 @@ suest_mi(fits)
 
 \method{summary}{suest_mi}(object, conf.level = 0.95, ...)
 
+\method{print}{summary.suest_mi}(x, digits = 3, ...)
+
 \method{print}{suest_mi}(x, ...)
 }
 \arguments{
@@ -31,6 +34,8 @@ a result list returned by \code{mitools::with.imputationList()}.}
 \item{...}{Additional arguments; currently ignored.}
 
 \item{conf.level}{Confidence level for \code{\link[=summary.suest_mi]{summary.suest_mi()}}.}
+
+\item{digits}{Number of decimal places shown by the \code{summary()} table.}
 }
 \value{
 A \code{"suest_mi"} object containing pooled coefficients, total,

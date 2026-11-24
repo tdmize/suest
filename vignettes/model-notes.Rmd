@@ -166,8 +166,8 @@ prediction with `"response"` and are left out with `"positive"` and
 
 ## Mixed models fitted with glmmTMB
 
-- Predictions and marginal effects average over the random intercept, and
-  over the random slope when there is one.
+- Predictions and marginal effects average over the random effects: the
+  random intercept and any random slopes.
 - Center continuous predictors and keep them in well-scaled units. glmmTMB's
   covariance matrix can be inaccurate with extreme predictor units even when
   the model reports convergence, and `suest` uses that covariance as supplied.
@@ -219,6 +219,44 @@ prediction with `"response"` and are left out with `"positive"` and
   unless `multinomial(refLevel = )` says otherwise.
 - `suest()` finds an `svyivreg()` model's design from its call, so keep that
   design object available.
+
+## Predictions and Stata's predict() options
+
+For most models, the default prediction (`type = "response"`) is the
+quantity that `margins` reports after `suest2` in Stata. For these models, it
+is another of Stata's predictions:
+
+| R model | R's default prediction | The same prediction in Stata |
+|---|---|---|
+| Random-effects logit and probit, `pglm::pglm()` | Probability averaged over the random effect | `predict(pr)` after `xtlogit, re` or `xtprobit, re` (also what `margins` gives after `suest2`) |
+| Random-effects Poisson, `pglm::pglm()` | Expected count with the random effect at zero | `predict(nu0)` after `xtpoisson, re`; R's `type = "link"` is Stata's default, the linear prediction |
+| Fixed-effects Poisson, `fixest::fepois()` | Expected count, including the fixed effects | None: Stata's predictions after `xtpoisson, fe` leave out the fixed effects. Effects on the linear prediction are the same |
+| IV probit, `Rchoice::ivpml()` | Probability from the outcome equation | `predict(pr fixedasf)` after `ivprobit` (after `suest2`, Stata gives only the linear prediction) |
+
+After fixed-effects models (`plm()` within models and `fixest::fepois()`),
+the average prediction over the estimation sample equals the average outcome,
+so it has no standard error. Compare slopes and changes instead.
+
+Two standard errors differ from Stata's for reasons on Stata's side:
+
+- Random-effects Poisson (`pglm()`): `suest` uses one score per panel for the
+  dispersion parameter. Stata's `xtpoisson, re vce(robust)` and `suest2`
+  repeat that score on every observation in the panel, so their standard
+  errors are larger, much larger for `lnalpha`.
+- Heteroskedastic probit (`Rchoice::hetprob()`): after `hetprobit`, Stata's
+  `margins, dydx()` can give a slightly smaller standard error with its
+  default chain rule. With `nochainrule`, it gives the same standard error
+  as R.
+
+## Truncated regression
+
+`truncreg::truncreg()` uses the BFGS optimizer by default, which can stop
+just short of the maximum (about 1e-4 in the coefficients). Use
+`method = "nr"` to reach it:
+
+```r
+truncreg::truncreg(y ~ x + z, data = d, point = 0, direction = "left", method = "nr")
+```
 
 ## Stata models without an R version
 

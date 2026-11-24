@@ -1,0 +1,43 @@
+# Rerun the returned Stata checks (tools/stata-parity) against the current package
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main, master]
+    paths:
+    - 'DESCRIPTION'
+    - 'R/**'
+    - 'tools/stata-parity/**'
+    - '.github/workflows/stata-parity.yaml'
+  push:
+    branches: [main, master]
+    paths:
+    - 'DESCRIPTION'
+    - 'R/**'
+    - 'tools/stata-parity/**'
+    - '.github/workflows/stata-parity.yaml'
+
+name: stata-parity
+
+permissions: read-all
+
+jobs:
+  stata-parity:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - uses: r-lib/actions/setup-r@v2
+      with:
+        use-public-rspm: true
+
+    - uses: r-lib/actions/setup-r-dependencies@v2
+      with:
+        extra-packages: local::.
+        needs: check
+
+    - name: Rerun the Stata checks
+      run: Rscript tools/stata-parity/run_parity.R

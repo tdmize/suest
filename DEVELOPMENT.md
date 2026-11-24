@@ -1,22 +1,13 @@
 # Development notes
 
-Version 0.1.6 adds NB2 random-intercept support and correlated random-intercept/
-numeric-slope support for Poisson, NB2, and Bernoulli-logit glmmTMB models.
-Independent validation covers balanced, partial-overlap, and disjoint samples.
-Raw GSEM covariance differences remain documented; strict raw-Stata parity is
-not claimed. Existing survey, MI, panel, and single-level contracts are unchanged.
-
-The 0.1.6.9000 development pass improves unsupported-specification messages and
-documents predictor scaling and numerical marginal-effect SE checks in
-`tools/STABILITY-USABILITY-20260925.md`. It preserves the native glmmTMB
-covariance and the distinction between independent R validation and unresolved
-raw Stata GSEM discrepancies. The 0.1.6 release instructions are complete.
-
-See the [release notes](https://github.com/tdmize/suest/blob/main/tools/RELEASE-0.1.6.md)
-and [current handoff](https://github.com/tdmize/suest/blob/main/tools/SESSION-HANDOFF-0.1.6-20260925.md)
-for scope, validation, and publication status. Cross-language benchmarks live
-in `tools/stata-benchmarks/`. The post-0.1.4 roadmap and earlier handoffs are
-historical records; choose subsequent model additions explicitly.
+NEWS.md records every change since 0.1.6 and the Stata check behind each new
+model. `tools/STATA-PARITY.md` is the September 2026 parity tracker, with its
+status column brought up to date. `tools/stata-parity/` reruns the returned
+Stata checks from October and November 2026 against the current package,
+without Stata (GitHub workflow `stata-parity`); see its README.
+Cross-language benchmarks from before October 2026 live in
+`tools/stata-benchmarks/`. The older handoffs and roadmaps in `tools/` are
+historical records.
 
 ## First local setup
 

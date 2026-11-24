@@ -94,7 +94,8 @@
 .suest_raw_data <- function(model, mf) {
   form <- tryCatch(stats::formula(model), error = function(e) NULL)
   if (is.null(form) || is.null(model$call$data)) return(NULL)
-  needed <- setdiff(all.vars(form), names(mf))
+  # Variables of an offset = argument are needed to predict, too.
+  needed <- setdiff(c(all.vars(form), all.vars(model$call$offset)), names(mf))
   if (!length(needed)) return(NULL)
   data <- tryCatch(eval(model$call$data, environment(form)), error = function(e) NULL)
   if (!is.data.frame(data) || is.null(rownames(mf))) return(NULL)
