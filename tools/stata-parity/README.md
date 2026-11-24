@@ -5,7 +5,10 @@ log (gzipped), and the R scripts that fit the same models and compare them
 with the log. `data/` holds the data files Stata used. `run_parity.R` reruns
 the R side with the installed suest, compares it with the stored log, and
 fails if any gap between R and Stata is more than twice its size when the
-round was stored, plus 1e-6. No Stata run is needed.
+round was stored, plus 1e-4. That margin allows for standard errors of
+slopes, which `marginaleffects` computes by numerical derivatives and which
+move by up to about 3e-5 from one machine to another; mistakes such as a
+missing N/(N-1) or G/(G-1) factor are larger. No Stata run is needed.
 
 ```sh
 Rscript tools/stata-parity/run_parity.R                   # every round, about 6 minutes

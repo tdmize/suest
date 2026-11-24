@@ -1,7 +1,8 @@
 # Reruns the R side of each returned Stata check with the installed suest and
 # compares it with the Stata log stored with the round. A check fails when a
 # gap between R and Stata is more than twice what it was when the round was
-# stored, plus 1e-6.
+# stored, plus 1e-4 (numerical-derivative standard errors of slopes move by
+# up to about 3e-5 from one machine to another).
 # Usage, from the package folder with suest installed:
 #   Rscript tools/stata-parity/run_parity.R                  every round
 #   Rscript tools/stata-parity/run_parity.R round09 round18  some rounds
@@ -14,6 +15,12 @@ args <- setdiff(args, "--update")
 here <- normalizePath(file.path("tools", "stata-parity"), mustWork = TRUE)
 rounds <- if (length(args)) args else
   basename(list.dirs(here, recursive = FALSE))[file.exists(file.path(list.dirs(here, recursive = FALSE), "replay.R"))]
+
+# On GitHub, failures also go to the run's page as error annotations.
+annotate <- function(title, lines) if (identical(Sys.getenv("GITHUB_ACTIONS"), "true")) {
+  msg <- gsub("\r", "%0D", gsub("\n", "%0A", gsub("%", "%25", paste(lines, collapse = "\n"))))
+  cat(sprintf("::error title=%s::%s\n", title, msg))
+}
 
 run_round <- function(round) {
   src <- file.path(here, round)
@@ -35,7 +42,9 @@ run_round <- function(round) {
   gaps <- file.path(work, "gaps.csv")
   if (status != 0 || !file.exists(gaps)) {
     cat(sprintf("\n%s: the replay failed (status %s). Last lines of its log:\n", round, status))
-    writeLines(tail(readLines(file.path(work, "replay.log")), 30))
+    log <- tail(readLines(file.path(work, "replay.log")), 30)
+    writeLines(log)
+    annotate(paste(round, "replay failed"), log)
     return(data.frame(round = round, check = "(replay)", measure = "", stored = NA, now = NA,
       limit = NA, pass = FALSE))
   }
@@ -47,10 +56,13 @@ run_round <- function(round) {
   }
   stored <- read.csv(baseline, stringsAsFactors = FALSE)
   x <- merge(stored, now, by = c("check", "measure"), all.x = TRUE, suffixes = c("_stored", "_now"))
-  x$limit <- 2*x$gap_stored + 1e-6
+  x$limit <- 2*x$gap_stored + 1e-4
   x$pass <- is.na(x$gap_stored) | (!is.na(x$gap_now) & x$gap_now <= x$limit)
   cat(sprintf("%s: %d of %d gaps within their limits (%.1f minutes)\n", round, sum(x$pass), nrow(x),
     minutes))
+  if (!all(x$pass)) annotate(paste(round, sum(!x$pass), "gaps over their limits"),
+    head(with(x[!x$pass, ], sprintf("%s, %s: now %.3g, stored %.3g, limit %.3g", check, measure,
+      gap_now, gap_stored, limit)), 20))
   data.frame(round = round, check = x$check, measure = x$measure, stored = x$gap_stored,
     now = x$gap_now, limit = x$limit, pass = x$pass)
 }
