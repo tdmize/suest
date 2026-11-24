@@ -730,8 +730,8 @@ and occupation are held constant:</p>
 <span><span class="fu"><a href="https://rdrr.io/pkg/marginaleffects/man/comparisons.html" class="external-link">avg_comparisons</a></span><span class="op">(</span><span class="va">analyses</span>, variables <span class="op">=</span> <span class="st">"edyrs"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;     Group Estimate Std. Error    t Pr(&gt;|t|)     S 2.5 % 97.5 %  Df</span></span>
-<span><span class="co">#&gt;  Base         1.64     0.0996 16.5   &lt;0.001 152.7  1.45   1.84 387</span></span>
-<span><span class="co">#&gt;  Adjusted     1.45     0.1026 14.2   &lt;0.001 130.6  1.25   1.66 663</span></span>
+<span><span class="co">#&gt;  Base         1.64     0.0995 16.5   &lt;0.001 150.6  1.44   1.84 365</span></span>
+<span><span class="co">#&gt;  Adjusted     1.45     0.1043 13.9   &lt;0.001 118.9  1.25   1.66 421</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Term: edyrs</span></span>
 <span><span class="co">#&gt; Type: response</span></span>
@@ -740,7 +740,7 @@ and occupation are held constant:</p>
 <span>                hypothesis <span class="op">=</span> <span class="va">difference</span> <span class="op">~</span> <span class="va">revpairwise</span><span class="op">)</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;           Hypothesis Estimate Std. Error    t Pr(&gt;|t|)    S 2.5 % 97.5 %  Df</span></span>
-<span><span class="co">#&gt;  (Base) - (Adjusted)    0.188     0.0402 4.67   &lt;0.001 17.0 0.108  0.267 120</span></span>
+<span><span class="co">#&gt;  (Base) - (Adjusted)    0.188       0.04 4.71   &lt;0.001 17.3 0.109  0.267 138</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Type: response</span></span></code></pre></div>
 <p><code>mice</code> warns “Large sample assumed.” here. That is
@@ -754,33 +754,33 @@ covariance:</p>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Multiple-imputation estimates for Base, Adjusted           Number of obs = 4,307</span></span>
 <span><span class="co">#&gt;                                                                 Imputations = 10</span></span>
-<span><span class="co">#&gt;                                                     DF: min = 22.8, max = 1224.6</span></span>
+<span><span class="co">#&gt;                                                      DF: min = 19.1, max = 784.7</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; --------------------------------------------------------------------------------</span></span>
 <span><span class="co">#&gt;               | Coefficient  std. err.        t   P&gt;|t|     [95% conf. interval]</span></span>
 <span><span class="co">#&gt; --------------+-----------------------------------------------------------------</span></span>
 <span><span class="co">#&gt; Base          |</span></span>
-<span><span class="co">#&gt;   (Intercept) |     -18.442      3.456   -5.336   0.000      -25.234     -11.651</span></span>
-<span><span class="co">#&gt;         edyrs |       1.642      0.100   16.495   0.000        1.447       1.838</span></span>
-<span><span class="co">#&gt;         woman |      -4.944      0.420  -11.781   0.000       -5.770      -4.118</span></span>
-<span><span class="co">#&gt;           age |       0.500      0.109    4.591   0.000        0.286       0.714</span></span>
-<span><span class="co">#&gt;         lnvar |       4.965      0.049  102.371   0.000        4.870       5.060</span></span>
+<span><span class="co">#&gt;   (Intercept) |     -18.324      3.469   -5.282   0.000      -25.142     -11.506</span></span>
+<span><span class="co">#&gt;         edyrs |       1.641      0.099   16.491   0.000        1.445       1.836</span></span>
+<span><span class="co">#&gt;         woman |      -4.893      0.429  -11.392   0.000       -5.740      -4.045</span></span>
+<span><span class="co">#&gt;           age |       0.495      0.111    4.461   0.000        0.276       0.713</span></span>
+<span><span class="co">#&gt;         lnvar |       4.966      0.049  100.387   0.000        4.869       5.064</span></span>
 <span><span class="co">#&gt; --------------+-----------------------------------------------------------------</span></span>
 <span><span class="co">#&gt; Adjusted      |</span></span>
-<span><span class="co">#&gt;   (Intercept) |     -12.534      3.649   -3.435   0.001      -19.710      -5.358</span></span>
-<span><span class="co">#&gt;         edyrs |       1.455      0.103   14.176   0.000        1.253       1.656</span></span>
-<span><span class="co">#&gt;         woman |      -5.013      0.478  -10.498   0.000       -5.956      -4.071</span></span>
-<span><span class="co">#&gt;           age |       0.488      0.109    4.485   0.000        0.274       0.701</span></span>
-<span><span class="co">#&gt;      parttime |       2.480      0.730    3.396   0.001        1.047       3.913</span></span>
-<span><span class="co">#&gt;       occcat2 |      -2.099      0.850   -2.469   0.014       -3.773      -0.425</span></span>
-<span><span class="co">#&gt;       occcat3 |      -6.310      1.061   -5.950   0.000       -8.394      -4.226</span></span>
-<span><span class="co">#&gt;       occcat4 |      -1.330      1.339   -0.993   0.321       -3.958       1.298</span></span>
-<span><span class="co">#&gt;       occcat5 |      -2.866      1.133   -2.529   0.012       -5.094      -0.638</span></span>
-<span><span class="co">#&gt;       occcat6 |      -5.070      1.061   -4.777   0.000       -7.159      -2.982</span></span>
-<span><span class="co">#&gt;       occcat7 |      -2.667      9.853   -0.271   0.789      -23.060      17.726</span></span>
-<span><span class="co">#&gt;       occcat8 |      -5.040      1.117   -4.514   0.000       -7.239      -2.841</span></span>
-<span><span class="co">#&gt;       occcat9 |      -4.810      0.883   -5.446   0.000       -6.547      -3.074</span></span>
-<span><span class="co">#&gt;         lnvar |       4.944      0.048  102.361   0.000        4.849       5.039</span></span>
+<span><span class="co">#&gt;   (Intercept) |     -12.464      3.735   -3.338   0.001      -19.822      -5.107</span></span>
+<span><span class="co">#&gt;         edyrs |       1.453      0.104   13.929   0.000        1.248       1.658</span></span>
+<span><span class="co">#&gt;         woman |      -4.948      0.485  -10.195   0.000       -5.907      -3.989</span></span>
+<span><span class="co">#&gt;           age |       0.485      0.110    4.388   0.000        0.267       0.702</span></span>
+<span><span class="co">#&gt;      parttime |       2.491      0.743    3.354   0.001        1.033       3.949</span></span>
+<span><span class="co">#&gt;       occcat2 |      -2.098      0.879   -2.388   0.018       -3.835      -0.361</span></span>
+<span><span class="co">#&gt;       occcat3 |      -6.387      1.114   -5.733   0.000       -8.585      -4.189</span></span>
+<span><span class="co">#&gt;       occcat4 |      -1.134      1.432   -0.792   0.429       -3.955       1.688</span></span>
+<span><span class="co">#&gt;       occcat5 |      -2.833      1.166   -2.429   0.016       -5.130      -0.535</span></span>
+<span><span class="co">#&gt;       occcat6 |      -5.107      1.047   -4.879   0.000       -7.164      -3.049</span></span>
+<span><span class="co">#&gt;       occcat7 |      -5.508      9.722   -0.567   0.578      -25.849      14.832</span></span>
+<span><span class="co">#&gt;       occcat8 |      -5.167      1.134   -4.556   0.000       -7.406      -2.928</span></span>
+<span><span class="co">#&gt;       occcat9 |      -4.809      0.920   -5.226   0.000       -6.625      -2.993</span></span>
+<span><span class="co">#&gt;         lnvar |       4.945      0.049  100.149   0.000        4.848       5.042</span></span>
 <span><span class="co">#&gt; --------------------------------------------------------------------------------</span></span></code></pre></div>
 <p><code>marginaleffects</code> functions give the same results on
 <code>pooled</code> as on <code>analyses</code>. A list of

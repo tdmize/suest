@@ -49,7 +49,7 @@ urban
 hypotheses(urban, hypothesis = difference ~ revpairwise)
 #> 
 #>                      Hypothesis Estimate Std. Error    z Pr(>|z|)   S 2.5 %  97.5 %
-#>  (Income) - (Income and region)   -0.588      0.255 -2.3   0.0214 5.5 -1.09 -0.0873
+#>  (Income) - (Income and region)   -0.588      0.255 -2.3   0.0214 5.5 -1.09 -0.0872
 ```
 
 **Example interpretation:** Neither model shows a significant effect of
